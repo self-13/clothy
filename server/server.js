@@ -29,9 +29,13 @@ mongoose
 const app = express();
 const PORT = process.env.PORT || 3003;
 
+const allowedOrigins = process.env.NODE_ENV === "production"
+  ? ["https://yourdomain.com"]   // production
+  : ["http://localhost:5173"];   // development
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: allowedOrigins,
     methods: ["GET", "POST", "DELETE", "PUT"],
     allowedHeaders: [
       "Content-Type",
