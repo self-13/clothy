@@ -16,16 +16,6 @@ const shopReviewRouter = require("./routes/shop/review-routes");
 
 const commonFeatureRouter = require("./routes/common/feature-routes");
 
-//create a database connection -> u can also
-//create a separate file for this and then import/use that file here
-
-const db_url = process.env.MONGODB_URI;
-
-mongoose
-  .connect(db_url)
-  .then(() => console.log("MongoDB connected"))
-  .catch((error) => console.log(error));
-
 const app = express();
 const PORT = process.env.PORT || 3003;
 
@@ -33,6 +23,8 @@ const PORT = process.env.PORT || 3003;
 const allowedOrigins = process.env.FRONTEND_URLS
   ? process.env.FRONTEND_URLS.split(",").map(url => url.trim())
   : [process.env.FRONTEND_URL || "http://localhost:5173"];
+
+console.log("Allowed origins:", allowedOrigins);
 
 app.use(
   cors({
@@ -73,4 +65,20 @@ app.use("/api/shop/review", shopReviewRouter);
 
 app.use("/api/common/feature", commonFeatureRouter);
 
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+// ✅ CRITICAL: Add a root health check endpoint for Render
+app.get("/", (req, res) => {
+  res.status(200).send("OK - Server is running");
+});
+
+// ✅ CRITICAL: Start the server FIRST
+const server = app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Server running on port ${PORT}`));
+
+// ✅ THEN, connect to the database in the background
+const db_url = process.env.MONGODB_URI;
+if (db_url) {
+  mongoose.connect(db_url)
+    .then(() => console.log("MongoDB connected successfully"))
+    .catch((error) => console.error("MongoDB connection error:", error));
+} else {
+  console.error("MONGODB_URI environment variable is not defined.");
+}
