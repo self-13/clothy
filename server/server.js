@@ -30,7 +30,7 @@ const app = express();
 const PORT = process.env.PORT || 3003;
 
 const allowedOrigins = process.env.NODE_ENV === "production"
-  ? ["https://yourdomain.com"]   // production
+  ? ["https://clothy-azure.vercel.app"]   // production
   : ["http://localhost:5173"];   // development
 
 app.use(
