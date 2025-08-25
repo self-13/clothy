@@ -26,11 +26,11 @@ const createOrder = async (req, res) => {
       purchase_units: [
         {
           amount: {
-            currency_code: "INR",
+            currency_code: "USD",
             value: totalAmount.toFixed(2),
             breakdown: {
               item_total: {
-                currency_code: "INR",
+                currency_code: "USD",
                 value: totalAmount.toFixed(2),
               },
             },
@@ -38,7 +38,7 @@ const createOrder = async (req, res) => {
           items: cartItems.map((item) => ({
             name: item.title,
             unit_amount: {
-              currency_code: "INR",
+              currency_code: "USD",
               value: item.price.toFixed(2),
             },
             quantity: item.quantity.toString(),
@@ -50,7 +50,7 @@ const createOrder = async (req, res) => {
               admin_area_2: addressInfo.city,
               admin_area_1: addressInfo.state,
               postal_code: addressInfo.postalCode || addressInfo.pincode,
-              country_code: addressInfo.country || "IN", 
+              country_code: addressInfo.country || "US", 
             },
           },
         },
