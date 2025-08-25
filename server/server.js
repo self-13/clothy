@@ -29,13 +29,21 @@ mongoose
 const app = express();
 const PORT = process.env.PORT || 3003;
 
-const allowedOrigins = process.env.NODE_ENV === "production"
-  ? ["https://clothy-azure.vercel.app"]   // production
-  : ["http://localhost:5173"];   // development
+// ✅ Load frontend URLs from env
+const allowedOrigins = process.env.FRONTEND_URLS
+  ? process.env.FRONTEND_URLS.split(",").map(url => url.trim())
+  : [process.env.FRONTEND_URL || "http://localhost:5173"];
 
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.log("❌ Blocked by CORS:", origin);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     methods: ["GET", "POST", "DELETE", "PUT"],
     allowedHeaders: [
       "Content-Type",
@@ -50,6 +58,8 @@ app.use(
 
 app.use(cookieParser());
 app.use(express.json());
+
+// Routes
 app.use("/api/auth", authRouter);
 app.use("/api/admin/products", adminProductsRouter);
 app.use("/api/admin/orders", adminOrderRouter);
@@ -63,4 +73,4 @@ app.use("/api/shop/review", shopReviewRouter);
 
 app.use("/api/common/feature", commonFeatureRouter);
 
-app.listen(PORT, () => console.log(`Server is now running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
