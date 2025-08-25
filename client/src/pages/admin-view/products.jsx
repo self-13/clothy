@@ -24,7 +24,6 @@ const initialFormData = {
   title: "",
   description: "",
   category: "",
-  brand: "",
   price: "",
   salePrice: "",
   totalStock: "",
@@ -104,7 +103,7 @@ function AdminProducts() {
 
   return (
     <Fragment>
-      <div className="mb-5 w-full flex justify-end">
+      <div className="mb-5 w-full flex justify-end ">
         <Button onClick={() => setOpenCreateProductsDialog(true)}>
           Add New Product
         </Button>
