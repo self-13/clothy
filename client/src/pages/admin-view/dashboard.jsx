@@ -54,11 +54,6 @@ function AdminDashboard() {
                   src={featureImgItem.image}
                   className="w-full h-[300px] object-cover rounded-t-lg"
                 />
-                <ButtonGroup>
-                  <Button onClick={() => handleRemoveImage(featureImgItem._id)}>
-                    Delete
-                  </Button>
-                </ButtonGroup>
               </div>
             ))
           : null}
