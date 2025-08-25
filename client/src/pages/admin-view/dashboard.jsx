@@ -1,8 +1,10 @@
 import ProductImageUpload from "@/components/admin-view/image-upload";
 import { Button } from "@/components/ui/button";
-import { addFeatureImage, getFeatureImages } from "@/store/common-slice";
+import { addFeatureImage, getFeatureImages  } from "@/store/common-slice";
+import ButtonGroup from "antd/es/button/button-group";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+
 
 function AdminDashboard() {
   const [imageFile, setImageFile] = useState(null);
@@ -44,14 +46,19 @@ function AdminDashboard() {
       <Button onClick={handleUploadFeatureImage} className="mt-5 w-full">
         Upload
       </Button>
-      <div className="flex flex-col gap-4 mt-5">
+            <div className="flex flex-col gap-4 mt-5">
         {featureImageList && featureImageList.length > 0
           ? featureImageList.map((featureImgItem) => (
-              <div className="relative">
+              <div className="relative" key={featureImgItem._id}>
                 <img
                   src={featureImgItem.image}
                   className="w-full h-[300px] object-cover rounded-t-lg"
                 />
+                <ButtonGroup>
+                  <Button onClick={() => handleRemoveImage(featureImgItem._id)}>
+                    Delete
+                  </Button>
+                </ButtonGroup>
               </div>
             ))
           : null}

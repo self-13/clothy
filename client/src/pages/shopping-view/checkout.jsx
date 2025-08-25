@@ -96,7 +96,7 @@ function ShoppingCheckout() {
   }
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col bg-slate-300">
       <div className="relative h-[300px] w-full overflow-hidden">
         <img src={img} className="h-full w-full object-cover object-center" />
       </div>
@@ -114,7 +114,7 @@ function ShoppingCheckout() {
           <div className="mt-8 space-y-4">
             <div className="flex justify-between">
               <span className="font-bold">Total</span>
-              <span className="font-bold">${totalCartAmount}</span>
+              <span className="font-bold">₹{totalCartAmount}</span>
             </div>
           </div>
           <div className="mt-4 w-full">
