@@ -186,7 +186,9 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                     </Avatar>
                     <div className="flex flex-col">
                       <h3 className="font-semibold">{reviewItem?.userName}</h3>
-                      <StarRatingComponent rating={reviewItem?.reviewValue} />
+                      <div className="flex items-center gap-1">
+                        <StarRatingComponent rating={reviewItem?.reviewValue} />
+                      </div>
                       <p className="text-sm text-muted-foreground">
                         {reviewItem.reviewMessage}
                       </p>
