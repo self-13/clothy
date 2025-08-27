@@ -1,7 +1,18 @@
 import { Navigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
+import { useDispatch } from "react-redux";
+import { restoreSession } from "@/store/auth-slice";
 
 function CheckAuth({ isAuthenticated, user, children }) {
   const location = useLocation();
+  const dispatch = useDispatch();
+
+  // Restore session from localStorage if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      dispatch(restoreSession());
+    }
+  }, [isAuthenticated, dispatch]);
 
   console.log(location.pathname, isAuthenticated);
 
@@ -21,10 +32,10 @@ function CheckAuth({ isAuthenticated, user, children }) {
     !isAuthenticated &&
     !(
       location.pathname.includes("/login") ||
-    location.pathname.includes("/register") ||
-    location.pathname.includes("/verify-otp") ||
-    location.pathname.includes("/forgot-password") ||
-    location.pathname.includes("/reset-password")
+      location.pathname.includes("/register") ||
+      location.pathname.includes("/verify-otp") ||
+      location.pathname.includes("/forgot-password") ||
+      location.pathname.includes("/reset-password")
     )
   ) {
     return <Navigate to="/auth/login" />;
