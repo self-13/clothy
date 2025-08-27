@@ -76,6 +76,62 @@ export const checkAuth = createAsyncThunk(
   }
 );
 
+export const verifyOTP = createAsyncThunk(
+  "/auth/verify-otp",
+  async (formData) => {
+    const response = await axios.post(
+      `${BASE_URL}/api/auth/verify-otp`,
+      formData,
+      {
+        withCredentials: true,
+      }
+    );
+    return response.data;
+  }
+);
+
+export const resendOTP = createAsyncThunk(
+  "/auth/resend-otp",
+  async (formData) => {
+    const response = await axios.post(
+      `${BASE_URL}/api/auth/resend-otp`,
+      formData,
+      {
+        withCredentials: true,
+      }
+    );
+    return response.data;
+  }
+);
+
+export const forgotPassword = createAsyncThunk(
+  "/auth/forgot-password",
+  async (formData) => {
+    const response = await axios.post(
+      `${BASE_URL}/api/auth/forgot-password`,
+      formData,
+      {
+        withCredentials: true,
+      }
+    );
+    return response.data;
+  }
+);
+
+export const resetPassword = createAsyncThunk(
+  "/auth/reset-password",
+  async (formData) => {
+    const response = await axios.post(
+      `${BASE_URL}/api/auth/reset-password`,
+      formData,
+      {
+        withCredentials: true,
+      }
+    );
+    return response.data;
+  }
+);
+
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -129,6 +185,42 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.user = null;
         state.isAuthenticated = false;
+      })
+      .addCase(verifyOTP.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(verifyOTP.fulfilled, (state, action) => {
+        state.isLoading = false;
+      })
+      .addCase(verifyOTP.rejected, (state, action) => {
+        state.isLoading = false;
+      })
+      .addCase(resendOTP.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(resendOTP.fulfilled, (state, action) => {
+        state.isLoading = false;
+      })
+      .addCase(resendOTP.rejected, (state, action) => {
+        state.isLoading = false;
+      })
+      .addCase(forgotPassword.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(forgotPassword.fulfilled, (state, action) => {
+        state.isLoading = false;
+      })
+      .addCase(forgotPassword.rejected, (state, action) => {
+        state.isLoading = false;
+      })
+      .addCase(resetPassword.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(resetPassword.fulfilled, (state, action) => {
+        state.isLoading = false;
+      })
+      .addCase(resetPassword.rejected, (state, action) => {
+        state.isLoading = false;
       });
   },
 });

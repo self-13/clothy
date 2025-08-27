@@ -25,7 +25,8 @@ function AuthRegister() {
         toast({
           title: data?.payload?.message,
         });
-        navigate("/auth/login");
+        // Redirect to OTP verification with email pre-filled
+        navigate(`/auth/verify-otp?email=${encodeURIComponent(formData.email)}`);
       } else {
         toast({
           title: data?.payload?.message,
@@ -34,8 +35,6 @@ function AuthRegister() {
       }
     });
   }
-
-  console.log(formData);
 
   return (
     <div className="mx-auto w-full max-w-md space-y-6">
@@ -60,6 +59,16 @@ function AuthRegister() {
         setFormData={setFormData}
         onSubmit={onSubmit}
       />
+      <div className="text-center">
+        <p className="text-sm text-muted-foreground">
+          <Link
+            className="font-medium text-primary hover:underline"
+            to="/auth/forgot-password"
+          >
+            Forgot your password?
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

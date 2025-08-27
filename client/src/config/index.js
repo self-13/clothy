@@ -39,6 +39,50 @@ export const loginFormControls = [
   },
 ];
 
+export const otpFormControls = [
+  {
+    name: "email",
+    label: "Email",
+    placeholder: "Enter your email",
+    componentType: "input",
+    type: "email",
+  },
+  {
+    name: "otp",
+    label: "OTP Code",
+    placeholder: "Enter OTP code",
+    componentType: "input",
+    type: "text",
+  },
+];
+
+export const forgotPasswordFormControls = [
+  {
+    name: "email",
+    label: "Email",
+    placeholder: "Enter your email",
+    componentType: "input",
+    type: "email",
+  },
+];
+
+export const resetPasswordFormControls = [
+  {
+    name: "newPassword",
+    label: "New Password",
+    placeholder: "Enter new password",
+    componentType: "input",
+    type: "password",
+  },
+  {
+    name: "confirmPassword",
+    label: "Confirm Password",
+    placeholder: "Confirm new password",
+    componentType: "input",
+    type: "password",
+  },
+];
+
 export const addProductFormElements = [
   {
     label: "Title",
