@@ -1,8 +1,10 @@
-const { paypal, client } = require("../../helpers/paypal");
+const razorpay = require("../../helpers/razorpay");
+const crypto = require("crypto");
 const Order = require("../../models/Order");
 const Cart = require("../../models/Cart");
 const Product = require("../../models/Product");
 
+// ✅ Create Razorpay Order
 const createOrder = async (req, res) => {
   try {
     const {
@@ -18,108 +20,65 @@ const createOrder = async (req, res) => {
       cartId,
     } = req.body;
 
-    // Create PayPal order request
-    const request = new paypal.orders.OrdersCreateRequest();
-    request.prefer("return=representation");
-    request.requestBody({
-      intent: "CAPTURE",
-      purchase_units: [
-        {
-          amount: {
-            currency_code: "USD",
-            value: totalAmount.toFixed(2),
-            breakdown: {
-              item_total: {
-                currency_code: "USD",
-                value: totalAmount.toFixed(2),
-              },
-            },
-          },
-          items: cartItems.map((item) => ({
-            name: item.title,
-            unit_amount: {
-              currency_code: "USD",
-              value: item.price.toFixed(2),
-            },
-            quantity: item.quantity.toString(),
-            category: "PHYSICAL_GOODS",
-          })),
-          shipping: {
-            address: {
-              address_line_1: addressInfo.address,
-              admin_area_2: addressInfo.city,
-              admin_area_1: addressInfo.state,
-              postal_code: addressInfo.postalCode || addressInfo.pincode,
-              country_code: addressInfo.country || "US", 
-            },
-          },
-        },
-      ],
-      application_context: {
-        return_url: "http://localhost:5173/shop/paypal-return",
-        cancel_url: "http://localhost:5173/shop/paypal-cancel",
-        shipping_preference: "SET_PROVIDED_ADDRESS",
-      },
-    });
+    // Create Razorpay order
+    const options = {
+      amount: Math.round(totalAmount * 100), // amount in paise
+      currency: "INR",
+      receipt: `rcpt_${Date.now()}`,
+    };
 
-    // Execute the request
-    const orderResponse = await client.execute(request);
+    const razorpayOrder = await razorpay.orders.create(options);
 
-    // Save order in DB
+    // Save order in DB (pending state)
     const newlyCreatedOrder = new Order({
       userId,
       cartId,
       cartItems,
       addressInfo,
       orderStatus: orderStatus || "pending",
-      paymentMethod: paymentMethod || "paypal",
+      paymentMethod: paymentMethod || "razorpay",
       paymentStatus: paymentStatus || "pending",
       totalAmount,
       orderDate: orderDate || new Date(),
       orderUpdateDate: orderUpdateDate || new Date(),
-      paymentId: orderResponse.result.id,
+      paymentId: razorpayOrder.id,
     });
 
     await newlyCreatedOrder.save();
 
-    // Find approval link
-    const approvalLink = orderResponse.result.links.find(
-      (link) => link.rel === "approve"
-    );
-
-    if (!approvalLink) {
-      return res.status(500).json({
-        success: false,
-        message: "No approval URL found in PayPal response",
-      });
-    }
-
     res.status(201).json({
       success: true,
-      approvalURL: approvalLink.href,
+      razorpayOrderId: razorpayOrder.id,
+      amount: razorpayOrder.amount,
+      currency: razorpayOrder.currency,
       orderId: newlyCreatedOrder._id,
-      paypalOrderId: orderResponse.result.id,
     });
   } catch (e) {
-    console.error("PayPal Order Creation Error:", e);
+    console.error("Razorpay Order Creation Error:", e);
     res.status(500).json({
       success: false,
-      message: "Error while creating PayPal order",
+      message: "Error while creating Razorpay order",
       error: e.message,
     });
   }
 };
 
-// ✅ Capture PayPal order - UPDATED
+// ✅ Verify and Capture Payment
 const capturePayment = async (req, res) => {
   try {
-    const { orderId, dbOrderId } = req.body; // PayPal orderId + MongoDB orderId
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, dbOrderId } = req.body;
 
-    // Create capture request
-    const request = new paypal.orders.OrdersCaptureRequest(orderId);
-    request.requestBody({});
+    // Verify signature
+    const hmac = crypto.createHmac("sha256", process.env.RAZORPAY_KEY_SECRET);
+    hmac.update(razorpay_order_id + "|" + razorpay_payment_id);
+    const generated_signature = hmac.digest("hex");
 
-    const captureResponse = await client.execute(request);
+    if (generated_signature !== razorpay_signature) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid signature. Payment verification failed.",
+      });
+    }
 
     let order = await Order.findById(dbOrderId);
     if (!order) {
@@ -131,8 +90,7 @@ const capturePayment = async (req, res) => {
 
     order.paymentStatus = "paid";
     order.orderStatus = "confirmed";
-    order.paymentId = orderId;
-    order.payerId = captureResponse.result.payer?.payer_id || null;
+    order.paymentId = razorpay_payment_id;
     order.orderUpdateDate = new Date();
 
     // Update stock
@@ -166,21 +124,20 @@ const capturePayment = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Order confirmed",
+      message: "Order confirmed & payment verified",
       data: order,
-      paypalCapture: captureResponse.result,
     });
   } catch (e) {
-    console.error("PayPal Capture Error:", e);
+    console.error("Razorpay Capture Error:", e);
     res.status(500).json({
       success: false,
-      message: "Error while capturing PayPal order",
+      message: "Error while capturing Razorpay payment",
       error: e.message,
     });
   }
 };
 
-// ✅ Get all orders by user (unchanged)
+// ✅ Get all orders by user
 const getAllOrdersByUser = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -203,7 +160,7 @@ const getAllOrdersByUser = async (req, res) => {
   }
 };
 
-// ✅ Get single order details (unchanged)
+// ✅ Get single order details
 const getOrderDetails = async (req, res) => {
   try {
     const { id } = req.params;

@@ -14,11 +14,9 @@ function CheckAuth({ isAuthenticated, user, children }) {
     }
   }, [isAuthenticated, dispatch]);
 
-  console.log(location.pathname, isAuthenticated);
-
   if (location.pathname === "/") {
     if (!isAuthenticated) {
-      return <Navigate to="/auth/login" />;
+      return <Navigate to="/shop/home" />;
     } else {
       if (user?.role === "admin") {
         return <Navigate to="/admin/dashboard" />;
@@ -31,6 +29,9 @@ function CheckAuth({ isAuthenticated, user, children }) {
   if (
     !isAuthenticated &&
     !(
+      location.pathname.includes("/shop/home") ||
+      location.pathname.includes("/shop/listing") ||
+      location.pathname.includes("/shop/search") ||
       location.pathname.includes("/login") ||
       location.pathname.includes("/register") ||
       location.pathname.includes("/verify-otp") ||

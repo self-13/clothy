@@ -103,8 +103,10 @@ function ShoppingHeader() {
   }
 
   useEffect(() => {
-    dispatch(fetchCartItems(user?.id));
-  }, [dispatch]);
+    if (user?.id) {
+      dispatch(fetchCartItems(user.id));
+    }
+  }, [dispatch, user?.id]);
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-slate-300">
@@ -153,14 +155,34 @@ function ShoppingHeader() {
             <SheetContent side="left" className="w-full max-w-xs">
               <MenuItems />
               <div className="mt-6">
-                <UserMenu user={user} handleLogout={handleLogout} navigate={navigate} />
+                {user ? (
+                  <UserMenu user={user} handleLogout={handleLogout} navigate={navigate} />
+                ) : (
+                  <Button
+                    onClick={() => navigate("/auth/login")}
+                    variant="outline"
+                    className="w-full bg-black text-white font-semibold hover:bg-gray-800"
+                  >
+                    Login
+                  </Button>
+                )}
               </div>
             </SheetContent>
           </Sheet>
 
           {/* Desktop user menu */}
           <div className="hidden lg:block">
-            <UserMenu user={user} handleLogout={handleLogout} navigate={navigate} />
+            {user ? (
+              <UserMenu user={user} handleLogout={handleLogout} navigate={navigate} />
+            ) : (
+              <Button
+                onClick={() => navigate("/auth/login")}
+                variant="outline"
+                className="bg-black text-white font-semibold hover:bg-gray-800"
+              >
+                Login
+              </Button>
+            )}
           </div>
         </div>
       </div>
