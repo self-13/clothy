@@ -30,14 +30,14 @@ function ShoppingCheckout() {
       : 0;
 
   async function handleInitiateRazorpayPayment() {
-    if (cartItems.length === 0) {
+    if (!cartItems?.items || cartItems.items.length === 0) {
       toast({
         title: "Your cart is empty. Please add items to proceed",
         variant: "destructive",
       });
       return;
     }
-    if (currentSelectedAddress === null) {
+    if (!currentSelectedAddress) {
       toast({
         title: "Please select one address to proceed.",
         variant: "destructive",
@@ -45,6 +45,7 @@ function ShoppingCheckout() {
       return;
     }
 
+    // ✅ Order data sent to backend
     const orderData = {
       userId: user?.id,
       cartId: cartItems?._id,
@@ -66,13 +67,8 @@ function ShoppingCheckout() {
         phone: currentSelectedAddress?.phone,
         notes: currentSelectedAddress?.notes,
       },
-      orderStatus: "pending",
       paymentMethod: "razorpay",
-      paymentStatus: "pending",
       totalAmount: totalCartAmount,
-      orderDate: new Date(),
-      orderUpdateDate: new Date(),
-      paymentId: "",
     };
 
     setIsPaymentStart(true);
@@ -90,6 +86,7 @@ function ShoppingCheckout() {
         description: "Order Payment",
         order_id: razorpayOrderId,
         handler: async function (response) {
+          // ✅ Only send dbOrderId + payment details
           const verifyRes = await dispatch(
             capturePayment({
               razorpay_order_id: response.razorpay_order_id,

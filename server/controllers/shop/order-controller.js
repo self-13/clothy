@@ -4,21 +4,10 @@ const Order = require("../../models/Order");
 const Cart = require("../../models/Cart");
 const Product = require("../../models/Product");
 
-// ✅ Create Razorpay Order
+// ✅ Create Razorpay Order (only in Razorpay, not in our DB yet)
 const createOrder = async (req, res) => {
   try {
-    const {
-      userId,
-      cartItems,
-      addressInfo,
-      orderStatus,
-      paymentMethod,
-      paymentStatus,
-      totalAmount,
-      orderDate,
-      orderUpdateDate,
-      cartId,
-    } = req.body;
+    const { totalAmount, ...orderData } = req.body;
 
     // Create Razorpay order
     const options = {
@@ -29,29 +18,25 @@ const createOrder = async (req, res) => {
 
     const razorpayOrder = await razorpay.orders.create(options);
 
-    // Save order in DB (pending state)
-    const newlyCreatedOrder = new Order({
-      userId,
-      cartId,
-      cartItems,
-      addressInfo,
-      orderStatus: orderStatus || "pending",
-      paymentMethod: paymentMethod || "razorpay",
-      paymentStatus: paymentStatus || "pending",
+    // Save order in DB with "pending" status
+    const newOrder = new Order({
+      ...orderData,
       totalAmount,
-      orderDate: orderDate || new Date(),
-      orderUpdateDate: orderUpdateDate || new Date(),
-      paymentId: razorpayOrder.id,
+      orderStatus: "pending",
+      paymentStatus: "pending",
+      razorpayOrderId: razorpayOrder.id,
+      orderDate: new Date(),
+      orderUpdateDate: new Date(),
     });
 
-    await newlyCreatedOrder.save();
+    await newOrder.save();
 
     res.status(201).json({
       success: true,
       razorpayOrderId: razorpayOrder.id,
       amount: razorpayOrder.amount,
       currency: razorpayOrder.currency,
-      orderId: newlyCreatedOrder._id,
+      orderId: newOrder._id, // return DB orderId
     });
   } catch (e) {
     console.error("Razorpay Order Creation Error:", e);
@@ -63,12 +48,12 @@ const createOrder = async (req, res) => {
   }
 };
 
-// ✅ Verify and Capture Payment
+// ✅ Verify and Capture Payment - Only update order after successful payment
 const capturePayment = async (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, dbOrderId } = req.body;
 
-    // Verify signature
+    // Verify signature first
     const hmac = crypto.createHmac("sha256", process.env.RAZORPAY_KEY_SECRET);
     hmac.update(razorpay_order_id + "|" + razorpay_payment_id);
     const generated_signature = hmac.digest("hex");
@@ -80,20 +65,16 @@ const capturePayment = async (req, res) => {
       });
     }
 
-    let order = await Order.findById(dbOrderId);
+    // Fetch order from DB
+    const order = await Order.findById(dbOrderId);
     if (!order) {
       return res.status(404).json({
         success: false,
-        message: "Order cannot be found",
+        message: "Order not found!",
       });
     }
 
-    order.paymentStatus = "paid";
-    order.orderStatus = "confirmed";
-    order.paymentId = razorpay_payment_id;
-    order.orderUpdateDate = new Date();
-
-    // Update stock
+    // Update stock for each product
     for (let item of order.cartItems) {
       let product = await Product.findById(item.productId);
 
@@ -115,10 +96,17 @@ const capturePayment = async (req, res) => {
       await product.save();
     }
 
-    // Delete cart
+    // Delete cart after order confirmed
     if (order.cartId) {
       await Cart.findByIdAndDelete(order.cartId);
     }
+
+    // Update order with payment info
+    order.paymentStatus = "paid";
+    order.orderStatus = "confirmed";
+    order.paymentId = razorpay_payment_id;
+    order.razorpayOrderId = razorpay_order_id;
+    order.orderUpdateDate = new Date();
 
     await order.save();
 
@@ -126,6 +114,7 @@ const capturePayment = async (req, res) => {
       success: true,
       message: "Order confirmed & payment verified",
       data: order,
+      orderId: order._id,
     });
   } catch (e) {
     console.error("Razorpay Capture Error:", e);
