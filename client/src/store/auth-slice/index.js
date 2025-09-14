@@ -11,124 +11,172 @@ const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 export const registerUser = createAsyncThunk(
   "/auth/register",
-
-  async (formData) => {
-    const response = await axios.post(
-      `${BASE_URL}/api/auth/register`,
-      formData,
-      {
-        withCredentials: true,
-      }
-    );
-
-    return response.data;
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(
+        `${BASE_URL}/api/auth/register`,
+        formData,
+        {
+          withCredentials: true,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { 
+        success: false, 
+        message: "Registration failed" 
+      });
+    }
   }
 );
 
 export const loginUser = createAsyncThunk(
   "/auth/login",
-
-  async (formData) => {
-    const response = await axios.post(
-      `${BASE_URL}/api/auth/login`,
-      formData,
-      {
-        withCredentials: true,
-      }
-    );
-
-    return response.data;
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(
+        `${BASE_URL}/api/auth/login`,
+        formData,
+        {
+          withCredentials: true,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { 
+        success: false, 
+        message: "Login failed" 
+      });
+    }
   }
 );
 
 export const logoutUser = createAsyncThunk(
   "/auth/logout",
-
-  async () => {
-    const response = await axios.post(
-      `${BASE_URL}/api/auth/logout`,
-      {},
-      {
-        withCredentials: true,
-      }
-    );
-
-    return response.data;
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(
+        `${BASE_URL}/api/auth/logout`,
+        {},
+        {
+          withCredentials: true,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { 
+        success: false, 
+        message: "Logout failed" 
+      });
+    }
   }
 );
 
 export const checkAuth = createAsyncThunk(
   "/auth/checkauth",
-
-  async () => {
-    const response = await axios.get(
-      `${BASE_URL}/api/auth/check-auth`,
-      {
-        withCredentials: true,
-        headers: {
-          "Cache-Control":
-            "no-store, no-cache, must-revalidate, proxy-revalidate",
-        },
-      }
-    );
-
-    return response.data;
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(
+        `${BASE_URL}/api/auth/check-auth`,
+        {
+          withCredentials: true,
+          headers: {
+            "Cache-Control":
+              "no-store, no-cache, must-revalidate, proxy-revalidate",
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { 
+        success: false, 
+        message: "Authentication check failed" 
+      });
+    }
   }
 );
 
 export const verifyOTP = createAsyncThunk(
   "/auth/verify-otp",
-  async (formData) => {
-    const response = await axios.post(
-      `${BASE_URL}/api/auth/verify-otp`,
-      formData,
-      {
-        withCredentials: true,
-      }
-    );
-    return response.data;
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(
+        `${BASE_URL}/api/auth/verify-otp`,
+        formData,
+        {
+          withCredentials: true,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { 
+        success: false, 
+        message: "OTP verification failed" 
+      });
+    }
   }
 );
 
 export const resendOTP = createAsyncThunk(
   "/auth/resend-otp",
-  async (formData) => {
-    const response = await axios.post(
-      `${BASE_URL}/api/auth/resend-otp`,
-      formData,
-      {
-        withCredentials: true,
-      }
-    );
-    return response.data;
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(
+        `${BASE_URL}/api/auth/resend-otp`,
+        formData,
+        {
+          withCredentials: true,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { 
+        success: false, 
+        message: "Failed to resend OTP" 
+      });
+    }
   }
 );
 
 export const forgotPassword = createAsyncThunk(
   "/auth/forgot-password",
-  async (formData) => {
-    const response = await axios.post(
-      `${BASE_URL}/api/auth/forgot-password`,
-      formData,
-      {
-        withCredentials: true,
-      }
-    );
-    return response.data;
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(
+        `${BASE_URL}/api/auth/forgot-password`,
+        formData,
+        {
+          withCredentials: true,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { 
+        success: false, 
+        message: "Failed to send reset email" 
+      });
+    }
   }
 );
 
 export const resetPassword = createAsyncThunk(
   "/auth/reset-password",
-  async (formData) => {
-    const response = await axios.post(
-      `${BASE_URL}/api/auth/reset-password`,
-      formData,
-      {
-        withCredentials: true,
-      }
-    );
-    return response.data;
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(
+        `${BASE_URL}/api/auth/reset-password`,
+        formData,
+        {
+          withCredentials: true,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { 
+        success: false, 
+        message: "Password reset failed" 
+      });
+    }
   }
 );
 

@@ -14,26 +14,55 @@ const initialState = {
 
 function AuthRegister() {
   const [formData, setFormData] = useState(initialState);
+  const [isLoading, setIsLoading] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   function onSubmit(event) {
     event.preventDefault();
-    dispatch(registerUser(formData)).then((data) => {
-      if (data?.payload?.success) {
+    setIsLoading(true);
+
+    dispatch(registerUser(formData))
+      .then((result) => {
+        // Check if the action was fulfilled or rejected
+        if (registerUser.fulfilled.match(result)) {
+          const payload = result.payload;
+
+          if (payload && payload.success) {
+            toast({
+              title: payload.message || "Registration successful",
+              description: "Please check your email for the verification code.",
+            });
+            navigate(
+              `/auth/verify-otp?email=${encodeURIComponent(formData.email)}`
+            );
+          } else {
+            toast({
+              title:
+                payload?.message || "Registration failed. Please try again.",
+              variant: "destructive",
+            });
+          }
+        } else if (registerUser.rejected.match(result)) {
+          // Handle rejected action - the payload contains the error response
+          const errorPayload = result.payload;
+          toast({
+            title: errorPayload?.message || "Registration failed",
+            variant: "destructive",
+          });
+        }
+      })
+      .catch((error) => {
+        console.error("Registration error:", error);
         toast({
-          title: data?.payload?.message,
-        });
-        // Redirect to OTP verification with email pre-filled
-        navigate(`/auth/verify-otp?email=${encodeURIComponent(formData.email)}`);
-      } else {
-        toast({
-          title: data?.payload?.message,
+          title: "An unexpected error occurred.",
           variant: "destructive",
         });
-      }
-    });
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }
 
   return (
@@ -45,7 +74,7 @@ function AuthRegister() {
         <p className="mt-2">
           Already have an account
           <Link
-            className="font-medium ml-2 text-primary hover:underline"
+            className="font-bold ml-2 text-primary hover:underline"
             to="/auth/login"
           >
             Login
@@ -54,10 +83,11 @@ function AuthRegister() {
       </div>
       <CommonForm
         formControls={registerFormControls}
-        buttonText={"Sign Up"}
+        buttonText="Sign Up"
         formData={formData}
         setFormData={setFormData}
         onSubmit={onSubmit}
+        isLoading={isLoading}
       />
       <div className="text-center">
         <p className="text-sm text-muted-foreground">

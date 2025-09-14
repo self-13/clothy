@@ -4,7 +4,7 @@ import { loginFormControls } from "@/config";
 import { loginUser } from "@/store/auth-slice";
 import { useState } from "react";
 import { useDispatch } from "react-redux";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const initialState = {
   email: "",
@@ -13,24 +13,51 @@ const initialState = {
 
 function AuthLogin() {
   const [formData, setFormData] = useState(initialState);
+  const [isLoading, setIsLoading] = useState(false);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   function onSubmit(event) {
     event.preventDefault();
+    setIsLoading(true);
 
-    dispatch(loginUser(formData)).then((data) => {
-      if (data?.payload?.success) {
+    dispatch(loginUser(formData))
+      .then((result) => {
+        // Check if the action was fulfilled or rejected
+        if (loginUser.fulfilled.match(result)) {
+          const payload = result.payload;
+          
+          if (payload && payload.success) {
+            toast({
+              title: payload.message || "Login successful",
+            });
+            navigate("/");
+          } else {
+            toast({
+              title: payload?.message || "Login failed. Please try again.",
+              variant: "destructive",
+            });
+          }
+        } else if (loginUser.rejected.match(result)) {
+          // Handle rejected action - the payload contains the error response
+          const errorPayload = result.payload;
+          toast({
+            title: errorPayload?.message || "Login failed",
+            variant: "destructive",
+          });
+        }
+      })
+      .catch((error) => {
+        console.error("Login error:", error);
         toast({
-          title: data?.payload?.message,
-        });
-      } else {
-        toast({
-          title: data?.payload?.message,
+          title: "An unexpected error occurred.",
           variant: "destructive",
         });
-      }
-    });
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }
 
   return (
@@ -42,7 +69,7 @@ function AuthLogin() {
         <p className="mt-2">
           Don't have an account
           <Link
-            className="font-medium ml-2 text-primary hover:underline"
+            className="font-bold ml-2 text-primary hover:underline "
             to="/auth/register"
           >
             Register
@@ -55,6 +82,7 @@ function AuthLogin() {
         formData={formData}
         setFormData={setFormData}
         onSubmit={onSubmit}
+        isLoading={isLoading}
       />
       <div className="text-center">
         <p className="text-sm text-muted-foreground">

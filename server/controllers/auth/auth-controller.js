@@ -9,18 +9,30 @@ const generateOTP = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-//register
+// Register user
 const registerUser = async (req, res) => {
   const { userName, email, password } = req.body;
 
   try {
-    const checkUser = await User.findOne({ email });
-    if (checkUser)
-      return res.json({
+    // Check if email already exists
+    const checkEmail = await User.findOne({ email });
+    if (checkEmail) {
+      return res.status(400).json({
         success: false,
-        message: "User Already exists with the same email! Please try again",
+        message: "User already exists with the same email! Please try again.",
       });
+    }
 
+    // Check if username already exists
+    const checkUserName = await User.findOne({ userName });
+    if (checkUserName) {
+      return res.status(400).json({
+        success: false,
+        message: "Username already taken! Please choose another.",
+      });
+    }
+
+    // Hash the password
     const hashPassword = await bcrypt.hash(password, 12);
     const otpCode = generateOTP();
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
@@ -36,10 +48,10 @@ const registerUser = async (req, res) => {
     });
 
     await newUser.save();
-    
+
     // Send OTP email
     const emailSent = await sendOTPEmail(email, userName, otpCode);
-    
+
     if (!emailSent) {
       return res.status(500).json({
         success: false,
@@ -52,7 +64,7 @@ const registerUser = async (req, res) => {
       message: "Registration successful. Please check your email for verification code.",
     });
   } catch (e) {
-    console.log(e);
+    console.error(e);
     res.status(500).json({
       success: false,
       message: "Some error occurred",
@@ -101,12 +113,10 @@ const verifyOTP = async (req, res) => {
       });
     }
 
-    // Update user as verified and clear OTP
     user.isVerified = true;
     user.otp = undefined;
     await user.save();
 
-    // Send welcome email
     await sendWelcomeEmail(user.email, user.userName);
 
     res.status(200).json({
@@ -152,9 +162,8 @@ const resendOTP = async (req, res) => {
 
     await user.save();
 
-    // Send OTP email
     const emailSent = await sendOTPEmail(email, user.userName, otpCode);
-    
+
     if (!emailSent) {
       return res.status(500).json({
         success: false,
@@ -182,14 +191,12 @@ const forgotPassword = async (req, res) => {
   try {
     const user = await User.findOne({ email });
     if (!user) {
-      // Don't reveal that the user doesn't exist for security reasons
       return res.status(200).json({
         success: true,
         message: "If the email exists, a password reset link has been sent",
       });
     }
 
-    // Generate reset token
     const resetToken = crypto.randomBytes(32).toString("hex");
     const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
@@ -197,9 +204,8 @@ const forgotPassword = async (req, res) => {
     user.resetPasswordExpires = resetTokenExpiry;
     await user.save();
 
-    // Send password reset email
     const emailSent = await sendPasswordResetEmail(email, user.userName, resetToken);
-    
+
     if (!emailSent) {
       return res.status(500).json({
         success: false,
@@ -237,10 +243,8 @@ const resetPassword = async (req, res) => {
       });
     }
 
-    // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 12);
 
-    // Update password and clear reset token
     user.password = hashedPassword;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
@@ -259,19 +263,18 @@ const resetPassword = async (req, res) => {
   }
 };
 
-//login (updated to check verification status)
+// Login user
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
   try {
     const checkUser = await User.findOne({ email });
     if (!checkUser)
-      return res.json({
+      return res.status(400).json({
         success: false,
-        message: "User doesn't exists! Please register first",
+        message: "User doesn't exist! Please register first",
       });
 
-    // Check if email is verified
     if (!checkUser.isVerified) {
       return res.status(401).json({
         success: false,
@@ -279,12 +282,9 @@ const loginUser = async (req, res) => {
       });
     }
 
-    const checkPasswordMatch = await bcrypt.compare(
-      password,
-      checkUser.password
-    );
+    const checkPasswordMatch = await bcrypt.compare(password, checkUser.password);
     if (!checkPasswordMatch)
-      return res.json({
+      return res.status(400).json({
         success: false,
         message: "Incorrect password! Please try again",
       });
@@ -311,15 +311,15 @@ const loginUser = async (req, res) => {
       },
     });
   } catch (e) {
-    console.log(e);
+    console.error(e);
     res.status(500).json({
       success: false,
-      message: "Some error occured",
+      message: "Some error occurred",
     });
   }
 };
 
-//logout
+// Logout user
 const logoutUser = (req, res) => {
   res.clearCookie("token").json({
     success: true,
@@ -327,13 +327,13 @@ const logoutUser = (req, res) => {
   });
 };
 
-//auth middleware
+// Authentication middleware
 const authMiddleware = async (req, res, next) => {
   const token = req.cookies.token;
   if (!token)
     return res.status(401).json({
       success: false,
-      message: "Unauthorised user!",
+      message: "Unauthorized user!",
     });
 
   try {
@@ -343,7 +343,7 @@ const authMiddleware = async (req, res, next) => {
   } catch (error) {
     res.status(401).json({
       success: false,
-      message: "Unauthorised user!",
+      message: "Unauthorized user!",
     });
   }
 };

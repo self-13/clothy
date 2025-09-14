@@ -1,16 +1,10 @@
 import { Button } from "@/components/ui/button";
-import bannerOne from "../../assets/banner-1.webp";
-import bannerTwo from "../../assets/banner-2.webp";
-import bannerThree from "../../assets/banner-3.webp";
 import {
-  Airplay,
   BabyIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   CloudLightning,
   ShirtIcon,
-  UmbrellaIcon,
-  WatchIcon,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useState } from "react";
@@ -83,10 +77,8 @@ function ShoppingHome() {
   }, [productDetails]);
 
   useEffect(() => {
-    if (productDetails !== null) setOpenDetailsDialog(true);
-  }, [productDetails]);
-
-  useEffect(() => {
+    if (featureImageList.length === 0) return;
+    
     const timer = setInterval(() => {
       setCurrentSlide((prevSlide) => (prevSlide + 1) % featureImageList.length);
     }, 2500);
@@ -103,61 +95,94 @@ function ShoppingHome() {
     );
   }, [dispatch]);
 
-  console.log(productList, "productList");
-
   useEffect(() => {
     dispatch(getFeatureImages());
   }, [dispatch]);
 
+  const goToNextSlide = () => {
+    setCurrentSlide((prevSlide) => (prevSlide + 1) % featureImageList.length);
+  };
+
+  const goToPrevSlide = () => {
+    setCurrentSlide((prevSlide) => 
+      (prevSlide - 1 + featureImageList.length) % featureImageList.length
+    );
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
-      <div className="relative w-full h-[600px] overflow-hidden">
-        {featureImageList && featureImageList.length > 0
-          ? featureImageList.map((slide, index) => (
+      {/* Carousel */}
+      <div className="relative w-full h-[300px] md:h-[600px] overflow-hidden bg-gray-100">
+        {featureImageList && featureImageList.length > 0 ? (
+          featureImageList.map((slide, index) => (
+            <div
+              key={index}
+              className={`${
+                index === currentSlide ? "opacity-100" : "opacity-0"
+              } absolute top-0 left-0 w-full h-full transition-opacity duration-1000 flex items-center justify-center`}
+            >
               <img
                 src={slide?.image}
-                key={index}
-                className={`${
-                  index === currentSlide ? "opacity-100" : "opacity-0"
-                } absolute top-0 left-0 w-full h-full object-cover transition-opacity duration-1000`}
+                alt={`Slide ${index + 1}`}
+                className="w-full h-full object-cover md:object-contain"
               />
-            ))
-          : null}
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() =>
-            setCurrentSlide(
-              (prevSlide) =>
-                (prevSlide - 1 + featureImageList.length) %
-                featureImageList.length
-            )
-          }
-          className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white/80"
-        >
-          <ChevronLeftIcon className="w-4 h-4" />
-        </Button>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() =>
-            setCurrentSlide(
-              (prevSlide) => (prevSlide + 1) % featureImageList.length
-            )
-          }
-          className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white/80"
-        >
-          <ChevronRightIcon className="w-4 h-4" />
-        </Button>
+            </div>
+          ))
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gray-200">
+            <p className="text-gray-500">No images available</p>
+          </div>
+        )}
+        
+        {/* Navigation buttons */}
+        {featureImageList && featureImageList.length > 1 && (
+          <>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={goToPrevSlide}
+              className="absolute top-1/2 left-2 transform -translate-y-1/2 bg-white/80 hover:bg-white z-10"
+            >
+              <ChevronLeftIcon className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={goToNextSlide}
+              className="absolute top-1/2 right-2 transform -translate-y-1/2 bg-white/80 hover:bg-white z-10"
+            >
+              <ChevronRightIcon className="w-4 h-4" />
+            </Button>
+          </>
+        )}
+        
+        {/* Slide indicators */}
+        {featureImageList && featureImageList.length > 1 && (
+          <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-2 z-10">
+            {featureImageList.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentSlide(index)}
+                className={`w-2 h-2 rounded-full ${
+                  index === currentSlide ? "bg-white" : "bg-white/50"
+                }`}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* Categories */}
       <section className="py-12 bg-slate-300">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-8 ">
+          <h2 className="text-3xl font-bold text-center mb-8">
             Shop by category
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 bg-slate-200">
             {categoriesWithIcon.map((categoryItem) => (
               <Card
+                key={categoryItem.id}
                 onClick={() =>
                   handleNavigateToListingPage(categoryItem, "category")
                 }
@@ -173,6 +198,7 @@ function ShoppingHome() {
         </div>
       </section>
 
+      {/* Featured products */}
       <section className="py-12 bg-slate-300">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-8">
@@ -182,6 +208,7 @@ function ShoppingHome() {
             {productList && productList.length > 0
               ? productList.map((productItem) => (
                   <ShoppingProductTile
+                    key={productItem.id}
                     handleGetProductDetails={handleGetProductDetails}
                     product={productItem}
                     handleAddtoCart={handleAddtoCart}
@@ -191,6 +218,7 @@ function ShoppingHome() {
           </div>
         </div>
       </section>
+
       <ProductDetailsDialog
         open={openDetailsDialog}
         setOpen={setOpenDetailsDialog}
