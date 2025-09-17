@@ -1,10 +1,12 @@
 import ProductImageUpload from "@/components/admin-view/image-upload";
 import { Button } from "@/components/ui/button";
-import { addFeatureImage, getFeatureImages  } from "@/store/common-slice";
-// import ButtonGroup from "antd/es/button/button-group";
+import {
+  addFeatureImage,
+  getFeatureImages,
+  deleteFeatureImage,
+} from "@/store/common-slice";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-
 
 function AdminDashboard() {
   const [imageFile, setImageFile] = useState(null);
@@ -25,6 +27,17 @@ function AdminDashboard() {
     });
   }
 
+  function handleDeleteFeatureImage(id) {
+    if (window.confirm("Are you sure you want to delete this image?")) {
+      dispatch(deleteFeatureImage(id)).then((data) => {
+        if (data?.payload?.success) {
+          // The image is automatically removed from state via the extraReducer
+          console.log("Image deleted successfully");
+        }
+      });
+    }
+  }
+
   useEffect(() => {
     dispatch(getFeatureImages());
   }, [dispatch]);
@@ -41,12 +54,11 @@ function AdminDashboard() {
         setImageLoadingState={setImageLoadingState}
         imageLoadingState={imageLoadingState}
         isCustomStyling={true}
-        // isEditMode={currentEditedId !== null}
       />
       <Button onClick={handleUploadFeatureImage} className="mt-5 w-full">
         Upload
       </Button>
-            <div className="flex flex-col gap-4 mt-5">
+      <div className="flex flex-col gap-4 mt-5">
         {featureImageList && featureImageList.length > 0
           ? featureImageList.map((featureImgItem) => (
               <div className="relative" key={featureImgItem._id}>
@@ -54,6 +66,13 @@ function AdminDashboard() {
                   src={featureImgItem.image}
                   className="w-full h-[300px] object-cover rounded-t-lg"
                 />
+                <Button
+                  onClick={() => handleDeleteFeatureImage(featureImgItem._id)}
+                  className="absolute top-2 right-2 bg-red-600 hover:bg-red-700"
+                  size="sm"
+                >
+                  Delete
+                </Button>
               </div>
             ))
           : null}

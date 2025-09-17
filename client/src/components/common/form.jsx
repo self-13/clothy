@@ -17,6 +17,7 @@ function CommonForm({
   onSubmit,
   buttonText,
   isBtnDisabled,
+  onButtonClick, // New prop for custom button action
 }) {
   function renderInputsByComponentType(getControlItem) {
     let element = null;
@@ -39,7 +40,6 @@ function CommonForm({
             }
           />
         );
-
         break;
       case "select":
         element = (
@@ -66,7 +66,6 @@ function CommonForm({
             </SelectContent>
           </Select>
         );
-
         break;
       case "textarea":
         element = (
@@ -83,9 +82,7 @@ function CommonForm({
             }
           />
         );
-
         break;
-
       default:
         element = (
           <Input
@@ -108,6 +105,13 @@ function CommonForm({
     return element;
   }
 
+  const handleButtonClick = (e) => {
+    if (onButtonClick) {
+      e.preventDefault();
+      onButtonClick();
+    }
+  };
+
   return (
     <form onSubmit={onSubmit}>
       <div className="flex flex-col gap-3">
@@ -118,7 +122,12 @@ function CommonForm({
           </div>
         ))}
       </div>
-      <Button disabled={isBtnDisabled} type="submit" className="mt-2 w-full">
+      <Button
+        disabled={isBtnDisabled}
+        onClick={handleButtonClick}
+        type={onButtonClick ? "button" : "submit"}
+        className="mt-2 w-full"
+      >
         {buttonText || "Submit"}
       </Button>
     </form>

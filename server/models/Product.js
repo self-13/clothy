@@ -1,5 +1,17 @@
 const mongoose = require("mongoose");
 
+const SizeStockSchema = new mongoose.Schema({
+  size: {
+    type: String,
+    required: true,
+  },
+  stock: {
+    type: Number,
+    required: true,
+    min: 0,
+  },
+});
+
 const ProductSchema = new mongoose.Schema(
   {
     image: String,
@@ -11,6 +23,7 @@ const ProductSchema = new mongoose.Schema(
     salePrice: Number,
     totalStock: Number,
     averageReview: Number,
+    sizes: [SizeStockSchema], // Array of size and stock objects
   },
   { timestamps: true }
 );

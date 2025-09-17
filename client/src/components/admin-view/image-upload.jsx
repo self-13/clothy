@@ -17,17 +17,18 @@ function ProductImageUpload({
   isCustomStyling = false,
 }) {
   const inputRef = useRef(null);
-
   const BASE_URL = import.meta.env.VITE_BASE_URL;
 
-  console.log(isEditMode, "isEditMode");
-
   function handleImageFileChange(event) {
-    console.log(event.target.files, "event.target.files");
     const selectedFile = event.target.files?.[0];
-    console.log(selectedFile);
-
-    if (selectedFile) setImageFile(selectedFile);
+    if (selectedFile && selectedFile.type.startsWith("image/")) {
+      setImageFile(selectedFile);
+    } else {
+      alert("Please select a valid image file");
+      if (inputRef.current) {
+        inputRef.current.value = "";
+      }
+    }
   }
 
   function handleDragOver(event) {
@@ -37,40 +38,59 @@ function ProductImageUpload({
   function handleDrop(event) {
     event.preventDefault();
     const droppedFile = event.dataTransfer.files?.[0];
-    if (droppedFile) setImageFile(droppedFile);
+    if (droppedFile && droppedFile.type.startsWith("image/")) {
+      setImageFile(droppedFile);
+    } else {
+      alert("Please drop a valid image file");
+    }
   }
 
   function handleRemoveImage() {
     setImageFile(null);
+    setUploadedImageUrl(null);
     if (inputRef.current) {
       inputRef.current.value = "";
     }
   }
 
   async function uploadImageToCloudinary() {
-    setImageLoadingState(true);
-    const data = new FormData();
-    data.append("my_file", imageFile);
-    const response = await axios.post(
-      `${BASE_URL}/api/admin/products/upload-image`,
-      data
-    );
-    console.log(response, "response");
+    if (!imageFile) return;
 
-    if (response?.data?.success) {
-      setUploadedImageUrl(response.data.result.url);
+    setImageLoadingState(true);
+    const formData = new FormData();
+    formData.append("my_file", imageFile);
+
+    try {
+      const response = await axios.post(
+        `${BASE_URL}/api/admin/products/image-upload`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      console.log(response, "response");
+      if (response?.data?.success) {
+        setUploadedImageUrl(response.data.result.url);
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Failed to upload image");
+    } finally {
       setImageLoadingState(false);
     }
   }
 
   useEffect(() => {
-    if (imageFile !== null) uploadImageToCloudinary();
+    if (imageFile) {
+      uploadImageToCloudinary();
+    }
   }, [imageFile]);
 
   return (
-    <div
-      className={`w-full  mt-4 ${isCustomStyling ? "" : "max-w-md mx-auto"}`}
-    >
+    <div className={`w-full mt-4 ${isCustomStyling ? "" : "max-w-md mx-auto"}`}>
       <Label className="text-lg font-semibold mb-2 block">Upload Image</Label>
       <div
         onDragOver={handleDragOver}
@@ -86,30 +106,54 @@ function ProductImageUpload({
           ref={inputRef}
           onChange={handleImageFileChange}
           disabled={isEditMode}
+          accept="image/*"
         />
-        {!imageFile ? (
+        {!imageFile && !uploadedImageUrl ? (
           <Label
             htmlFor="image-upload"
             className={`${
-              isEditMode ? "cursor-not-allowed" : ""
-            } flex flex-col items-center justify-center h-32 cursor-pointer`}
+              isEditMode ? "cursor-not-allowed" : "cursor-pointer"
+            } flex flex-col items-center justify-center h-32`}
           >
             <UploadCloudIcon className="w-10 h-10 text-muted-foreground mb-2" />
             <span>Drag & drop or click to upload image</span>
           </Label>
         ) : imageLoadingState ? (
-          <Skeleton className="h-10 bg-gray-100" />
+          <div className="flex items-center justify-center h-32">
+            <Skeleton className="h-10 w-full bg-gray-100" />
+          </div>
+        ) : uploadedImageUrl ? (
+          <div className="flex flex-col items-center">
+            <img
+              src={uploadedImageUrl}
+              alt="Preview"
+              className="h-32 object-contain mb-2"
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-foreground"
+              onClick={handleRemoveImage}
+              disabled={isEditMode}
+            >
+              <XIcon className="w-4 h-4 mr-1" />
+              Remove Image
+            </Button>
+          </div>
         ) : (
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <FileIcon className="w-8 text-primary mr-2 h-8" />
             </div>
-            <p className="text-sm font-medium">{imageFile.name}</p>
+            <p className="text-sm font-medium truncate max-w-xs">
+              {imageFile.name}
+            </p>
             <Button
               variant="ghost"
               size="icon"
               className="text-muted-foreground hover:text-foreground"
               onClick={handleRemoveImage}
+              disabled={isEditMode}
             >
               <XIcon className="w-4 h-4" />
               <span className="sr-only">Remove File</span>

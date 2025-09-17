@@ -21,9 +21,10 @@ const OrderSchema = new mongoose.Schema({
     notes: String,
   },
   orderStatus: String,
-  paymentMethod: String,
+  paymentMethod: String, // Add this field
   paymentStatus: String,
   totalAmount: Number,
+  cashHandlingFee: { type: Number, default: 0 }, // Add this field
   orderDate: Date,
   orderUpdateDate: Date,
   paymentId: String,

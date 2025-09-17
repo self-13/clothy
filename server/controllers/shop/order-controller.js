@@ -7,51 +7,101 @@ const Product = require("../../models/Product");
 // ✅ Create Razorpay Order (only in Razorpay, not in our DB yet)
 const createOrder = async (req, res) => {
   try {
-    const { totalAmount, ...orderData } = req.body;
+    const { totalAmount, paymentMethod, ...orderData } = req.body;
 
-    // Create Razorpay order
-    const options = {
-      amount: Math.round(totalAmount * 100), // amount in paise
-      currency: "INR",
-      receipt: `rcpt_${Date.now()}`,
-    };
+    // Calculate cash handling fee if COD is selected
+    let finalAmount = totalAmount;
+    let cashHandlingFee = 0;
 
-    const razorpayOrder = await razorpay.orders.create(options);
+    if (paymentMethod === "cod") {
+      cashHandlingFee = 60; // You can set this to 50-60 as needed
+      finalAmount = totalAmount + cashHandlingFee;
+    }
+
+    // Create Razorpay order only for online payment
+    let razorpayOrder = null;
+    if (paymentMethod === "online") {
+      const options = {
+        amount: Math.round(finalAmount * 100), // amount in paise
+        currency: "INR",
+        receipt: `rcpt_${Date.now()}`,
+      };
+
+      razorpayOrder = await razorpay.orders.create(options);
+    }
 
     // Save order in DB with "pending" status
     const newOrder = new Order({
       ...orderData,
-      totalAmount,
-      orderStatus: "pending",
-      paymentStatus: "pending",
-      razorpayOrderId: razorpayOrder.id,
+      totalAmount: finalAmount,
+      cashHandlingFee: paymentMethod === "cod" ? cashHandlingFee : 0,
+      paymentMethod,
+      orderStatus: paymentMethod === "cod" ? "confirmed" : "pending",
+      paymentStatus: paymentMethod === "cod" ? "pending" : "pending",
+      razorpayOrderId: razorpayOrder ? razorpayOrder.id : null,
       orderDate: new Date(),
       orderUpdateDate: new Date(),
     });
 
     await newOrder.save();
 
+    // For COD orders, update stock and clear cart immediately
+    if (paymentMethod === "cod") {
+      // Update stock for each product
+      for (let item of newOrder.cartItems) {
+        let product = await Product.findById(item.productId);
+
+        if (!product) {
+          return res.status(404).json({
+            success: false,
+            message: `Product ${item.title} not found`,
+          });
+        }
+
+        if (product.totalStock < item.quantity) {
+          return res.status(400).json({
+            success: false,
+            message: `Not enough stock for product ${item.title}`,
+          });
+        }
+
+        product.totalStock -= item.quantity;
+        await product.save();
+      }
+
+      // Delete cart after order confirmed
+      if (newOrder.cartId) {
+        await Cart.findByIdAndDelete(newOrder.cartId);
+      }
+    }
+
     res.status(201).json({
       success: true,
-      razorpayOrderId: razorpayOrder.id,
-      amount: razorpayOrder.amount,
-      currency: razorpayOrder.currency,
+      razorpayOrderId: razorpayOrder ? razorpayOrder.id : null,
+      amount: razorpayOrder ? razorpayOrder.amount : finalAmount * 100,
+      currency: razorpayOrder ? razorpayOrder.currency : "INR",
       orderId: newOrder._id, // return DB orderId
+      paymentMethod,
     });
   } catch (e) {
-    console.error("Razorpay Order Creation Error:", e);
+    console.error("Order Creation Error:", e);
     res.status(500).json({
       success: false,
-      message: "Error while creating Razorpay order",
+      message: "Error while creating order",
       error: e.message,
     });
   }
 };
 
-// ✅ Verify and Capture Payment - Only update order after successful payment
+// ✅ Verify and Capture Payment - Only for online payments
 const capturePayment = async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, dbOrderId } = req.body;
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      dbOrderId,
+    } = req.body;
 
     // Verify signature first
     const hmac = crypto.createHmac("sha256", process.env.RAZORPAY_KEY_SECRET);
