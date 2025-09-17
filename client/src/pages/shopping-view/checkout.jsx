@@ -148,7 +148,7 @@ function ShoppingCheckout() {
         }
 
         // For online payments, proceed with Razorpay
-        const { razorpayOrderId, amount, currency, orderId } = res.payload;
+        const { razorpayOrderId, amount, currency } = res.payload;
 
         // Verify we have the required Razorpay data
         if (!razorpayOrderId || !amount) {
@@ -164,13 +164,13 @@ function ShoppingCheckout() {
           order_id: razorpayOrderId,
           handler: async function (response) {
             try {
-              // ✅ Only send dbOrderId + payment details
+              // ✅ Send payment details + original order data to create DB entry
               const verifyRes = await dispatch(
                 capturePayment({
                   razorpay_order_id: response.razorpay_order_id,
                   razorpay_payment_id: response.razorpay_payment_id,
                   razorpay_signature: response.razorpay_signature,
-                  dbOrderId: orderId,
+                  orderData: orderData, // Send the original order data
                 })
               );
 

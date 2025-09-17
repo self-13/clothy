@@ -21,14 +21,14 @@ const OrderSchema = new mongoose.Schema({
     notes: String,
   },
   orderStatus: String,
-  paymentMethod: String, // Add this field
+  paymentMethod: String,
   paymentStatus: String,
   totalAmount: Number,
-  cashHandlingFee: { type: Number, default: 0 }, // Add this field
+  cashHandlingFee: { type: Number, default: 0 },
   orderDate: Date,
   orderUpdateDate: Date,
   paymentId: String,
-  payerId: String,
+  razorpayOrderId: String,
 });
 
 module.exports = mongoose.model("Order", OrderSchema);

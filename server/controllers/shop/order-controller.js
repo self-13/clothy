@@ -4,7 +4,7 @@ const Order = require("../../models/Order");
 const Cart = require("../../models/Cart");
 const Product = require("../../models/Product");
 
-// ✅ Create Razorpay Order (only in Razorpay, not in our DB yet)
+// ✅ Create Order
 const createOrder = async (req, res) => {
   try {
     const { totalAmount, paymentMethod, ...orderData } = req.body;
@@ -14,40 +14,24 @@ const createOrder = async (req, res) => {
     let cashHandlingFee = 0;
 
     if (paymentMethod === "cod") {
-      cashHandlingFee = 60; // You can set this to 50-60 as needed
+      cashHandlingFee = 60;
       finalAmount = totalAmount + cashHandlingFee;
-    }
 
-    // Create Razorpay order only for online payment
-    let razorpayOrder = null;
-    if (paymentMethod === "online") {
-      const options = {
-        amount: Math.round(finalAmount * 100), // amount in paise
-        currency: "INR",
-        receipt: `rcpt_${Date.now()}`,
-      };
+      // For COD, create the order directly in DB with confirmed status
+      const newOrder = new Order({
+        ...orderData,
+        totalAmount: finalAmount,
+        cashHandlingFee: cashHandlingFee,
+        paymentMethod,
+        orderStatus: "confirmed",
+        paymentStatus: "cod",
+        orderDate: new Date(),
+        orderUpdateDate: new Date(),
+      });
 
-      razorpayOrder = await razorpay.orders.create(options);
-    }
+      await newOrder.save();
 
-    // Save order in DB with "pending" status
-    const newOrder = new Order({
-      ...orderData,
-      totalAmount: finalAmount,
-      cashHandlingFee: paymentMethod === "cod" ? cashHandlingFee : 0,
-      paymentMethod,
-      orderStatus: paymentMethod === "cod" ? "confirmed" : "pending",
-      paymentStatus: paymentMethod === "cod" ? "pending" : "pending",
-      razorpayOrderId: razorpayOrder ? razorpayOrder.id : null,
-      orderDate: new Date(),
-      orderUpdateDate: new Date(),
-    });
-
-    await newOrder.save();
-
-    // For COD orders, update stock and clear cart immediately
-    if (paymentMethod === "cod") {
-      // Update stock for each product
+      // Update stock for each product for COD orders
       for (let item of newOrder.cartItems) {
         let product = await Product.findById(item.productId);
 
@@ -69,20 +53,37 @@ const createOrder = async (req, res) => {
         await product.save();
       }
 
-      // Delete cart after order confirmed
+      // Delete cart after order confirmed for COD
       if (newOrder.cartId) {
         await Cart.findByIdAndDelete(newOrder.cartId);
       }
-    }
 
-    res.status(201).json({
-      success: true,
-      razorpayOrderId: razorpayOrder ? razorpayOrder.id : null,
-      amount: razorpayOrder ? razorpayOrder.amount : finalAmount * 100,
-      currency: razorpayOrder ? razorpayOrder.currency : "INR",
-      orderId: newOrder._id, // return DB orderId
-      paymentMethod,
-    });
+      return res.status(201).json({
+        success: true,
+        orderId: newOrder._id, // return DB orderId
+        paymentMethod,
+        message: "COD order created successfully",
+      });
+    } else {
+      // For online payments, create Razorpay order only (no DB entry yet)
+      const options = {
+        amount: Math.round(finalAmount * 100), // amount in paise
+        currency: "INR",
+        receipt: `rcpt_${Date.now()}`,
+      };
+
+      const razorpayOrder = await razorpay.orders.create(options);
+
+      // Return only the Razorpay order details, don't create DB order yet
+      return res.status(201).json({
+        success: true,
+        razorpayOrderId: razorpayOrder.id,
+        amount: razorpayOrder.amount,
+        currency: razorpayOrder.currency,
+        paymentMethod,
+        // No orderId returned for online payments yet
+      });
+    }
   } catch (e) {
     console.error("Order Creation Error:", e);
     res.status(500).json({
@@ -100,8 +101,14 @@ const capturePayment = async (req, res) => {
       razorpay_order_id,
       razorpay_payment_id,
       razorpay_signature,
-      dbOrderId,
+      orderData, // This is what the frontend is now sending
     } = req.body;
+
+    console.log("Capture payment request received:", {
+      razorpay_order_id,
+      razorpay_payment_id,
+      orderData: orderData ? "Received" : "Missing",
+    });
 
     // Verify signature first
     const hmac = crypto.createHmac("sha256", process.env.RAZORPAY_KEY_SECRET);
@@ -109,26 +116,59 @@ const capturePayment = async (req, res) => {
     const generated_signature = hmac.digest("hex");
 
     if (generated_signature !== razorpay_signature) {
+      console.log("Signature verification failed");
       return res.status(400).json({
         success: false,
         message: "Invalid signature. Payment verification failed.",
       });
     }
 
-    // Fetch order from DB
-    const order = await Order.findById(dbOrderId);
-    if (!order) {
-      return res.status(404).json({
+    // Check if we have orderData
+    if (!orderData) {
+      console.log("No orderData received");
+      return res.status(400).json({
         success: false,
-        message: "Order not found!",
+        message: "Missing order data for payment capture",
       });
     }
 
+    // Calculate final amount
+    let finalAmount = orderData.totalAmount;
+    let cashHandlingFee = 0;
+
+    if (orderData.paymentMethod === "cod") {
+      cashHandlingFee = 60;
+      finalAmount = orderData.totalAmount + cashHandlingFee;
+    }
+
+    console.log("Creating order with final amount:", finalAmount);
+
+    // Create the order in DB only after successful payment verification
+    const newOrder = new Order({
+      userId: orderData.userId,
+      cartId: orderData.cartId,
+      cartItems: orderData.cartItems,
+      addressInfo: orderData.addressInfo,
+      totalAmount: finalAmount,
+      cashHandlingFee: cashHandlingFee,
+      paymentMethod: orderData.paymentMethod,
+      orderStatus: "confirmed",
+      paymentStatus: "paid",
+      razorpayOrderId: razorpay_order_id,
+      paymentId: razorpay_payment_id,
+      orderDate: new Date(),
+      orderUpdateDate: new Date(),
+    });
+
+    await newOrder.save();
+    console.log("Order saved to database:", newOrder._id);
+
     // Update stock for each product
-    for (let item of order.cartItems) {
+    for (let item of newOrder.cartItems) {
       let product = await Product.findById(item.productId);
 
       if (!product) {
+        console.log(`Product not found: ${item.productId}`);
         return res.status(404).json({
           success: false,
           message: `Product ${item.title} not found`,
@@ -136,6 +176,7 @@ const capturePayment = async (req, res) => {
       }
 
       if (product.totalStock < item.quantity) {
+        console.log(`Not enough stock for product: ${item.title}`);
         return res.status(400).json({
           success: false,
           message: `Not enough stock for product ${item.title}`,
@@ -144,27 +185,20 @@ const capturePayment = async (req, res) => {
 
       product.totalStock -= item.quantity;
       await product.save();
+      console.log(`Stock updated for product: ${item.title}`);
     }
 
     // Delete cart after order confirmed
-    if (order.cartId) {
-      await Cart.findByIdAndDelete(order.cartId);
+    if (newOrder.cartId) {
+      await Cart.findByIdAndDelete(newOrder.cartId);
+      console.log("Cart deleted:", newOrder.cartId);
     }
-
-    // Update order with payment info
-    order.paymentStatus = "paid";
-    order.orderStatus = "confirmed";
-    order.paymentId = razorpay_payment_id;
-    order.razorpayOrderId = razorpay_order_id;
-    order.orderUpdateDate = new Date();
-
-    await order.save();
 
     res.status(200).json({
       success: true,
       message: "Order confirmed & payment verified",
-      data: order,
-      orderId: order._id,
+      data: newOrder,
+      orderId: newOrder._id,
     });
   } catch (e) {
     console.error("Razorpay Capture Error:", e);

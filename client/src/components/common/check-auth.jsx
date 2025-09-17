@@ -36,7 +36,8 @@ function CheckAuth({ isAuthenticated, user, children }) {
       location.pathname.includes("/register") ||
       location.pathname.includes("/verify-otp") ||
       location.pathname.includes("/forgot-password") ||
-      location.pathname.includes("/reset-password")
+      location.pathname.includes("/reset-password") ||
+      location.pathname.includes("/shop/payment-success")
     )
   ) {
     return <Navigate to="/auth/login" />;
