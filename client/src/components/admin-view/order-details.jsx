@@ -22,7 +22,28 @@ function AdminOrderDetailsView({ orderDetails }) {
   const dispatch = useDispatch();
   const { toast } = useToast();
 
-  console.log(orderDetails, "orderDetailsorderDetails");
+  const getBadgeColor = (status) => {
+    switch (status) {
+      case "confirmed":
+        return "bg-green-500";
+      case "pending":
+        return "bg-yellow-500";
+      case "inProcess":
+        return "bg-blue-500";
+      case "inShipping":
+        return "bg-indigo-500";
+      case "delivered":
+        return "bg-purple-500";
+      case "rejected":
+        return "bg-red-600";
+      default:
+        return "bg-gray-500";
+    }
+  };
+
+  const getPaymentBadgeColor = (method) => {
+    return method === "cod" ? "bg-orange-500" : "bg-teal-500";
+  };
 
   function handleUpdateStatus(event) {
     event.preventDefault();
@@ -43,78 +64,130 @@ function AdminOrderDetailsView({ orderDetails }) {
   }
 
   return (
-    <DialogContent className="sm:max-w-[600px]">
+    <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
       <div className="grid gap-6">
-        <div className="grid gap-2">
-          <div className="flex mt-6 items-center justify-between">
-            <p className="font-medium">Order ID</p>
-            <Label>{orderDetails?._id}</Label>
-          </div>
-          <div className="flex mt-2 items-center justify-between">
-            <p className="font-medium">Order Date</p>
-            <Label>{orderDetails?.orderDate.split("T")[0]}</Label>
-          </div>
-          <div className="flex mt-2 items-center justify-between">
-            <p className="font-medium">Order Price</p>
-            <Label>₹{orderDetails?.totalAmount}</Label>
-          </div>
-          <div className="flex mt-2 items-center justify-between">
-            <p className="font-medium">Payment method</p>
-            <Label>{orderDetails?.paymentMethod}</Label>
-          </div>
-          <div className="flex mt-2 items-center justify-between">
-            <p className="font-medium">Payment Status</p>
-            <Label>{orderDetails?.paymentStatus}</Label>
-          </div>
-          <div className="flex mt-2 items-center justify-between">
-            <p className="font-medium">Order Status</p>
-            <Label>
+        <div className="grid gap-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-bold">Order Details</h2>
+            <div className="flex gap-2">
               <Badge
-                className={`py-1 px-3 ${
-                  orderDetails?.orderStatus === "confirmed"
-                    ? "bg-green-500"
-                    : orderDetails?.orderStatus === "rejected"
-                    ? "bg-red-600"
-                    : "bg-black"
-                }`}
+                className={getPaymentBadgeColor(orderDetails?.paymentMethod)}
               >
+                {orderDetails?.paymentMethod?.toUpperCase()}
+              </Badge>
+              <Badge className={getBadgeColor(orderDetails?.orderStatus)}>
                 {orderDetails?.orderStatus}
               </Badge>
-            </Label>
+            </div>
           </div>
-        </div>
-        <Separator />
-        <div className="grid gap-4">
-          <div className="grid gap-2">
-            <div className="font-medium">Order Details</div>
-            <ul className="grid gap-3">
-              {orderDetails?.cartItems && orderDetails?.cartItems.length > 0
-                ? orderDetails?.cartItems.map((item) => (
-                    <li className="flex items-center justify-between">
-                      <span>Title: {item.title}</span>
-                      <span>Quantity: {item.quantity}</span>
-                      <span>Price: ₹{item.price}</span>
-                    </li>
-                  ))
-                : null}
-            </ul>
-          </div>
-        </div>
-        <div className="grid gap-4">
-          <div className="grid gap-2">
-            <div className="font-medium">Shipping Info</div>
-            <div className="grid gap-0.5 text-muted-foreground">
-              <span>{user.userName}</span>
-              <span>{orderDetails?.addressInfo?.address}</span>
-              <span>{orderDetails?.addressInfo?.city}</span>
-              <span>{orderDetails?.addressInfo?.pincode}</span>
-              <span>{orderDetails?.addressInfo?.phone}</span>
-              <span>{orderDetails?.addressInfo?.notes}</span>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col">
+              <span className="font-medium text-sm text-muted-foreground">
+                Order ID
+              </span>
+              <Label className="text-base">{orderDetails?._id}</Label>
+            </div>
+            <div className="flex flex-col">
+              <span className="font-medium text-sm text-muted-foreground">
+                Order Date
+              </span>
+              <Label>
+                {new Date(orderDetails?.orderDate).toLocaleDateString()}
+              </Label>
+            </div>
+            <div className="flex flex-col">
+              <span className="font-medium text-sm text-muted-foreground">
+                Total Amount
+              </span>
+              <Label className="text-lg font-bold">
+                ₹{orderDetails?.totalAmount?.toFixed(2)}
+              </Label>
+            </div>
+            <div className="flex flex-col">
+              <span className="font-medium text-sm text-muted-foreground">
+                Payment Status
+              </span>
+              <Label>{orderDetails?.paymentStatus}</Label>
             </div>
           </div>
         </div>
 
+        <Separator />
+
+        <div className="grid gap-4">
+          <h3 className="font-semibold text-lg">Order Items</h3>
+          <div className="space-y-3">
+            {orderDetails?.cartItems && orderDetails?.cartItems.length > 0
+              ? orderDetails?.cartItems.map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex justify-between items-center p-3 border rounded-lg"
+                  >
+                    <div className="flex-1">
+                      <p className="font-medium">{item.title}</p>
+                      {item.selectedSize && (
+                        <p className="text-sm text-muted-foreground">
+                          Size: {item.selectedSize}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <p>Qty: {item.quantity}</p>
+                      <p className="font-semibold">₹{item.price}</p>
+                    </div>
+                  </div>
+                ))
+              : null}
+          </div>
+        </div>
+
+        <Separator />
+
+        <div className="grid gap-4">
+          <h3 className="font-semibold text-lg">Shipping Information</h3>
+          <div className="grid gap-2 p-3 border rounded-lg">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <span className="font-medium text-sm text-muted-foreground">
+                  Address
+                </span>
+                <p className="text-sm">{orderDetails?.addressInfo?.address}</p>
+              </div>
+              <div>
+                <span className="font-medium text-sm text-muted-foreground">
+                  City
+                </span>
+                <p className="text-sm">{orderDetails?.addressInfo?.city}</p>
+              </div>
+              <div>
+                <span className="font-medium text-sm text-muted-foreground">
+                  Pincode
+                </span>
+                <p className="text-sm">{orderDetails?.addressInfo?.pincode}</p>
+              </div>
+              <div>
+                <span className="font-medium text-sm text-muted-foreground">
+                  Phone
+                </span>
+                <p className="text-sm">{orderDetails?.addressInfo?.phone}</p>
+              </div>
+            </div>
+            {orderDetails?.addressInfo?.notes && (
+              <div>
+                <span className="font-medium text-sm text-muted-foreground">
+                  Notes
+                </span>
+                <p className="text-sm">{orderDetails?.addressInfo?.notes}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <Separator />
+
         <div>
+          <h3 className="font-semibold text-lg mb-4">Update Order Status</h3>
           <CommonForm
             formControls={[
               {
@@ -123,6 +196,7 @@ function AdminOrderDetailsView({ orderDetails }) {
                 componentType: "select",
                 options: [
                   { id: "pending", label: "Pending" },
+                  { id: "confirmed", label: "Confirmed" },
                   { id: "inProcess", label: "In Process" },
                   { id: "inShipping", label: "In Shipping" },
                   { id: "delivered", label: "Delivered" },
@@ -132,7 +206,7 @@ function AdminOrderDetailsView({ orderDetails }) {
             ]}
             formData={formData}
             setFormData={setFormData}
-            buttonText={"Update Order Status"}
+            buttonText={"Update Status"}
             onSubmit={handleUpdateStatus}
           />
         </div>

@@ -2,7 +2,7 @@ const Product = require("../../models/Product");
 
 const getFilteredProducts = async (req, res) => {
   try {
-    const { category = [], brand = [], sortBy = "price-lowtohigh" } = req.query;
+    const { category = [], brand = [], sortBy = "most-selling" } = req.query; // Changed default to most-selling
 
     let filters = {};
 
@@ -40,17 +40,17 @@ const getFilteredProducts = async (req, res) => {
         break;
     }
 
-    const products = await Product.find(filters).sort(sort);
+    const products = await Product.find(filters).sort(sort).select("+sizes"); // Include sizes in response
 
     res.status(200).json({
       success: true,
       data: products,
     });
-  } catch (e) {
+  } catch (error) {
     console.log(error);
     res.status(500).json({
       success: false,
-      message: "Some error occured",
+      message: "Some error occurred",
     });
   }
 };
@@ -58,7 +58,7 @@ const getFilteredProducts = async (req, res) => {
 const getProductDetails = async (req, res) => {
   try {
     const { id } = req.params;
-    const product = await Product.findById(id);
+    const product = await Product.findById(id).select("+sizes"); // Include sizes
 
     if (!product)
       return res.status(404).json({
@@ -70,11 +70,11 @@ const getProductDetails = async (req, res) => {
       success: true,
       data: product,
     });
-  } catch (e) {
+  } catch (error) {
     console.log(error);
     res.status(500).json({
       success: false,
-      message: "Some error occured",
+      message: "Some error occurred",
     });
   }
 };

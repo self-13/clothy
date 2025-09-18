@@ -20,6 +20,22 @@ function AdminProductTile({
         </div>
         <CardContent>
           <h2 className="text-xl font-bold mb-2 mt-2">{product?.title}</h2>
+
+          {/* Display sales count */}
+          <div className="text-sm text-gray-600 mb-2">
+            Sold: {product?.salesCount || 0}
+          </div>
+
+          {/* Display sizes and stock if available */}
+          {product?.sizes && product.sizes.length > 0 && (
+            <div className="text-sm text-gray-600 mb-2">
+              Sizes:{" "}
+              {product.sizes
+                .map((size) => `${size.size} (${size.stock})`)
+                .join(", ")}
+            </div>
+          )}
+
           <div className="flex justify-between items-center mb-2">
             <span
               className={`${
@@ -31,6 +47,10 @@ function AdminProductTile({
             {product?.salePrice > 0 ? (
               <span className="text-lg font-bold">₹{product?.salePrice}</span>
             ) : null}
+          </div>
+
+          <div className="text-sm text-gray-600">
+            Total Stock: {product?.totalStock}
           </div>
         </CardContent>
         <CardFooter className="flex justify-between items-center">

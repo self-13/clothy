@@ -31,7 +31,7 @@ const createOrder = async (req, res) => {
 
       await newOrder.save();
 
-      // Update stock for each product for COD orders
+      // Update stock for each product and size for COD orders
       for (let item of newOrder.cartItems) {
         let product = await Product.findById(item.productId);
 
@@ -42,14 +42,36 @@ const createOrder = async (req, res) => {
           });
         }
 
-        if (product.totalStock < item.quantity) {
+        // Find the specific size and update stock
+        const sizeItem = product.sizes.find(
+          (s) => s.size === item.selectedSize
+        );
+        if (!sizeItem) {
           return res.status(400).json({
             success: false,
-            message: `Not enough stock for product ${item.title}`,
+            message: `Size ${item.selectedSize} not available for product ${item.title}`,
           });
         }
 
-        product.totalStock -= item.quantity;
+        if (sizeItem.stock < item.quantity) {
+          return res.status(400).json({
+            success: false,
+            message: `Not enough stock for size ${item.selectedSize} of product ${item.title}`,
+          });
+        }
+
+        sizeItem.stock -= item.quantity;
+
+        // Update total stock
+        const totalStockFromSizes = product.sizes.reduce(
+          (total, s) => total + s.stock,
+          0
+        );
+        product.totalStock = totalStockFromSizes;
+
+        // Update sales count
+        product.salesCount += item.quantity;
+
         await product.save();
       }
 
@@ -60,28 +82,26 @@ const createOrder = async (req, res) => {
 
       return res.status(201).json({
         success: true,
-        orderId: newOrder._id, // return DB orderId
+        orderId: newOrder._id,
         paymentMethod,
         message: "COD order created successfully",
       });
     } else {
-      // For online payments, create Razorpay order only (no DB entry yet)
+      // For online payments, create Razorpay order only
       const options = {
-        amount: Math.round(finalAmount * 100), // amount in paise
+        amount: Math.round(finalAmount * 100),
         currency: "INR",
         receipt: `rcpt_${Date.now()}`,
       };
 
       const razorpayOrder = await razorpay.orders.create(options);
 
-      // Return only the Razorpay order details, don't create DB order yet
       return res.status(201).json({
         success: true,
         razorpayOrderId: razorpayOrder.id,
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency,
         paymentMethod,
-        // No orderId returned for online payments yet
       });
     }
   } catch (e) {
@@ -101,7 +121,7 @@ const capturePayment = async (req, res) => {
       razorpay_order_id,
       razorpay_payment_id,
       razorpay_signature,
-      orderData, // This is what the frontend is now sending
+      orderData,
     } = req.body;
 
     console.log("Capture payment request received:", {
@@ -123,7 +143,6 @@ const capturePayment = async (req, res) => {
       });
     }
 
-    // Check if we have orderData
     if (!orderData) {
       console.log("No orderData received");
       return res.status(400).json({
@@ -163,7 +182,7 @@ const capturePayment = async (req, res) => {
     await newOrder.save();
     console.log("Order saved to database:", newOrder._id);
 
-    // Update stock for each product
+    // Update stock for each product and size
     for (let item of newOrder.cartItems) {
       let product = await Product.findById(item.productId);
 
@@ -175,17 +194,44 @@ const capturePayment = async (req, res) => {
         });
       }
 
-      if (product.totalStock < item.quantity) {
-        console.log(`Not enough stock for product: ${item.title}`);
+      // Find the specific size and update stock
+      const sizeItem = product.sizes.find((s) => s.size === item.selectedSize);
+      if (!sizeItem) {
+        console.log(
+          `Size not found: ${item.selectedSize} for product ${item.title}`
+        );
         return res.status(400).json({
           success: false,
-          message: `Not enough stock for product ${item.title}`,
+          message: `Size ${item.selectedSize} not available for product ${item.title}`,
         });
       }
 
-      product.totalStock -= item.quantity;
+      if (sizeItem.stock < item.quantity) {
+        console.log(
+          `Not enough stock for size ${item.selectedSize} of product ${item.title}`
+        );
+        return res.status(400).json({
+          success: false,
+          message: `Not enough stock for size ${item.selectedSize} of product ${item.title}`,
+        });
+      }
+
+      sizeItem.stock -= item.quantity;
+
+      // Update total stock
+      const totalStockFromSizes = product.sizes.reduce(
+        (total, s) => total + s.stock,
+        0
+      );
+      product.totalStock = totalStockFromSizes;
+
+      // Update sales count
+      product.salesCount += item.quantity;
+
       await product.save();
-      console.log(`Stock updated for product: ${item.title}`);
+      console.log(
+        `Stock updated for product: ${item.title}, size: ${item.selectedSize}`
+      );
     }
 
     // Delete cart after order confirmed

@@ -54,11 +54,24 @@ function ShoppingOrderDetailsView({ orderDetails }) {
             <div className="font-medium">Order Details</div>
             <ul className="grid gap-3">
               {orderDetails?.cartItems && orderDetails?.cartItems.length > 0
-                ? orderDetails?.cartItems.map((item) => (
-                    <li className="flex items-center justify-between">
-                      <span>Title: {item.title}</span>
-                      <span>Quantity: {item.quantity}</span>
-                      <span>Price: ₹{item.price}</span>
+                ? orderDetails?.cartItems.map((item, index) => (
+                    <li
+                      key={index}
+                      className="flex items-center justify-between border-b pb-2"
+                    >
+                      <div className="flex-1">
+                        <span className="font-medium">{item.title}</span>
+                        {item.selectedSize && (
+                          <p className="text-sm text-muted-foreground">
+                            Size: {item.selectedSize}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <span>Qty: {item.quantity}</span>
+                        <br />
+                        <span>₹{item.price}</span>
+                      </div>
                     </li>
                   ))
                 : null}

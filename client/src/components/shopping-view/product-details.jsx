@@ -11,10 +11,19 @@ import { Label } from "../ui/label";
 import StarRatingComponent from "../common/star-rating";
 import { useEffect, useState } from "react";
 import { addReview, getReviews } from "@/store/shop/review-slice";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 
 function ProductDetailsDialog({ open, setOpen, productDetails }) {
   const [reviewMsg, setReviewMsg] = useState("");
   const [rating, setRating] = useState(0);
+  const [selectedSize, setSelectedSize] = useState("");
+  const [quantity, setQuantity] = useState(1);
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const { cartItems } = useSelector((state) => state.shopCart);
@@ -26,36 +35,64 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
     setRating(getRating);
   }
 
-  function handleAddToCart(getCurrentProductId, getTotalStock) {
-    let getCartItems = cartItems.items || [];
+  function handleAddToCart() {
+    if (!selectedSize) {
+      toast({
+        title: "Please select a size",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    if (getCartItems.length) {
-      const indexOfCurrentItem = getCartItems.findIndex(
-        (item) => item.productId === getCurrentProductId
-      );
-      if (indexOfCurrentItem > -1) {
-        const getQuantity = getCartItems[indexOfCurrentItem].quantity;
-        if (getQuantity + 1 > getTotalStock) {
-          toast({
-            title: `Only ${getQuantity} quantity can be added for this item`,
-            variant: "destructive",
-          });
-          return;
-        }
+    // Check if the selected size has sufficient stock
+    const sizeStock = productDetails?.sizes?.find(
+      (s) => s.size === selectedSize
+    );
+    if (!sizeStock || sizeStock.stock < quantity) {
+      toast({
+        title: `Not enough stock for size ${selectedSize}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if the same product with same size already exists in cart
+    const existingCartItem = cartItems.items?.find(
+      (item) =>
+        item.productId === productDetails?._id &&
+        item.selectedSize === selectedSize
+    );
+
+    if (existingCartItem) {
+      const newQuantity = existingCartItem.quantity + quantity;
+      if (sizeStock.stock < newQuantity) {
+        toast({
+          title: `Only ${sizeStock.stock} items available for size ${selectedSize}`,
+          variant: "destructive",
+        });
+        return;
       }
     }
 
     dispatch(
       addToCart({
         userId: user?.id,
-        productId: getCurrentProductId,
-        quantity: 1,
+        productId: productDetails?._id,
+        quantity: quantity,
+        selectedSize: selectedSize,
       })
     ).then((data) => {
       if (data?.payload?.success) {
         dispatch(fetchCartItems(user?.id));
         toast({
-          title: "Product is added to cart",
+          title: "Product added to cart successfully",
+        });
+        setQuantity(1);
+        setSelectedSize("");
+      } else if (data?.payload?.message) {
+        toast({
+          title: data.payload.message,
+          variant: "destructive",
         });
       }
     });
@@ -66,6 +103,8 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
     dispatch(setProductDetails());
     setRating(0);
     setReviewMsg("");
+    setSelectedSize("");
+    setQuantity(1);
   }
 
   function handleAddReview() {
@@ -100,6 +139,10 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
       ? reviews.reduce((sum, reviewItem) => sum + reviewItem.reviewValue, 0) /
         reviews.length
       : 0;
+
+  // Get available sizes with stock
+  const availableSizes =
+    productDetails?.sizes?.filter((size) => size.stock > 0) || [];
 
   return (
     <Dialog open={open} onOpenChange={handleDialogClose}>
@@ -149,21 +192,71 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
             </span>
           </div>
 
+          {/* Size Selector */}
+          {availableSizes.length > 0 && (
+            <div className="grid gap-2">
+              <Label htmlFor="size">Select Size</Label>
+              <Select value={selectedSize} onValueChange={setSelectedSize}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose size" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableSizes.map((size) => (
+                    <SelectItem key={size.size} value={size.size}>
+                      {size.size} ({size.stock} available)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Quantity Selector */}
+          {selectedSize && (
+            <div className="grid gap-2">
+              <Label htmlFor="quantity">Quantity</Label>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  disabled={quantity <= 1}
+                >
+                  -
+                </Button>
+                <span className="px-4 py-2 border rounded-md">{quantity}</span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    const selectedSizeStock =
+                      availableSizes.find((s) => s.size === selectedSize)
+                        ?.stock || 0;
+                    setQuantity(Math.min(selectedSizeStock, quantity + 1));
+                  }}
+                  disabled={
+                    quantity >=
+                    (availableSizes.find((s) => s.size === selectedSize)
+                      ?.stock || 0)
+                  }
+                >
+                  +
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Add to Cart */}
           <div>
-            {productDetails?.totalStock === 0 ? (
+            {availableSizes.length === 0 ? (
               <Button className="w-full opacity-60 cursor-not-allowed">
                 Out of Stock
               </Button>
             ) : (
               <Button
                 className="w-full"
-                onClick={() =>
-                  handleAddToCart(
-                    productDetails?._id,
-                    productDetails?.totalStock
-                  )
-                }
+                onClick={handleAddToCart}
+                disabled={!selectedSize}
               >
                 Add to Cart
               </Button>
@@ -205,10 +298,10 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
           <div className="mt-4 flex flex-col gap-2">
             <Label>Write a review</Label>
             <div className="mt-4 flex flex-centre gap-2">
-            <StarRatingComponent
-              rating={rating}
-              handleRatingChange={handleRatingChange}
-            />
+              <StarRatingComponent
+                rating={rating}
+                handleRatingChange={handleRatingChange}
+              />
             </div>
             <Input
               name="reviewMsg"

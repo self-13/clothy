@@ -17,24 +17,28 @@ function UserCartItemsContent({ cartItem }) {
 
       if (getCartItems.length) {
         const indexOfCurrentCartItem = getCartItems.findIndex(
-          (item) => item.productId === getCartItem?.productId
+          (item) =>
+            item.productId === getCartItem?.productId &&
+            item.selectedSize === getCartItem?.selectedSize
         );
 
-        const getCurrentProductIndex = productList.findIndex(
+        const getCurrentProduct = productList.find(
           (product) => product._id === getCartItem?.productId
         );
-        const getTotalStock = productList[getCurrentProductIndex].totalStock;
 
-        console.log(getCurrentProductIndex, getTotalStock, "getTotalStock");
+        // Find the stock for the specific size
+        const sizeStock =
+          getCurrentProduct?.sizes?.find(
+            (s) => s.size === getCartItem?.selectedSize
+          )?.stock || 0;
 
         if (indexOfCurrentCartItem > -1) {
           const getQuantity = getCartItems[indexOfCurrentCartItem].quantity;
-          if (getQuantity + 1 > getTotalStock) {
+          if (getQuantity + 1 > sizeStock) {
             toast({
-              title: `Only ${getQuantity} quantity can be added for this item`,
+              title: `Only ${sizeStock} quantity can be added for size ${getCartItem?.selectedSize}`,
               variant: "destructive",
             });
-
             return;
           }
         }
@@ -49,11 +53,17 @@ function UserCartItemsContent({ cartItem }) {
           typeOfAction === "plus"
             ? getCartItem?.quantity + 1
             : getCartItem?.quantity - 1,
+        selectedSize: getCartItem?.selectedSize, // Include selected size
       })
     ).then((data) => {
       if (data?.payload?.success) {
         toast({
           title: "Cart item is updated successfully",
+        });
+      } else if (data?.payload?.message) {
+        toast({
+          title: data.payload.message,
+          variant: "destructive",
         });
       }
     });
@@ -61,7 +71,11 @@ function UserCartItemsContent({ cartItem }) {
 
   function handleCartItemDelete(getCartItem) {
     dispatch(
-      deleteCartItem({ userId: user?.id, productId: getCartItem?.productId })
+      deleteCartItem({
+        userId: user?.id,
+        productId: getCartItem?.productId,
+        selectedSize: getCartItem?.selectedSize, // Include selected size
+      })
     ).then((data) => {
       if (data?.payload?.success) {
         toast({
@@ -80,6 +94,11 @@ function UserCartItemsContent({ cartItem }) {
       />
       <div className="flex-1">
         <h3 className="font-extrabold">{cartItem?.title}</h3>
+        {cartItem?.selectedSize && (
+          <p className="text-sm text-muted-foreground">
+            Size: {cartItem.selectedSize}
+          </p>
+        )}
         <div className="flex items-center gap-2 mt-1">
           <Button
             variant="outline"
@@ -99,7 +118,7 @@ function UserCartItemsContent({ cartItem }) {
             onClick={() => handleUpdateQuantity(cartItem, "plus")}
           >
             <Plus className="w-4 h-4" />
-            <span className="sr-only">Decrease</span>
+            <span className="sr-only">Increase</span>
           </Button>
         </div>
       </div>

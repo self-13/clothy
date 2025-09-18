@@ -30,9 +30,7 @@ export const addNewProduct = createAsyncThunk(
 export const fetchAllProducts = createAsyncThunk(
   "/products/fetchAllProducts",
   async () => {
-    const result = await axios.get(
-      `${BASE_URL}/api/admin/products/fetch-all` // Updated endpoint to match backend
-    );
+    const result = await axios.get(`${BASE_URL}/api/admin/products/fetch-all`);
 
     return result?.data;
   }
@@ -120,7 +118,6 @@ const AdminProductsSlice = createSlice({
   name: "adminProducts",
   initialState,
   reducers: {
-    // Reducer to update product sizes locally for immediate UI feedback
     updateProductSizesLocally: (state, action) => {
       const { productId, sizes } = action.payload;
       const product = state.productList.find((item) => item._id === productId);

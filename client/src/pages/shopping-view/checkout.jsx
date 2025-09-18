@@ -124,6 +124,7 @@ function ShoppingCheckout() {
               ? singleCartItem?.salePrice
               : singleCartItem?.price,
           quantity: singleCartItem?.quantity,
+          selectedSize: singleCartItem?.selectedSize, // Include selected size
         })),
         addressInfo: {
           addressId: currentSelectedAddress?._id,

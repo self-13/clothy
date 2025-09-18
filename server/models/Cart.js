@@ -19,6 +19,11 @@ const CartSchema = new mongoose.Schema(
           required: true,
           min: 1,
         },
+        selectedSize: {
+          // Add selected size field
+          type: String,
+          required: true,
+        },
       },
     ],
   },

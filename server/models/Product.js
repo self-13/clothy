@@ -24,6 +24,11 @@ const ProductSchema = new mongoose.Schema(
     totalStock: Number,
     averageReview: Number,
     sizes: [SizeStockSchema], // Array of size and stock objects
+    salesCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   { timestamps: true }
 );

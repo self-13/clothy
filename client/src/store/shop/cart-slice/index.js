@@ -10,16 +10,13 @@ const initialState = {
 
 export const addToCart = createAsyncThunk(
   "cart/addToCart",
-  async ({ userId, productId, quantity }) => {
-    const response = await axios.post(
-      `${BASE_URL}/api/shop/cart/add`,
-      {
-        userId,
-        productId,
-        quantity,
-      }
-    );
-
+  async ({ userId, productId, quantity, selectedSize }) => {
+    const response = await axios.post(`${BASE_URL}/api/shop/cart/add`, {
+      userId,
+      productId,
+      quantity,
+      selectedSize, // Include selectedSize
+    });
     return response.data;
   }
 );
@@ -27,9 +24,7 @@ export const addToCart = createAsyncThunk(
 export const fetchCartItems = createAsyncThunk(
   "cart/fetchCartItems",
   async (userId) => {
-    const response = await axios.get(
-      `${BASE_URL}/api/shop/cart/get/${userId}`
-    );
+    const response = await axios.get(`${BASE_URL}/api/shop/cart/get/${userId}`);
 
     return response.data;
   }
@@ -37,27 +32,23 @@ export const fetchCartItems = createAsyncThunk(
 
 export const deleteCartItem = createAsyncThunk(
   "cart/deleteCartItem",
-  async ({ userId, productId }) => {
+  async ({ userId, productId, selectedSize }) => {
     const response = await axios.delete(
-      `${BASE_URL}/api/shop/cart/${userId}/${productId}`
+      `${BASE_URL}/api/shop/cart/delete/${userId}/${productId}/${selectedSize}` // Update URL to include selectedSize
     );
-
     return response.data;
   }
 );
 
 export const updateCartQuantity = createAsyncThunk(
   "cart/updateCartQuantity",
-  async ({ userId, productId, quantity }) => {
-    const response = await axios.put(
-      `${BASE_URL}/api/shop/cart/update-cart`,
-      {
-        userId,
-        productId,
-        quantity,
-      }
-    );
-
+  async ({ userId, productId, quantity, selectedSize }) => {
+    const response = await axios.put(`${BASE_URL}/api/shop/cart/update`, {
+      userId,
+      productId,
+      quantity,
+      selectedSize, // Include selectedSize
+    });
     return response.data;
   }
 );

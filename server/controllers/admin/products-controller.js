@@ -42,7 +42,8 @@ const addProduct = async (req, res) => {
       salePrice,
       totalStock,
       averageReview,
-      sizes, // New field for sizes and stock
+      sizes,
+      salesCount = 0, // Add salesCount with default value
     } = req.body;
 
     console.log(averageReview, "averageReview");
@@ -57,7 +58,8 @@ const addProduct = async (req, res) => {
       salePrice,
       totalStock,
       averageReview,
-      sizes: sizes || [], // Initialize sizes array
+      sizes: sizes || [],
+      salesCount, // Include salesCount
     });
 
     await newlyCreatedProduct.save();
@@ -77,7 +79,7 @@ const addProduct = async (req, res) => {
 // Fetch all products
 const fetchAllProducts = async (req, res) => {
   try {
-    const listOfProducts = await Product.find({});
+    const listOfProducts = await Product.find({}).select("+sizes"); // Ensure sizes are included
     res.status(200).json({
       success: true,
       data: listOfProducts,
@@ -105,7 +107,8 @@ const editProduct = async (req, res) => {
       salePrice,
       totalStock,
       averageReview,
-      sizes, // New field for sizes and stock
+      sizes,
+      salesCount, // Add salesCount
     } = req.body;
 
     let findProduct = await Product.findById(id);
@@ -125,7 +128,9 @@ const editProduct = async (req, res) => {
     findProduct.totalStock = totalStock || findProduct.totalStock;
     findProduct.image = image || findProduct.image;
     findProduct.averageReview = averageReview || findProduct.averageReview;
-    findProduct.sizes = sizes || findProduct.sizes; // Update sizes array
+    findProduct.sizes = sizes || findProduct.sizes;
+    findProduct.salesCount =
+      salesCount !== undefined ? salesCount : findProduct.salesCount; // Update salesCount
 
     await findProduct.save();
     res.status(200).json({
@@ -191,6 +196,14 @@ const addSizeToProduct = async (req, res) => {
 
     // Add new size
     product.sizes.push({ size, stock });
+
+    // Recalculate total stock from sizes
+    const totalStockFromSizes = product.sizes.reduce(
+      (total, item) => total + (item.stock || 0),
+      0
+    );
+    product.totalStock = totalStockFromSizes;
+
     await product.save();
 
     res.status(200).json({
@@ -230,6 +243,14 @@ const updateSizeStock = async (req, res) => {
     }
 
     sizeItem.stock = stock;
+
+    // Recalculate total stock from sizes
+    const totalStockFromSizes = product.sizes.reduce(
+      (total, item) => total + (item.stock || 0),
+      0
+    );
+    product.totalStock = totalStockFromSizes;
+
     await product.save();
 
     res.status(200).json({
@@ -260,6 +281,44 @@ const removeSizeFromProduct = async (req, res) => {
 
     // Remove the size
     product.sizes.pull({ _id: sizeId });
+
+    // Recalculate total stock from sizes
+    const totalStockFromSizes = product.sizes.reduce(
+      (total, item) => total + (item.stock || 0),
+      0
+    );
+    product.totalStock = totalStockFromSizes;
+
+    await product.save();
+
+    res.status(200).json({
+      success: true,
+      data: product,
+    });
+  } catch (e) {
+    console.log(e);
+    res.status(500).json({
+      success: false,
+      message: "Error occurred",
+    });
+  }
+};
+
+// Increment sales count for a product (to be called when orders are placed)
+const incrementSalesCount = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { quantity = 1 } = req.body;
+
+    const product = await Product.findById(id);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    product.salesCount += quantity;
     await product.save();
 
     res.status(200).json({
@@ -284,4 +343,5 @@ module.exports = {
   addSizeToProduct,
   updateSizeStock,
   removeSizeFromProduct,
+  incrementSalesCount, // Export the new function
 };
