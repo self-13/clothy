@@ -24,6 +24,7 @@ import SearchProducts from "./pages/shopping-view/search";
 import AuthVerifyOTP from "./pages/auth/verify-otp";
 import AuthForgotPassword from "./pages/auth/forgot-password";
 import AuthResetPassword from "./pages/auth/reset-password";
+import { Analytics } from "@vercel/analytics/react"
 
 function App() {
   const { user, isAuthenticated, isLoading } = useSelector(
@@ -97,6 +98,7 @@ function App() {
         <Route path="/unauth-page" element={<UnauthPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <Analytics />
     </div>
   );
 }

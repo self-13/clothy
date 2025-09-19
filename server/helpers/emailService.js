@@ -1,22 +1,14 @@
 require("dotenv").config();
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 
-// Create transporter with your SMTP settings
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  secure: false, // true for 465, false for other ports
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Send OTP email
 const sendOTPEmail = async (email, userName, otpCode) => {
   try {
-    const mailOptions = {
-      from: process.env.FROM_EMAIL,
+    const { data, error } = await resend.emails.send({
+      from:
+        process.env.FROM_EMAIL || "E-commerce Store <onboarding@resend.dev>",
       to: email,
       subject: "Verify Your Email Address",
       html: `
@@ -33,9 +25,13 @@ const sendOTPEmail = async (email, userName, otpCode) => {
           <p>Best regards,<br>E-commerce Team</p>
         </div>
       `,
-    };
+    });
 
-    await transporter.sendMail(mailOptions);
+    if (error) {
+      console.error("Error sending OTP email:", error);
+      return false;
+    }
+
     return true;
   } catch (error) {
     console.error("Error sending OTP email:", error);
@@ -46,8 +42,9 @@ const sendOTPEmail = async (email, userName, otpCode) => {
 // Send welcome email
 const sendWelcomeEmail = async (email, userName) => {
   try {
-    const mailOptions = {
-      from: process.env.FROM_EMAIL,
+    const { data, error } = await resend.emails.send({
+      from:
+        process.env.FROM_EMAIL || "E-commerce Store <onboarding@resend.dev>",
       to: email,
       subject: "Welcome to Our E-commerce Store!",
       html: `
@@ -60,9 +57,13 @@ const sendWelcomeEmail = async (email, userName) => {
           <p>Best regards,<br>E-commerce Team</p>
         </div>
       `,
-    };
+    });
 
-    await transporter.sendMail(mailOptions);
+    if (error) {
+      console.error("Error sending welcome email:", error);
+      return false;
+    }
+
     return true;
   } catch (error) {
     console.error("Error sending welcome email:", error);
@@ -74,9 +75,10 @@ const sendWelcomeEmail = async (email, userName) => {
 const sendPasswordResetEmail = async (email, userName, resetToken) => {
   try {
     const resetLink = `${process.env.FRONTEND_URL}/auth/reset-password?token=${resetToken}`;
-    
-    const mailOptions = {
-      from: process.env.FROM_EMAIL,
+
+    const { data, error } = await resend.emails.send({
+      from:
+        process.env.FROM_EMAIL || "E-commerce Store <onboarding@resend.dev>",
       to: email,
       subject: "Password Reset Request",
       html: `
@@ -93,9 +95,13 @@ const sendPasswordResetEmail = async (email, userName, resetToken) => {
           <p>Best regards,<br>E-commerce Team</p>
         </div>
       `,
-    };
+    });
 
-    await transporter.sendMail(mailOptions);
+    if (error) {
+      console.error("Error sending password reset email:", error);
+      return false;
+    }
+
     return true;
   } catch (error) {
     console.error("Error sending password reset email:", error);

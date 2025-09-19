@@ -272,9 +272,11 @@ function AdminOrdersView() {
                 <div className="pt-2 flex justify-end">
                   <Dialog
                     open={openDetailsDialog}
-                    onOpenChange={() => {
-                      setOpenDetailsDialog(false);
-                      dispatch(resetOrderDetails());
+                    onOpenChange={(isOpen) => {
+                      setOpenDetailsDialog(isOpen);
+                      if (!isOpen) {
+                        setTimeout(() => dispatch(resetOrderDetails()), 200); // Delay to allow dialog close animation
+                      }
                     }}
                   >
                     <Button
@@ -284,7 +286,7 @@ function AdminOrdersView() {
                     >
                       View Details
                     </Button>
-                    <AdminOrderDetailsView orderDetails={orderDetails} />
+                    {orderDetails && <AdminOrderDetailsView orderDetails={orderDetails} />}
                   </Dialog>
                 </div>
               </CardContent>
