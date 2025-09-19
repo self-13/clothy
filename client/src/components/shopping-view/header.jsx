@@ -113,8 +113,8 @@ function ShoppingHeader() {
       <div className="flex h-16 items-center justify-between px-4 md:px-6 gap-3">
         {/* Logo */}
         <Link to="/shop/home" className="flex items-center gap-2">
-          <HousePlug className="h-6 w-6" />
-          <span className="font-bold">Ecommerce</span>
+            <img src="/logo.png" alt="logo" className="size-24" />
+            <span className="font-bold text-lg">Luxeridge</span>
         </Link>
 
         {/* Desktop menu */}
