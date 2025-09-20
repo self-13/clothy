@@ -109,8 +109,108 @@ const sendPasswordResetEmail = async (email, userName, resetToken) => {
   }
 };
 
+// Send order confirmation email to customer
+const sendOrderConfirmationEmail = async (email, userName, orderDetails) => {
+  try {
+    const { data, error } = await resend.emails.send({
+      from:
+        process.env.FROM_EMAIL || "E-commerce Store <onboarding@resend.dev>",
+      to: email,
+      subject: `Order Confirmation - #${orderDetails.orderId}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Order Confirmed!</h2>
+          <p>Dear ${userName},</p>
+          <p>Thank you for your order. Your order has been confirmed and is being processed.</p>
+          
+          <h3>Order Details:</h3>
+          <p><strong>Order ID:</strong> ${orderDetails.orderId}</p>
+          <p><strong>Order Date:</strong> ${new Date(
+            orderDetails.orderDate
+          ).toLocaleDateString()}</p>
+          <p><strong>Payment Method:</strong> ${orderDetails.paymentMethod.toUpperCase()}</p>
+          <p><strong>Total Amount:</strong> ₹${orderDetails.totalAmount}</p>
+          
+          <h3>Shipping Address:</h3>
+          <p>${orderDetails.addressInfo.name}<br>
+          ${orderDetails.addressInfo.address}<br>
+          ${orderDetails.addressInfo.city}, ${
+        orderDetails.addressInfo.state
+      } - ${orderDetails.addressInfo.pincode}<br>
+          Phone: ${orderDetails.addressInfo.phone}</p>
+          
+          <p>You can track your order from your account dashboard.</p>
+          <br>
+          <p>Best regards,<br>E-commerce Team</p>
+        </div>
+      `,
+    });
+
+    if (error) {
+      console.error("Error sending order confirmation email:", error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error sending order confirmation email:", error);
+    return false;
+  }
+};
+
+// Send new order notification email to admin
+const sendNewOrderNotificationEmail = async (adminEmail, orderDetails) => {
+  try {
+    const { data, error } = await resend.emails.send({
+      from:
+        process.env.FROM_EMAIL || "E-commerce Store <onboarding@resend.dev>",
+      to: adminEmail,
+      subject: `New Order Received - #${orderDetails.orderId}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>New Order Received!</h2>
+          <p>A new order has been placed on your e-commerce store.</p>
+          
+          <h3>Order Details:</h3>
+          <p><strong>Order ID:</strong> ${orderDetails.orderId}</p>
+          <p><strong>Customer:</strong> ${orderDetails.userName} (${
+        orderDetails.userEmail
+      })</p>
+          <p><strong>Order Date:</strong> ${new Date(
+            orderDetails.orderDate
+          ).toLocaleDateString()}</p>
+          <p><strong>Payment Method:</strong> ${orderDetails.paymentMethod.toUpperCase()}</p>
+          <p><strong>Total Amount:</strong> ₹${orderDetails.totalAmount}</p>
+          
+          <h3>Shipping Address:</h3>
+          <p>${orderDetails.addressInfo.name}<br>
+          ${orderDetails.addressInfo.address}<br>
+          ${orderDetails.addressInfo.city}, ${
+        orderDetails.addressInfo.state
+      } - ${orderDetails.addressInfo.pincode}<br>
+          Phone: ${orderDetails.addressInfo.phone}</p>
+          
+          <p>Please process this order promptly.</p>
+        </div>
+      `,
+    });
+
+    if (error) {
+      console.error("Error sending new order notification email:", error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error sending new order notification email:", error);
+    return false;
+  }
+};
+
 module.exports = {
   sendOTPEmail,
   sendWelcomeEmail,
   sendPasswordResetEmail,
+  sendOrderConfirmationEmail,
+  sendNewOrderNotificationEmail,
 };

@@ -3,6 +3,11 @@ const crypto = require("crypto");
 const Order = require("../../models/Order");
 const Cart = require("../../models/Cart");
 const Product = require("../../models/Product");
+const { 
+  sendOrderConfirmationEmail, 
+  sendNewOrderNotificationEmail 
+} = require("../../helpers/emailService");
+const User = require("../../models/User"); // Import User model to get user details
 
 // ✅ Create Order
 const createOrder = async (req, res) => {
@@ -78,6 +83,42 @@ const createOrder = async (req, res) => {
       // Delete cart after order confirmed for COD
       if (newOrder.cartId) {
         await Cart.findByIdAndDelete(newOrder.cartId);
+      }
+
+      // Send confirmation email to customer
+      try {
+        const user = await User.findById(newOrder.userId);
+        if (user) {
+          await sendOrderConfirmationEmail(user.email, user.name, {
+            orderId: newOrder._id,
+            orderDate: newOrder.orderDate,
+            paymentMethod: newOrder.paymentMethod,
+            totalAmount: newOrder.totalAmount,
+            addressInfo: newOrder.addressInfo
+          });
+        }
+      } catch (emailError) {
+        console.error("Failed to send confirmation email:", emailError);
+        // Don't fail the order if email fails
+      }
+
+      // Send notification email to admin
+      try {
+        const adminEmail = process.env.ADMIN_EMAIL || "admin@example.com";
+        const user = await User.findById(newOrder.userId);
+        
+        await sendNewOrderNotificationEmail(adminEmail, {
+          orderId: newOrder._id,
+          userName: user ? user.name : "Customer",
+          userEmail: user ? user.email : "N/A",
+          orderDate: newOrder.orderDate,
+          paymentMethod: newOrder.paymentMethod,
+          totalAmount: newOrder.totalAmount,
+          addressInfo: newOrder.addressInfo
+        });
+      } catch (emailError) {
+        console.error("Failed to send admin notification email:", emailError);
+        // Don't fail the order if email fails
       }
 
       return res.status(201).json({
@@ -238,6 +279,42 @@ const capturePayment = async (req, res) => {
     if (newOrder.cartId) {
       await Cart.findByIdAndDelete(newOrder.cartId);
       console.log("Cart deleted:", newOrder.cartId);
+    }
+
+    // Send confirmation email to customer for online payment orders
+    try {
+      const user = await User.findById(newOrder.userId);
+      if (user) {
+        await sendOrderConfirmationEmail(user.email, user.name, {
+          orderId: newOrder._id,
+          orderDate: newOrder.orderDate,
+          paymentMethod: newOrder.paymentMethod,
+          totalAmount: newOrder.totalAmount,
+          addressInfo: newOrder.addressInfo
+        });
+      }
+    } catch (emailError) {
+      console.error("Failed to send confirmation email:", emailError);
+      // Don't fail the order if email fails
+    }
+
+    // Send notification email to admin for online payment orders
+    try {
+      const adminEmail = process.env.ADMIN_EMAIL || "admin@example.com";
+      const user = await User.findById(newOrder.userId);
+      
+      await sendNewOrderNotificationEmail(adminEmail, {
+        orderId: newOrder._id,
+        userName: user ? user.name : "Customer",
+        userEmail: user ? user.email : "N/A",
+        orderDate: newOrder.orderDate,
+        paymentMethod: newOrder.paymentMethod,
+        totalAmount: newOrder.totalAmount,
+        addressInfo: newOrder.addressInfo
+      });
+    } catch (emailError) {
+      console.error("Failed to send admin notification email:", emailError);
+      // Don't fail the order if email fails
     }
 
     res.status(200).json({
