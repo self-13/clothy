@@ -222,7 +222,7 @@ const updateCartItemQty = async (req, res) => {
 
 const deleteCartItem = async (req, res) => {
   try {
-    const { userId, productId, selectedSize } = req.params; // Add selectedSize to params
+    const { userId, productId, selectedSize } = req.params;
 
     if (!userId || !productId || !selectedSize) {
       return res.status(400).json({
@@ -231,10 +231,7 @@ const deleteCartItem = async (req, res) => {
       });
     }
 
-    const cart = await Cart.findOne({ userId }).populate({
-      path: "items.productId",
-      select: "image title price salePrice sizes",
-    });
+    const cart = await Cart.findOne({ userId });
 
     if (!cart) {
       return res.status(404).json({
@@ -247,13 +244,14 @@ const deleteCartItem = async (req, res) => {
     cart.items = cart.items.filter(
       (item) =>
         !(
-          item.productId._id.toString() === productId &&
+          item.productId.toString() === productId &&
           item.selectedSize === selectedSize
         )
     );
 
     await cart.save();
 
+    // Populate after saving to get updated data
     await cart.populate({
       path: "items.productId",
       select: "image title price salePrice sizes",

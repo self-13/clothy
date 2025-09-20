@@ -11,7 +11,7 @@ const router = express.Router();
 
 router.post("/add", addToCart);
 router.get("/get/:userId", fetchCartItems);
-router.put("/update-cart", updateCartItemQty);
-router.delete("/:userId/:productId", deleteCartItem);
+router.put("/update", updateCartItemQty); // Changed from "/update-cart" to "/update"
+router.delete("/delete/:userId/:productId/:selectedSize", deleteCartItem); // Added selectedSize parameter
 
 module.exports = router;
