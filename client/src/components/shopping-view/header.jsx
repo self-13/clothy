@@ -114,7 +114,6 @@ function ShoppingHeader() {
         {/* Logo */}
         <Link to="/shop/home" className="flex items-center gap-2">
             <img src="/logo.png" alt="logo" className="size-24" />
-            <span className="font-bold text-lg">Luxeridge</span>
         </Link>
 
         {/* Desktop menu */}

@@ -66,6 +66,7 @@ function AdminOrderDetailsView({ orderDetails }) {
   return (
     <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
       <div className="grid gap-6">
+        {/* Header Section */}
         <div className="grid gap-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-bold">Order Details</h2>
@@ -115,35 +116,51 @@ function AdminOrderDetailsView({ orderDetails }) {
 
         <Separator />
 
+        {/* Order Items Section */}
         <div className="grid gap-4">
           <h3 className="font-semibold text-lg">Order Items</h3>
           <div className="space-y-3">
-            {orderDetails?.cartItems && orderDetails?.cartItems.length > 0
-              ? orderDetails?.cartItems.map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex justify-between items-center p-3 border rounded-lg"
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium">{item.title}</p>
-                      {item.selectedSize && (
-                        <p className="text-sm text-muted-foreground">
-                          Size: {item.selectedSize}
-                        </p>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <p>Qty: {item.quantity}</p>
-                      <p className="font-semibold">₹{item.price}</p>
-                    </div>
+            {orderDetails?.cartItems && orderDetails?.cartItems.length > 0 ? (
+              orderDetails.cartItems.map((item, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-4 p-3 border rounded-lg"
+                >
+                  {/* Product Image */}
+                  <div className="w-20 h-20 rounded overflow-hidden border">
+                    <img
+                      src={item.image}
+                      alt={item.title}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
-                ))
-              : null}
+
+                  {/* Product Info */}
+                  <div className="flex-1">
+                    <p className="font-medium">{item.title}</p>
+                    {item.selectedSize && (
+                      <p className="text-sm text-muted-foreground">
+                        Size: {item.selectedSize}
+                      </p>
+                    )}
+                    <p className="text-sm">Qty: {item.quantity}</p>
+                  </div>
+
+                  {/* Price */}
+                  <div className="text-right">
+                    <p className="font-semibold">₹{item.price}</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-muted-foreground text-sm">No items found.</p>
+            )}
           </div>
         </div>
 
         <Separator />
 
+        {/* Shipping Info */}
         <div className="grid gap-4">
           <h3 className="font-semibold text-lg">Shipping Information</h3>
           <div className="grid gap-2 p-3 border rounded-lg">
@@ -186,6 +203,7 @@ function AdminOrderDetailsView({ orderDetails }) {
 
         <Separator />
 
+        {/* Update Status Form */}
         <div>
           <h3 className="font-semibold text-lg mb-4">Update Order Status</h3>
           <CommonForm

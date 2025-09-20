@@ -44,26 +44,20 @@ function AdminOrdersView() {
     if (orderDetails !== null) setOpenDetailsDialog(true);
   }, [orderDetails]);
 
-  // Filter and sort orders
   const filteredAndSortedOrders = orderList
     ?.filter((order) => {
-      // Filter by payment method
       if (
         filters.paymentMethod !== "all" &&
         order.paymentMethod !== filters.paymentMethod
-      ) {
+      )
         return false;
-      }
 
-      // Filter by order status
       if (
         filters.orderStatus !== "all" &&
         order.orderStatus !== filters.orderStatus
-      ) {
+      )
         return false;
-      }
 
-      // Filter by search term
       if (filters.search) {
         const searchTerm = filters.search.toLowerCase();
         return (
@@ -78,7 +72,6 @@ function AdminOrdersView() {
       return true;
     })
     ?.sort((a, b) => {
-      // Sort by date - newest first by default
       if (filters.sortBy === "newest") {
         return new Date(b.orderDate) - new Date(a.orderDate);
       } else if (filters.sortBy === "oldest") {
@@ -219,79 +212,130 @@ function AdminOrdersView() {
       {/* Orders Grid */}
       <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
         {filteredAndSortedOrders && filteredAndSortedOrders.length > 0 ? (
-          filteredAndSortedOrders.map((orderItem) => (
-            <Card
-              key={orderItem?._id}
-              className="shadow-md rounded-2xl hover:shadow-lg transition-shadow"
-            >
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex justify-between items-center">
-                  <span className="truncate text-sm font-mono">
-                    #{orderItem?._id.slice(-8)}
-                  </span>
-                  <div className="flex gap-2">
-                    <Badge
-                      className={getPaymentBadgeColor(orderItem?.paymentMethod)}
-                    >
-                      {orderItem?.paymentMethod?.toUpperCase()}
-                    </Badge>
-                    <Badge className={getBadgeColor(orderItem?.orderStatus)}>
-                      {orderItem?.orderStatus}
-                    </Badge>
+          filteredAndSortedOrders.map((orderItem) => {
+            const totalQty = orderItem?.cartItems?.reduce(
+              (sum, item) => sum + item.quantity,
+              0
+            );
+            const productCount = orderItem?.cartItems?.length;
+
+            return (
+              <Card
+                key={orderItem?._id}
+                className="shadow-md rounded-2xl hover:shadow-lg transition-shadow"
+              >
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex justify-between items-center">
+                    <span className="truncate text-sm font-mono">
+                      #{orderItem?._id.slice(-8)}
+                    </span>
+                    <div className="flex gap-2">
+                      <Badge
+                        className={getPaymentBadgeColor(
+                          orderItem?.paymentMethod
+                        )}
+                      >
+                        {orderItem?.paymentMethod?.toUpperCase()}
+                      </Badge>
+                      <Badge className={getBadgeColor(orderItem?.orderStatus)}>
+                        {orderItem?.orderStatus}
+                      </Badge>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="font-medium">Date:</span>
+                    <span>
+                      {new Date(orderItem?.orderDate).toLocaleDateString()}
+                    </span>
                   </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="font-medium">Date:</span>
-                  <span>
-                    {new Date(orderItem?.orderDate).toLocaleDateString()}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Price:</span>
-                  <span className="font-bold">
-                    ₹{orderItem?.totalAmount?.toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Items:</span>
-                  <span>
-                    {orderItem?.cartItems?.reduce(
-                      (sum, item) => sum + item.quantity,
-                      0
+
+                  <div className="flex justify-between">
+                    <span className="font-medium">Total Price:</span>
+                    <span className="font-bold">
+                      ₹{parseFloat(orderItem?.totalAmount).toFixed(2)}
+                    </span>
+                  </div>
+
+                  {orderItem?.cashHandlingFee > 0 && (
+                    <div className="flex justify-between text-orange-600">
+                      <span className="font-medium">Cash Handling Fee:</span>
+                      <span>₹{orderItem.cashHandlingFee}</span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between">
+                    <span className="font-medium">Items:</span>
+                    <span>
+                      {productCount} product{productCount > 1 ? "s" : ""} (
+                      {totalQty} pcs)
+                    </span>
+                  </div>
+
+                  {orderItem?.paymentMethod === "online" &&
+                    orderItem?.paymentId && (
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Payment ID:</span>
+                        <span className="font-mono">{orderItem.paymentId}</span>
+                      </div>
                     )}
-                  </span>
-                </div>
-                {orderItem?.addressInfo?.city && (
+
                   <div className="flex justify-between">
                     <span className="font-medium">City:</span>
-                    <span>{orderItem.addressInfo.city}</span>
+                    <span>{orderItem.addressInfo?.city}</span>
                   </div>
-                )}
-                <div className="pt-2 flex justify-end">
-                  <Dialog
-                    open={openDetailsDialog}
-                    onOpenChange={(isOpen) => {
-                      setOpenDetailsDialog(isOpen);
-                      if (!isOpen) {
-                        setTimeout(() => dispatch(resetOrderDetails()), 200); // Delay to allow dialog close animation
-                      }
-                    }}
-                  >
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleFetchOrderDetails(orderItem?._id)}
+
+                  {/* Mini preview of cart items */}
+                  <div className="space-y-1 pt-2">
+                    {orderItem?.cartItems?.slice(0, 2).map((item) => (
+                      <div key={item._id} className="flex items-center gap-2">
+                        <img
+                          src={item.image}
+                          alt={item.title}
+                          className="w-10 h-10 object-cover rounded"
+                        />
+                        <div>
+                          <div className="font-medium">{item.title}</div>
+                          <div className="text-xs text-muted-foreground">
+                            ₹{parseFloat(item.price)} × {item.quantity}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {orderItem.cartItems.length > 2 && (
+                      <div className="text-xs text-muted-foreground italic">
+                        +{orderItem.cartItems.length - 2} more item(s)
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-2 flex justify-end">
+                    <Dialog
+                      open={openDetailsDialog}
+                      onOpenChange={(isOpen) => {
+                        setOpenDetailsDialog(isOpen);
+                        if (!isOpen) {
+                          setTimeout(() => dispatch(resetOrderDetails()), 200);
+                        }
+                      }}
                     >
-                      View Details
-                    </Button>
-                    {orderDetails && <AdminOrderDetailsView orderDetails={orderDetails} />}
-                  </Dialog>
-                </div>
-              </CardContent>
-            </Card>
-          ))
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleFetchOrderDetails(orderItem?._id)}
+                      >
+                        View Details
+                      </Button>
+                      {orderDetails && (
+                        <AdminOrderDetailsView orderDetails={orderDetails} />
+                      )}
+                    </Dialog>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
         ) : (
           <div className="col-span-full text-center py-12">
             <div className="text-gray-400 text-lg mb-2">No orders found</div>
