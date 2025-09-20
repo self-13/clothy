@@ -7,7 +7,7 @@ import {
   ShirtIcon,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchAllFilteredProducts,
@@ -40,6 +40,15 @@ function ShoppingHome() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Sort products by salesCount in descending order
+  const sortedProducts = useMemo(() => {
+    if (!productList) return [];
+
+    return [...productList].sort((a, b) => {
+      return (b.salesCount || 0) - (a.salesCount || 0);
+    });
+  }, [productList]);
 
   function handleNavigateToListingPage(getCurrentItem, section) {
     sessionStorage.removeItem("filters");
@@ -78,7 +87,7 @@ function ShoppingHome() {
 
   useEffect(() => {
     if (featureImageList.length === 0) return;
-    
+
     const timer = setInterval(() => {
       setCurrentSlide((prevSlide) => (prevSlide + 1) % featureImageList.length);
     }, 2500);
@@ -104,8 +113,9 @@ function ShoppingHome() {
   };
 
   const goToPrevSlide = () => {
-    setCurrentSlide((prevSlide) => 
-      (prevSlide - 1 + featureImageList.length) % featureImageList.length
+    setCurrentSlide(
+      (prevSlide) =>
+        (prevSlide - 1 + featureImageList.length) % featureImageList.length
     );
   };
 
@@ -133,7 +143,7 @@ function ShoppingHome() {
             <p className="text-gray-500">No images available</p>
           </div>
         )}
-        
+
         {/* Navigation buttons */}
         {featureImageList && featureImageList.length > 1 && (
           <>
@@ -155,7 +165,7 @@ function ShoppingHome() {
             </Button>
           </>
         )}
-        
+
         {/* Slide indicators */}
         {featureImageList && featureImageList.length > 1 && (
           <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-2 z-10">
@@ -205,8 +215,8 @@ function ShoppingHome() {
             Feature Products
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {productList && productList.length > 0
-              ? productList.map((productItem) => (
+            {sortedProducts && sortedProducts.length > 0
+              ? sortedProducts.map((productItem) => (
                   <ShoppingProductTile
                     key={productItem.id}
                     handleGetProductDetails={handleGetProductDetails}
