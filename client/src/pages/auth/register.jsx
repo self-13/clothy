@@ -23,6 +23,19 @@ function AuthRegister() {
     event.preventDefault();
     setIsLoading(true);
 
+    // Password validation: 8+ chars, must contain letters & numbers
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+
+    if (!passwordRegex.test(formData.password)) {
+      toast({
+        title:
+          "Password must be at least 8 characters and include letters and numbers.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+
     dispatch(registerUser(formData))
       .then((result) => {
         // Check if the action was fulfilled or rejected

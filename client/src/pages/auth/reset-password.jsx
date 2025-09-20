@@ -29,7 +29,19 @@ function AuthResetPassword() {
 
   function onSubmit(event) {
     event.preventDefault();
-    
+
+    // Password validation
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+
+    if (!passwordRegex.test(formData.newPassword)) {
+      toast({
+        title:
+          "Password must be at least 8 characters and include letters and numbers.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (formData.newPassword !== formData.confirmPassword) {
       toast({
         title: "Passwords do not match",
@@ -38,30 +50,23 @@ function AuthResetPassword() {
       return;
     }
 
-    if (formData.newPassword.length < 6) {
-      toast({
-        title: "Password must be at least 6 characters",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    dispatch(resetPassword({ token, newPassword: formData.newPassword })).then((data) => {
-      if (data?.payload?.success) {
-        toast({
-          title: data?.payload?.message,
-        });
-        // Redirect to login after successful password reset
-        setTimeout(() => {
-          window.location.href = "/auth/login";
-        }, 2000);
-      } else {
-        toast({
-          title: data?.payload?.message,
-          variant: "destructive",
-        });
+    dispatch(resetPassword({ token, newPassword: formData.newPassword })).then(
+      (data) => {
+        if (data?.payload?.success) {
+          toast({
+            title: data?.payload?.message,
+          });
+          setTimeout(() => {
+            window.location.href = "/auth/login";
+          }, 2000);
+        } else {
+          toast({
+            title: data?.payload?.message,
+            variant: "destructive",
+          });
+        }
       }
-    });
+    );
   }
 
   if (!token) {
