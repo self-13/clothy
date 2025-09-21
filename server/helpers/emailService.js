@@ -22,7 +22,7 @@ const sendOTPEmail = async (email, userName, otpCode) => {
           <p>This OTP will expire in 10 minutes.</p>
           <p>If you didn't create an account with us, please ignore this email.</p>
           <br>
-          <p>Best regards,<br>E-commerce Team</p>
+          <p>Best regards,<br>Luxeridge Fashion Team</p>
         </div>
       `,
     });
@@ -54,7 +54,7 @@ const sendWelcomeEmail = async (email, userName) => {
           <p>Thank you for verifying your email address. Your account is now active and ready to use.</p>
           <p>Start shopping now and enjoy our exclusive offers!</p>
           <br>
-          <p>Best regards,<br>E-commerce Team</p>
+          <p>Best regards,<br>Luxeridge Fashion Team</p>
         </div>
       `,
     });
@@ -92,7 +92,7 @@ const sendPasswordResetEmail = async (email, userName, resetToken) => {
           <p>This link will expire in 1 hour.</p>
           <p>If you didn't request a password reset, please ignore this email.</p>
           <br>
-          <p>Best regards,<br>E-commerce Team</p>
+          <p>Best regards,<br>Luxeridge Fashion Team</p>
         </div>
       `,
     });
@@ -141,7 +141,7 @@ const sendOrderConfirmationEmail = async (email, userName, orderDetails) => {
           
           <p>You can track your order from your account dashboard.</p>
           <br>
-          <p>Best regards,<br>E-commerce Team</p>
+          <p>Best regards,<br>Luxeridge Fashion Team</p>
         </div>
       `,
     });
@@ -207,10 +207,70 @@ const sendNewOrderNotificationEmail = async (adminEmail, orderDetails) => {
   }
 };
 
+// Send order status update email to customer
+const sendOrderStatusUpdateEmail = async (email, userName, orderDetails) => {
+  try {
+    console.log(`Attempting to send order status update to: ${email}`);
+    
+    // Map status to friendly messages
+    const statusMessages = {
+      'confirmed': 'has been confirmed and is being processed',
+      'processing': 'is now being processed',
+      'shipped': 'has been shipped',
+      'out_for_delivery': 'is out for delivery',
+      'delivered': 'has been delivered',
+      'rejected': 'has been rejected'
+    };
+
+    const statusMessage = statusMessages[orderDetails.orderStatus] || 'status has been updated';
+
+    const { data, error } = await resend.emails.send({
+      from: process.env.FROM_EMAIL || "E-commerce Store <onboarding@resend.dev>",
+      to: email,
+      subject: `Order ${orderDetails.orderStatus} - #${orderDetails.orderId}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Order Status Updated!</h2>
+          <p>Dear ${userName},</p>
+          <p>Your order #${orderDetails.orderId} ${statusMessage}.</p>
+          
+          <h3>Order Details:</h3>
+          <p><strong>Order ID:</strong> ${orderDetails.orderId}</p>
+          <p><strong>Order Date:</strong> ${new Date(orderDetails.orderDate).toLocaleDateString()}</p>
+          <p><strong>New Status:</strong> ${orderDetails.orderStatus.toUpperCase().replace('_', ' ')}</p>
+          <p><strong>Total Amount:</strong> ₹${orderDetails.totalAmount}</p>
+          
+          <h3>Shipping Address:</h3>
+          <p>${orderDetails.addressInfo.name}<br>
+          ${orderDetails.addressInfo.address}<br>
+          ${orderDetails.addressInfo.city}, ${orderDetails.addressInfo.state} - ${orderDetails.addressInfo.pincode}<br>
+          Phone: ${orderDetails.addressInfo.phone}</p>
+          
+          <p>You can track your order from your account dashboard.</p>
+          <br>
+          <p>Best regards,<br>Luxeridge Fashion Team</p>
+        </div>
+      `,
+    });
+
+    if (error) {
+      console.error("Error sending order status update email:", error);
+      return false;
+    }
+
+    console.log("Order status update email sent successfully:", data);
+    return true;
+  } catch (error) {
+    console.error("Error sending order status update email:", error);
+    return false;
+  }
+};
+
 module.exports = {
   sendOTPEmail,
   sendWelcomeEmail,
   sendPasswordResetEmail,
   sendOrderConfirmationEmail,
   sendNewOrderNotificationEmail,
+  sendOrderStatusUpdateEmail,
 };
