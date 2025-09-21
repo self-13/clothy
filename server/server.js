@@ -35,6 +35,8 @@ app.use(cookieParser());
 app.use(express.json({ limit: "10kb" }));
 app.use(mongoSanitize());
 
+app.set("trust proxy", 1);
+
 app.use(
   cors({
     origin: function (origin, callback) {
