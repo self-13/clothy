@@ -25,6 +25,7 @@ import AuthVerifyOTP from "./pages/auth/verify-otp";
 import AuthForgotPassword from "./pages/auth/forgot-password";
 import AuthResetPassword from "./pages/auth/reset-password";
 import { Analytics } from "@vercel/analytics/react"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 function App() {
   const { user, isAuthenticated, isLoading } = useSelector(
@@ -99,6 +100,7 @@ function App() {
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Analytics />
+      <SpeedInsights />
     </div>
   );
 }
