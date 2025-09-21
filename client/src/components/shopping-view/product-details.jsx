@@ -18,16 +18,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { Heart, HeartOff } from "lucide-react";
+import {
+  addToWishlist,
+  removeFromWishlist,
+  checkProductInWishlist,
+} from "@/store/shop/wishlist-slice";
 
 function ProductDetailsDialog({ open, setOpen, productDetails }) {
   const [reviewMsg, setReviewMsg] = useState("");
   const [rating, setRating] = useState(0);
   const [selectedSize, setSelectedSize] = useState("");
   const [quantity, setQuantity] = useState(1);
+  const [isInWishlist, setIsInWishlist] = useState(false);
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const { cartItems } = useSelector((state) => state.shopCart);
   const { reviews } = useSelector((state) => state.shopReview);
+  const { wishlistItems } = useSelector((state) => state.wishlist);
 
   const { toast } = useToast();
 
@@ -98,6 +106,51 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
     });
   }
 
+  function handleToggleWishlist() {
+    if (!user) {
+      toast({
+        title: "Please login to add to wishlist",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isInWishlist) {
+      dispatch(
+        removeFromWishlist({
+          userId: user?.id,
+          productId: productDetails?._id,
+        })
+      ).then((data) => {
+        if (data?.payload?.success) {
+          setIsInWishlist(false);
+          toast({
+            title: "Removed from wishlist",
+          });
+        }
+      });
+    } else {
+      dispatch(
+        addToWishlist({
+          userId: user?.id,
+          productId: productDetails?._id,
+        })
+      ).then((data) => {
+        if (data?.payload?.success) {
+          setIsInWishlist(true);
+          toast({
+            title: "Added to wishlist",
+          });
+        } else if (data?.payload?.message) {
+          toast({
+            title: data.payload.message,
+            variant: "destructive",
+          });
+        }
+      });
+    }
+  }
+
   function handleDialogClose() {
     setOpen(false);
     dispatch(setProductDetails());
@@ -105,6 +158,7 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
     setReviewMsg("");
     setSelectedSize("");
     setQuantity(1);
+    setIsInWishlist(false);
   }
 
   function handleAddReview() {
@@ -129,10 +183,20 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
   }
 
   useEffect(() => {
-    if (productDetails !== null) {
+    if (productDetails !== null && user) {
       dispatch(getReviews(productDetails?._id));
+
+      // Check if product is in wishlist
+      dispatch(
+        checkProductInWishlist({
+          userId: user.id,
+          productId: productDetails?._id,
+        })
+      ).then((data) => {
+        setIsInWishlist(data.payload?.data?.isInWishlist || false);
+      });
     }
-  }, [productDetails, dispatch]);
+  }, [productDetails, dispatch, user]);
 
   const averageReview =
     reviews && reviews.length > 0
@@ -147,13 +211,26 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
   return (
     <Dialog open={open} onOpenChange={handleDialogClose}>
       <DialogContent className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-10 p-4 sm:p-8 max-w-[95vw] sm:max-w-[90vw] lg:max-w-[70vw] overflow-y-auto max-h-[90vh]">
-        {/* Left Side - Product Image */}
-        <div className="w-full flex justify-center items-center">
+        {/* Left Side - Product Image with Wishlist Button */}
+        <div className="w-full flex justify-center items-center relative">
           <img
             src={productDetails?.image}
             alt={productDetails?.title}
             className="w-full max-w-[500px] h-auto rounded-lg object-cover"
           />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm rounded-full p-2 hover:bg-background"
+            onClick={handleToggleWishlist}
+            disabled={!user}
+          >
+            {isInWishlist ? (
+              <HeartOff className="h-5 w-5 text-red-500 fill-red-500" />
+            ) : (
+              <Heart className="h-5 w-5" />
+            )}
+          </Button>
         </div>
 
         {/* Right Side - Product Info */}

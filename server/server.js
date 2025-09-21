@@ -16,12 +16,14 @@ const shopReviewRouter = require("./routes/shop/review-routes");
 
 const commonFeatureRouter = require("./routes/common/feature-routes");
 
+const shopWishlistRouter = require("./routes/shop/wishlist-routes");
+
 const app = express();
 const PORT = process.env.PORT || 3003;
 
 // ✅ Load frontend URLs from env
 const allowedOrigins = process.env.FRONTEND_URLS
-  ? process.env.FRONTEND_URLS.split(",").map(url => url.trim())
+  ? process.env.FRONTEND_URLS.split(",").map((url) => url.trim())
   : [process.env.FRONTEND_URL || "http://localhost:5173"];
 
 console.log("Allowed origins:", allowedOrigins);
@@ -65,18 +67,23 @@ app.use("/api/shop/review", shopReviewRouter);
 
 app.use("/api/common/feature", commonFeatureRouter);
 
+app.use("/api/shop/wishlist", shopWishlistRouter);
+
 // ✅ CRITICAL: Add a root health check endpoint for Render
 app.get("/", (req, res) => {
   res.status(200).send("OK - Server is running");
 });
 
 // ✅ CRITICAL: Start the server FIRST
-const server = app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Server running on port ${PORT}`));
+const server = app.listen(PORT, "0.0.0.0", () =>
+  console.log(`🚀 Server running on port ${PORT}`)
+);
 
 // ✅ THEN, connect to the database in the background
 const db_url = process.env.MONGODB_URI;
 if (db_url) {
-  mongoose.connect(db_url)
+  mongoose
+    .connect(db_url)
     .then(() => console.log("MongoDB connected successfully"))
     .catch((error) => console.error("MongoDB connection error:", error));
 } else {
