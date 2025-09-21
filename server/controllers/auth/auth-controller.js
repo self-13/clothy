@@ -1,74 +1,153 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
+const Joi = require("joi");
 const User = require("../../models/User");
-const { sendOTPEmail, sendWelcomeEmail, sendPasswordResetEmail } = require("../../helpers/emailService");
+const {
+  sendOTPEmail,
+  sendWelcomeEmail,
+  sendPasswordResetEmail,
+} = require("../../helpers/emailService");
 
-// Generate OTP
-const generateOTP = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-};
+// ✅ Utility
+const generateOTP = () =>
+  Math.floor(100000 + Math.random() * 900000).toString();
 
-// Register user
+// ---------------- REGISTER ----------------
+const registerSchema = Joi.object({
+  userName: Joi.string().min(3).max(30).required(),
+  email: Joi.string().email().max(254).required(),
+  password: Joi.string().min(8).max(1024).required(),
+});
+
 const registerUser = async (req, res) => {
-  const { userName, email, password } = req.body;
-
   try {
-    // Check if email already exists
-    const checkEmail = await User.findOne({ email });
-    if (checkEmail) {
-      return res.status(400).json({
-        success: false,
-        message: "User already exists with the same email! Please try again.",
-      });
+    const { error, value } = registerSchema.validate(req.body, {
+      stripUnknown: true,
+    });
+    if (error)
+      return res.status(400).json({ success: false, message: error.message });
+
+    const { userName, email, password } = value;
+
+    if (await User.findOne({ email })) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Email already in use" });
+    }
+    if (await User.findOne({ userName })) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Username already taken" });
     }
 
-    // Check if username already exists
-    const checkUserName = await User.findOne({ userName });
-    if (checkUserName) {
-      return res.status(400).json({
-        success: false,
-        message: "Username already taken! Please choose another.",
-      });
-    }
-
-    // Hash the password
     const hashPassword = await bcrypt.hash(password, 12);
     const otpCode = generateOTP();
-    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
 
     const newUser = new User({
       userName,
       email,
       password: hashPassword,
-      otp: {
-        code: otpCode,
-        expiresAt: otpExpires,
-      },
+      otp: { code: otpCode, expiresAt: otpExpires },
     });
-
     await newUser.save();
-
-    // Send OTP email
     const emailSent = await sendOTPEmail(email, userName, otpCode);
 
-    if (!emailSent) {
-      return res.status(500).json({
-        success: false,
-        message: "Error sending verification email",
-      });
-    }
+    if (!emailSent)
+      return res
+        .status(500)
+        .json({ success: false, message: "Error sending OTP email" });
 
     res.status(200).json({
       success: true,
-      message: "Registration successful. Please check your email for verification code.",
+      message: "Registration successful. Check your email for OTP.",
     });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({
-      success: false,
-      message: "Some error occurred",
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// ---------------- LOGIN ----------------
+const loginSchema = Joi.object({
+  email: Joi.string().email().max(254).required(),
+  password: Joi.string().min(8).max(1024).required(),
+});
+
+const loginUser = async (req, res) => {
+  try {
+    const { error, value } = loginSchema.validate(req.body, {
+      stripUnknown: true,
     });
+    if (error)
+      return res.status(400).json({ success: false, message: error.message });
+
+    const email = String(value.email).toLowerCase().trim();
+    const password = value.password;
+
+    const user = await User.findOne({ email });
+    if (!user)
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid email or password" });
+    if (!user.isVerified)
+      return res.status(401).json({
+        success: false,
+        message: "Please verify your email before logging in",
+      });
+
+    const match = await bcrypt.compare(password, user.password);
+    if (!match)
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid email or password" });
+
+    const token = jwt.sign(
+      {
+        id: user._id,
+        role: user.role,
+        email: user.email,
+        userName: user.userName,
+      },
+      process.env.CLIENT_SECRET_KEY,
+      { expiresIn: "60m" }
+    );
+
+    res.cookie("token", token, { httpOnly: true, secure: true }).json({
+      success: true,
+      message: "Logged in successfully",
+      user: {
+        email: user.email,
+        role: user.role,
+        id: user._id,
+        userName: user.userName,
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// ---------------- LOGOUT ----------------
+const logoutUser = (req, res) => {
+  res
+    .clearCookie("token")
+    .json({ success: true, message: "Logged out successfully" });
+};
+
+// ---------------- AUTH MIDDLEWARE ----------------
+const authMiddleware = (req, res, next) => {
+  const token = req.cookies.token;
+  if (!token)
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+
+  try {
+    req.user = jwt.verify(token, process.env.CLIENT_SECRET_KEY);
+    next();
+  } catch {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
   }
 };
 
@@ -204,7 +283,11 @@ const forgotPassword = async (req, res) => {
     user.resetPasswordExpires = resetTokenExpiry;
     await user.save();
 
-    const emailSent = await sendPasswordResetEmail(email, user.userName, resetToken);
+    const emailSent = await sendPasswordResetEmail(
+      email,
+      user.userName,
+      resetToken
+    );
 
     if (!emailSent) {
       return res.status(500).json({
@@ -263,98 +346,13 @@ const resetPassword = async (req, res) => {
   }
 };
 
-// Login user
-const loginUser = async (req, res) => {
-  const { email, password } = req.body;
-
-  try {
-    const checkUser = await User.findOne({ email });
-    if (!checkUser)
-      return res.status(400).json({
-        success: false,
-        message: "User doesn't exist! Please register first",
-      });
-
-    if (!checkUser.isVerified) {
-      return res.status(401).json({
-        success: false,
-        message: "Please verify your email before logging in",
-      });
-    }
-
-    const checkPasswordMatch = await bcrypt.compare(password, checkUser.password);
-    if (!checkPasswordMatch)
-      return res.status(400).json({
-        success: false,
-        message: "Incorrect password! Please try again",
-      });
-
-    const token = jwt.sign(
-      {
-        id: checkUser._id,
-        role: checkUser.role,
-        email: checkUser.email,
-        userName: checkUser.userName,
-      },
-      "CLIENT_SECRET_KEY",
-      { expiresIn: "60m" }
-    );
-
-    res.cookie("token", token, { httpOnly: true, secure: false }).json({
-      success: true,
-      message: "Logged in successfully",
-      user: {
-        email: checkUser.email,
-        role: checkUser.role,
-        id: checkUser._id,
-        userName: checkUser.userName,
-      },
-    });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({
-      success: false,
-      message: "Some error occurred",
-    });
-  }
-};
-
-// Logout user
-const logoutUser = (req, res) => {
-  res.clearCookie("token").json({
-    success: true,
-    message: "Logged out successfully!",
-  });
-};
-
-// Authentication middleware
-const authMiddleware = async (req, res, next) => {
-  const token = req.cookies.token;
-  if (!token)
-    return res.status(401).json({
-      success: false,
-      message: "Unauthorized user!",
-    });
-
-  try {
-    const decoded = jwt.verify(token, "CLIENT_SECRET_KEY");
-    req.user = decoded;
-    next();
-  } catch (error) {
-    res.status(401).json({
-      success: false,
-      message: "Unauthorized user!",
-    });
-  }
-};
-
-module.exports = { 
-  registerUser, 
-  loginUser, 
-  logoutUser, 
-  authMiddleware, 
-  verifyOTP, 
-  resendOTP, 
-  forgotPassword, 
-  resetPassword 
+module.exports = {
+  registerUser,
+  loginUser,
+  logoutUser,
+  authMiddleware,
+  verifyOTP,
+  resendOTP,
+  forgotPassword,
+  resetPassword,
 };
