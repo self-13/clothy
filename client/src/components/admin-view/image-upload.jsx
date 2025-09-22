@@ -19,15 +19,25 @@ function ProductImageUpload({
   const inputRef = useRef(null);
   const BASE_URL = import.meta.env.VITE_BASE_URL;
 
+  // Helper to get userId from localStorage
+  const getUserId = () => {
+    const user = localStorage.getItem("user");
+    if (!user) return null;
+    try {
+      return JSON.parse(user).id;
+    } catch (error) {
+      console.error("Error parsing user from localStorage", error);
+      return null;
+    }
+  };
+
   function handleImageFileChange(event) {
     const selectedFile = event.target.files?.[0];
     if (selectedFile && selectedFile.type.startsWith("image/")) {
       setImageFile(selectedFile);
     } else {
       alert("Please select a valid image file");
-      if (inputRef.current) {
-        inputRef.current.value = "";
-      }
+      if (inputRef.current) inputRef.current.value = "";
     }
   }
 
@@ -48,9 +58,7 @@ function ProductImageUpload({
   function handleRemoveImage() {
     setImageFile(null);
     setUploadedImageUrl(null);
-    if (inputRef.current) {
-      inputRef.current.value = "";
-    }
+    if (inputRef.current) inputRef.current.value = "";
   }
 
   async function uploadImageToCloudinary() {
@@ -61,17 +69,18 @@ function ProductImageUpload({
     formData.append("my_file", imageFile);
 
     try {
+      const userId = getUserId();
       const response = await axios.post(
         `${BASE_URL}/api/admin/products/image-upload`,
         formData,
         {
           headers: {
             "Content-Type": "multipart/form-data",
+            "x-user-id": userId, // <-- add userId here
           },
         }
       );
 
-      console.log(response, "response");
       if (response?.data?.success) {
         setUploadedImageUrl(response.data.result.url);
       }
@@ -95,9 +104,7 @@ function ProductImageUpload({
       <div
         onDragOver={handleDragOver}
         onDrop={handleDrop}
-        className={`${
-          isEditMode ? "opacity-60" : ""
-        } border-2 border-dashed rounded-lg p-4`}
+        className={`${isEditMode ? "opacity-60" : ""} border-2 border-dashed rounded-lg p-4`}
       >
         <Input
           id="image-upload"
@@ -111,9 +118,7 @@ function ProductImageUpload({
         {!imageFile && !uploadedImageUrl ? (
           <Label
             htmlFor="image-upload"
-            className={`${
-              isEditMode ? "cursor-not-allowed" : "cursor-pointer"
-            } flex flex-col items-center justify-center h-32`}
+            className={`${isEditMode ? "cursor-not-allowed" : "cursor-pointer"} flex flex-col items-center justify-center h-32`}
           >
             <UploadCloudIcon className="w-10 h-10 text-muted-foreground mb-2" />
             <span>Drag & drop or click to upload image</span>

@@ -1,7 +1,27 @@
 const Feature = require("../../models/Feature");
+const User = require("../../models/User"); // Import User model
+
+const checkAdminRole = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    return user && user.role === "admin";
+  } catch (error) {
+    console.log("Role check error:", error);
+    return false;
+  }
+};
 
 const addFeatureImage = async (req, res) => {
   try {
+    // Check admin role
+    const isAdmin = await checkAdminRole(req.user.id);
+    if (!isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Admin privileges required.",
+      });
+    }
+
     const { image } = req.body;
 
     console.log(image, "image");
@@ -44,6 +64,15 @@ const getFeatureImages = async (req, res) => {
 
 const deleteFeatureImage = async (req, res) => {
   try {
+    // Check admin role
+    const isAdmin = await checkAdminRole(req.user.id);
+    if (!isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Admin privileges required.",
+      });
+    }
+
     const { id } = req.params;
 
     const deletedImage = await Feature.findByIdAndDelete(id);

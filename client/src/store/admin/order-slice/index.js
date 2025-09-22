@@ -6,15 +6,30 @@ const BASE_URL = import.meta.env.VITE_BASE_URL;
 const initialState = {
   orderList: [],
   orderDetails: null,
+  isLoading: false,
+};
+
+// Helper function to get user ID from localStorage
+const getUserId = () => {
+  const user = localStorage.getItem("user");
+  if (!user) return null;
+  try {
+    return JSON.parse(user).id;
+  } catch (error) {
+    console.error("Error parsing user from localStorage", error);
+    return null;
+  }
 };
 
 export const getAllOrdersForAdmin = createAsyncThunk(
   "/order/getAllOrdersForAdmin",
   async () => {
-    const response = await axios.get(
-      `${BASE_URL}/api/admin/orders/get`
-    );
-
+    const userId = getUserId();
+    const response = await axios.get(`${BASE_URL}/api/admin/orders/get`, {
+      headers: {
+        "x-user-id": userId, // sending userId in headers
+      },
+    });
     return response.data;
   }
 );
@@ -22,10 +37,15 @@ export const getAllOrdersForAdmin = createAsyncThunk(
 export const getOrderDetailsForAdmin = createAsyncThunk(
   "/order/getOrderDetailsForAdmin",
   async (id) => {
+    const userId = getUserId();
     const response = await axios.get(
-      `${BASE_URL}/api/admin/orders/details/${id}`
+      `${BASE_URL}/api/admin/orders/details/${id}`,
+      {
+        headers: {
+          "x-user-id": userId,
+        },
+      }
     );
-
     return response.data;
   }
 );
@@ -33,13 +53,16 @@ export const getOrderDetailsForAdmin = createAsyncThunk(
 export const updateOrderStatus = createAsyncThunk(
   "/order/updateOrderStatus",
   async ({ id, orderStatus }) => {
+    const userId = getUserId();
     const response = await axios.put(
       `${BASE_URL}/api/admin/orders/update/${id}`,
+      { orderStatus },
       {
-        orderStatus,
+        headers: {
+          "x-user-id": userId,
+        },
       }
     );
-
     return response.data;
   }
 );
@@ -50,7 +73,6 @@ const adminOrderSlice = createSlice({
   reducers: {
     resetOrderDetails: (state) => {
       console.log("resetOrderDetails");
-
       state.orderDetails = null;
     },
   },
@@ -77,6 +99,16 @@ const adminOrderSlice = createSlice({
       .addCase(getOrderDetailsForAdmin.rejected, (state) => {
         state.isLoading = false;
         state.orderDetails = null;
+      })
+      .addCase(updateOrderStatus.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(updateOrderStatus.fulfilled, (state, action) => {
+        state.isLoading = false;
+        // Optionally update the order list or details here
+      })
+      .addCase(updateOrderStatus.rejected, (state) => {
+        state.isLoading = false;
       });
   },
 });

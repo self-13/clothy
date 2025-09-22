@@ -1,9 +1,28 @@
 const Order = require("../../models/Order");
-const User = require("../../models/User"); // Import User model
-const { sendOrderStatusUpdateEmail } = require("../../helpers/emailService"); // Import the email function
+const User = require("../../models/User");
+const { sendOrderStatusUpdateEmail } = require("../../helpers/emailService");
+
+const checkAdminRole = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    return user && user.role === "admin";
+  } catch (error) {
+    console.log("Role check error:", error);
+    return false;
+  }
+};
 
 const getAllOrdersOfAllUsers = async (req, res) => {
   try {
+    // Check admin role
+    const isAdmin = await checkAdminRole(req.user.id);
+    if (!isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Admin privileges required.",
+      });
+    }
+
     const orders = await Order.find({});
 
     if (!orders.length) {
@@ -28,6 +47,15 @@ const getAllOrdersOfAllUsers = async (req, res) => {
 
 const getOrderDetailsForAdmin = async (req, res) => {
   try {
+    // Check admin role
+    const isAdmin = await checkAdminRole(req.user.id);
+    if (!isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Admin privileges required.",
+      });
+    }
+
     const { id } = req.params;
 
     const order = await Order.findById(id);
@@ -54,6 +82,15 @@ const getOrderDetailsForAdmin = async (req, res) => {
 
 const updateOrderStatus = async (req, res) => {
   try {
+    // Check admin role
+    const isAdmin = await checkAdminRole(req.user.id);
+    if (!isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Admin privileges required.",
+      });
+    }
+
     const { id } = req.params;
     const { orderStatus } = req.body;
 
@@ -66,19 +103,14 @@ const updateOrderStatus = async (req, res) => {
       });
     }
 
-    // Save the old status for comparison
     const oldStatus = order.orderStatus;
 
-    // Update the order status
     await Order.findByIdAndUpdate(id, { orderStatus });
 
-    // Only send email if status actually changed
     if (oldStatus !== orderStatus) {
       try {
-        // Get user details for email
         const user = await User.findById(order.userId);
         if (user) {
-          // Send order status update email to customer
           await sendOrderStatusUpdateEmail(user.email, user.name, {
             orderId: order._id,
             orderDate: order.orderDate,
@@ -89,7 +121,6 @@ const updateOrderStatus = async (req, res) => {
         }
       } catch (emailError) {
         console.error("Failed to send status update email:", emailError);
-        // Don't fail the order update if email fails
       }
     }
 
