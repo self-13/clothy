@@ -14,8 +14,18 @@ const checkAdminRole = async (userId) => {
 
 const getAllOrdersOfAllUsers = async (req, res) => {
   try {
+    // FIX: Get user ID from header
+    const userId = req.headers["x-user-id"];
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
     // Check admin role
-    const isAdmin = await checkAdminRole(req.user.id);
+    const isAdmin = await checkAdminRole(userId);
     if (!isAdmin) {
       return res.status(403).json({
         success: false,
@@ -23,7 +33,7 @@ const getAllOrdersOfAllUsers = async (req, res) => {
       });
     }
 
-    const orders = await Order.find({});
+    const orders = await Order.find({}).sort({ orderDate: -1 });
 
     if (!orders.length) {
       return res.status(404).json({
@@ -37,18 +47,28 @@ const getAllOrdersOfAllUsers = async (req, res) => {
       data: orders,
     });
   } catch (e) {
-    console.log(e);
+    console.log("Error in getAllOrdersOfAllUsers:", e);
     res.status(500).json({
       success: false,
-      message: "Some error occured!",
+      message: "Error occurred while fetching orders",
     });
   }
 };
 
 const getOrderDetailsForAdmin = async (req, res) => {
   try {
+    // FIX: Get user ID from header
+    const userId = req.headers["x-user-id"];
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
     // Check admin role
-    const isAdmin = await checkAdminRole(req.user.id);
+    const isAdmin = await checkAdminRole(userId);
     if (!isAdmin) {
       return res.status(403).json({
         success: false,
@@ -72,18 +92,28 @@ const getOrderDetailsForAdmin = async (req, res) => {
       data: order,
     });
   } catch (e) {
-    console.log(e);
+    console.log("Error in getOrderDetailsForAdmin:", e);
     res.status(500).json({
       success: false,
-      message: "Some error occured!",
+      message: "Error occurred while fetching order details",
     });
   }
 };
 
 const updateOrderStatus = async (req, res) => {
   try {
+    // FIX: Get user ID from header
+    const userId = req.headers["x-user-id"];
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
     // Check admin role
-    const isAdmin = await checkAdminRole(req.user.id);
+    const isAdmin = await checkAdminRole(userId);
     if (!isAdmin) {
       return res.status(403).json({
         success: false,
@@ -105,7 +135,9 @@ const updateOrderStatus = async (req, res) => {
 
     const oldStatus = order.orderStatus;
 
-    await Order.findByIdAndUpdate(id, { orderStatus });
+    // Update the order status
+    order.orderStatus = orderStatus;
+    await order.save();
 
     if (oldStatus !== orderStatus) {
       try {
@@ -126,13 +158,14 @@ const updateOrderStatus = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Order status is updated successfully!",
+      message: "Order status updated successfully!",
+      data: order,
     });
   } catch (e) {
-    console.log(e);
+    console.log("Error in updateOrderStatus:", e);
     res.status(500).json({
       success: false,
-      message: "Some error occured!",
+      message: "Error occurred while updating order status",
     });
   }
 };

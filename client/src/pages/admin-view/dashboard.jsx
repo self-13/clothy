@@ -12,59 +12,132 @@ function AdminDashboard() {
   const [imageFile, setImageFile] = useState(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState("");
   const [imageLoadingState, setImageLoadingState] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState("");
+
   const dispatch = useDispatch();
-  const { featureImageList } = useSelector((state) => state.commonFeature);
+  const { featureImageList, isLoading } = useSelector((state) => state.commonFeature);
+  const { user } = useSelector((state) => state.auth);
 
-  console.log(uploadedImageUrl, "uploadedImageUrl");
+  console.log("🖼️ Uploaded Image URL:", uploadedImageUrl);
 
-  function handleUploadFeatureImage() {
-    dispatch(addFeatureImage(uploadedImageUrl)).then((data) => {
-      if (data?.payload?.success) {
+  const handleUploadFeatureImage = async () => {
+    if (!uploadedImageUrl) {
+      setUploadStatus("Please upload an image first");
+      return;
+    }
+
+    if (!user?.id) {
+      setUploadStatus("User not authenticated");
+      return;
+    }
+
+    setUploadStatus("Uploading...");
+
+    try {
+      const result = await dispatch(addFeatureImage(uploadedImageUrl)).unwrap();
+
+      if (result.success) {
+        setUploadStatus("✅ Image uploaded successfully!");
         dispatch(getFeatureImages());
         setImageFile(null);
         setUploadedImageUrl("");
-      }
-    });
-  }
 
-  function handleDeleteFeatureImage(id) {
-    if (window.confirm("Are you sure you want to delete this image?")) {
-      dispatch(deleteFeatureImage(id)).then((data) => {
-        if (data?.payload?.success) {
-          // The image is automatically removed from state via the extraReducer
-          console.log("Image deleted successfully");
-        }
-      });
+        // Clear success message after 3 seconds
+        setTimeout(() => setUploadStatus(""), 3000);
+      } else {
+        setUploadStatus(
+          "❌ Upload failed: " + (result.message || "Unknown error")
+        );
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      setUploadStatus(
+        "❌ Upload failed: " + (error.message || "Unknown error")
+      );
     }
-  }
+  };
+
+  const handleDeleteFeatureImage = async (id) => {
+    if (window.confirm("Are you sure you want to delete this image?")) {
+      try {
+        const result = await dispatch(deleteFeatureImage(id)).unwrap();
+        if (result.success) {
+          console.log("✅ Image deleted successfully");
+          dispatch(getFeatureImages());
+        }
+      } catch (error) {
+        console.error("Delete error:", error);
+        alert("Delete failed: " + (error.message || "Unknown error"));
+      }
+    }
+  };
 
   useEffect(() => {
     dispatch(getFeatureImages());
   }, [dispatch]);
 
-  console.log(featureImageList, "featureImageList");
-
   return (
-    <div>
-      <ProductImageUpload
-        imageFile={imageFile}
-        setImageFile={setImageFile}
-        uploadedImageUrl={uploadedImageUrl}
-        setUploadedImageUrl={setUploadedImageUrl}
-        setImageLoadingState={setImageLoadingState}
-        imageLoadingState={imageLoadingState}
-        isCustomStyling={true}
-      />
-      <Button onClick={handleUploadFeatureImage} className="mt-5 w-full">
-        Upload
-      </Button>
-      <div className="flex flex-col gap-4 mt-5">
-        {featureImageList && featureImageList.length > 0
-          ? featureImageList.map((featureImgItem) => (
-              <div className="relative" key={featureImgItem._id}>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-6">
+        Admin Dashboard - Feature Images
+      </h1>
+
+      {/* Image Upload Section */}
+      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+        <h2 className="text-lg font-semibold mb-4">Upload Feature Image</h2>
+
+        <ProductImageUpload
+          imageFile={imageFile}
+          setImageFile={setImageFile}
+          uploadedImageUrl={uploadedImageUrl}
+          setUploadedImageUrl={setUploadedImageUrl}
+          setImageLoadingState={setImageLoadingState}
+          imageLoadingState={imageLoadingState}
+          isCustomStyling={true}
+        />
+
+        <Button
+          onClick={handleUploadFeatureImage}
+          className="mt-5 w-full"
+          disabled={!uploadedImageUrl || isLoading}
+        >
+          {isLoading ? "Uploading..." : "Upload Feature Image"}
+        </Button>
+
+        {uploadStatus && (
+          <div
+            className={`mt-3 p-3 rounded ${
+              uploadStatus.includes("✅")
+                ? "bg-green-100 text-green-800"
+                : uploadStatus.includes("❌")
+                ? "bg-red-100 text-red-800"
+                : "bg-blue-100 text-blue-800"
+            }`}
+          >
+            {uploadStatus}
+          </div>
+        )}
+      </div>
+
+      {/* Feature Images List */}
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <h2 className="text-lg font-semibold mb-4">
+          Feature Images ({featureImageList?.length || 0})
+        </h2>
+
+        {isLoading ? (
+          <div className="text-center py-4">Loading images...</div>
+        ) : featureImageList && featureImageList.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {featureImageList.map((featureImgItem) => (
+              <div
+                className="relative border rounded-lg overflow-hidden"
+                key={featureImgItem._id}
+              >
                 <img
                   src={featureImgItem.image}
-                  className="w-full h-[300px] object-cover rounded-t-lg"
+                  alt="Feature"
+                  className="w-full h-48 object-cover"
                 />
                 <Button
                   onClick={() => handleDeleteFeatureImage(featureImgItem._id)}
@@ -73,9 +146,19 @@ function AdminDashboard() {
                 >
                   Delete
                 </Button>
+                <div className="p-3 bg-gray-50">
+                  <p className="text-sm text-gray-600 truncate">
+                    {featureImgItem.image}
+                  </p>
+                </div>
               </div>
-            ))
-          : null}
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            No feature images uploaded yet.
+          </div>
+        )}
       </div>
     </div>
   );

@@ -44,7 +44,10 @@ function AdminProducts() {
   const [currentEditedId, setCurrentEditedId] = useState(null);
   const [activeTab, setActiveTab] = useState("basic");
 
-  const { productList } = useSelector((state) => state.adminProducts);
+  const { productList, isLoading } = useSelector(
+    (state) => state.adminProducts
+  );
+  const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const { toast } = useToast();
 
@@ -52,8 +55,6 @@ function AdminProducts() {
     event.preventDefault();
 
     const sizes = formData.sizes || [];
-
-    // Calculate total stock from sizes if sizes exist
     const totalStockFromSizes = sizes.reduce(
       (total, item) => total + (item.stock || 0),
       0
@@ -75,41 +76,91 @@ function AdminProducts() {
           id: currentEditedId,
           formData: productData,
         })
-      ).then((data) => {
-        if (data?.payload?.success) {
-          dispatch(fetchAllProducts());
-          setFormData(initialFormData);
-          setOpenCreateProductsDialog(false);
-          setCurrentEditedId(null);
+      )
+        .then((data) => {
+          if (data?.payload?.success) {
+            dispatch(fetchAllProducts());
+            setFormData(initialFormData);
+            setOpenCreateProductsDialog(false);
+            setCurrentEditedId(null);
+            toast({
+              title: "Product updated successfully",
+            });
+          } else {
+            toast({
+              title: "Error updating product",
+              description: data?.payload?.message,
+              variant: "destructive",
+            });
+          }
+        })
+        .catch((error) => {
+          console.error("Edit product error:", error);
           toast({
-            title: "Product updated successfully",
+            title: "Error updating product",
+            description: error.message,
+            variant: "destructive",
           });
-        }
-      });
+        });
     } else {
-      dispatch(addNewProduct(productData)).then((data) => {
-        if (data?.payload?.success) {
-          dispatch(fetchAllProducts());
-          setOpenCreateProductsDialog(false);
-          setImageFile(null);
-          setFormData(initialFormData);
+      dispatch(addNewProduct(productData))
+        .then((data) => {
+          if (data?.payload?.success) {
+            dispatch(fetchAllProducts());
+            setOpenCreateProductsDialog(false);
+            setImageFile(null);
+            setFormData(initialFormData);
+            toast({
+              title: "Product added successfully",
+            });
+          } else {
+            toast({
+              title: "Error adding product",
+              description: data?.payload?.message,
+              variant: "destructive",
+            });
+          }
+        })
+        .catch((error) => {
+          console.error("Add product error:", error);
           toast({
-            title: "Product added successfully",
+            title: "Error adding product",
+            description: error.message,
+            variant: "destructive",
           });
-        }
-      });
+        });
     }
   }
 
+  // FIXED: Delete product function
   function handleDelete(getCurrentProductId) {
-    dispatch(deleteProduct(getCurrentProductId)).then((data) => {
-      if (data?.payload?.success) {
-        dispatch(fetchAllProducts());
-        toast({
-          title: "Product deleted successfully",
+    console.log("Deleting product:", getCurrentProductId);
+
+    if (window.confirm("Are you sure you want to delete this product?")) {
+      dispatch(deleteProduct(getCurrentProductId))
+        .then((data) => {
+          if (data?.payload?.success) {
+            dispatch(fetchAllProducts());
+            toast({
+              title: "Product deleted successfully",
+            });
+          } else {
+            toast({
+              title: "Error deleting product",
+              description: data?.payload?.message,
+              variant: "destructive",
+            });
+          }
+        })
+        .catch((error) => {
+          console.error("Delete product error:", error);
+          toast({
+            title: "Error deleting product",
+            description: error.message,
+            variant: "destructive",
+          });
         });
-      }
-    });
+    }
   }
 
   function isFormValid() {
@@ -123,7 +174,6 @@ function AdminProducts() {
       .map((key) => formData[key] !== "")
       .every((item) => item);
 
-    // If sizes are provided, check they have valid data
     const sizesValid =
       formData.sizes.length === 0 ||
       formData.sizes.every((item) => item.size && item.stock !== undefined);
@@ -162,13 +212,20 @@ function AdminProducts() {
   return (
     <Fragment>
       <div className="mb-5 w-full flex justify-end ">
-        <Button onClick={() => setOpenCreateProductsDialog(true)}>
-          Add New Product
+        <Button
+          onClick={() => setOpenCreateProductsDialog(true)}
+          disabled={isLoading}
+        >
+          {isLoading ? "Loading..." : "Add New Product"}
         </Button>
       </div>
-      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
-        {productList && productList.length > 0
-          ? productList.map((productItem) => (
+
+      {isLoading ? (
+        <div className="text-center py-8">Loading products...</div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
+          {productList && productList.length > 0 ? (
+            productList.map((productItem) => (
               <AdminProductTile
                 setFormData={setFormData}
                 setOpenCreateProductsDialog={setOpenCreateProductsDialog}
@@ -178,8 +235,14 @@ function AdminProducts() {
                 key={productItem._id}
               />
             ))
-          : null}
-      </div>
+          ) : (
+            <div className="col-span-full text-center py-8 text-gray-500">
+              No products found. Add your first product!
+            </div>
+          )}
+        </div>
+      )}
+
       <Sheet
         open={openCreateProductsDialog}
         onOpenChange={() => {
@@ -223,7 +286,7 @@ function AdminProducts() {
               />
               <div className="py-6">
                 <CommonForm
-                  onSubmit={(e) => e.preventDefault()} // Prevent form submission on tab
+                  onSubmit={(e) => e.preventDefault()}
                   formData={formData}
                   setFormData={setFormData}
                   buttonText="Next: Sizes & Stock"
@@ -251,10 +314,14 @@ function AdminProducts() {
                 </Button>
                 <Button
                   onClick={onSubmit}
-                  disabled={!isFormValid()}
+                  disabled={!isFormValid() || isLoading}
                   className="flex-1"
                 >
-                  {currentEditedId !== null ? "Update Product" : "Add Product"}
+                  {isLoading
+                    ? "Processing..."
+                    : currentEditedId !== null
+                    ? "Update Product"
+                    : "Add Product"}
                 </Button>
               </div>
             </TabsContent>

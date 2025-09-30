@@ -1,6 +1,6 @@
 const { imageUploadUtil } = require("../../helpers/imagekit");
 const Product = require("../../models/Product");
-const User = require("../../models/User"); // Import User model
+const User = require("../../models/User");
 
 const checkAdminRole = async (userId) => {
   try {
@@ -14,8 +14,16 @@ const checkAdminRole = async (userId) => {
 
 const handleImageUpload = async (req, res) => {
   try {
-    // Check admin role
-    const isAdmin = await checkAdminRole(req.user.id);
+    const userId = req.headers["x-user-id"];
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
+    const isAdmin = await checkAdminRole(userId);
     if (!isAdmin) {
       return res.status(403).json({
         success: false,
@@ -49,11 +57,21 @@ const handleImageUpload = async (req, res) => {
   }
 };
 
-// Add a new product
+// Add a new product - FIXED
 const addProduct = async (req, res) => {
   try {
+    // FIX: Get user ID from header
+    const userId = req.headers["x-user-id"];
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
     // Check admin role
-    const isAdmin = await checkAdminRole(req.user.id);
+    const isAdmin = await checkAdminRole(userId);
     if (!isAdmin) {
       return res.status(403).json({
         success: false,
@@ -75,7 +93,13 @@ const addProduct = async (req, res) => {
       salesCount = 0,
     } = req.body;
 
-    console.log(averageReview, "averageReview");
+    console.log("Creating product with data:", {
+      title,
+      category,
+      brand,
+      price,
+      sizes,
+    });
 
     const newlyCreatedProduct = new Product({
       image,
@@ -95,21 +119,33 @@ const addProduct = async (req, res) => {
     res.status(201).json({
       success: true,
       data: newlyCreatedProduct,
+      message: "Product added successfully",
     });
   } catch (e) {
-    console.log(e);
+    console.log("Error in addProduct:", e);
     res.status(500).json({
       success: false,
-      message: "Error occurred",
+      message: "Error occurred while adding product",
+      error: e.message,
     });
   }
 };
 
-// Fetch all products (admin version)
+// Fetch all products (admin version) - FIXED
 const fetchAllProducts = async (req, res) => {
   try {
+    // FIX: Get user ID from header
+    const userId = req.headers["x-user-id"];
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
     // Check admin role
-    const isAdmin = await checkAdminRole(req.user.id);
+    const isAdmin = await checkAdminRole(userId);
     if (!isAdmin) {
       return res.status(403).json({
         success: false,
@@ -123,19 +159,29 @@ const fetchAllProducts = async (req, res) => {
       data: listOfProducts,
     });
   } catch (e) {
-    console.log(e);
+    console.log("Error in fetchAllProducts:", e);
     res.status(500).json({
       success: false,
-      message: "Error occurred",
+      message: "Error occurred while fetching products",
     });
   }
 };
 
-// Edit a product
+// Edit a product - FIXED
 const editProduct = async (req, res) => {
   try {
+    // FIX: Get user ID from header
+    const userId = req.headers["x-user-id"];
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
     // Check admin role
-    const isAdmin = await checkAdminRole(req.user.id);
+    const isAdmin = await checkAdminRole(userId);
     if (!isAdmin) {
       return res.status(403).json({
         success: false,
@@ -183,21 +229,32 @@ const editProduct = async (req, res) => {
     res.status(200).json({
       success: true,
       data: findProduct,
+      message: "Product updated successfully",
     });
   } catch (e) {
-    console.log(e);
+    console.log("Error in editProduct:", e);
     res.status(500).json({
       success: false,
-      message: "Error occurred",
+      message: "Error occurred while updating product",
     });
   }
 };
 
-// Delete a product
+// Delete a product - FIXED
 const deleteProduct = async (req, res) => {
   try {
+    // FIX: Get user ID from header
+    const userId = req.headers["x-user-id"];
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
     // Check admin role
-    const isAdmin = await checkAdminRole(req.user.id);
+    const isAdmin = await checkAdminRole(userId);
     if (!isAdmin) {
       return res.status(403).json({
         success: false,
@@ -219,19 +276,29 @@ const deleteProduct = async (req, res) => {
       message: "Product deleted successfully",
     });
   } catch (e) {
-    console.log(e);
+    console.log("Error in deleteProduct:", e);
     res.status(500).json({
       success: false,
-      message: "Error occurred",
+      message: "Error occurred while deleting product",
     });
   }
 };
 
-// Add size and stock to a product
+// Add size and stock to a product - FIXED
 const addSizeToProduct = async (req, res) => {
   try {
+    // FIX: Get user ID from header
+    const userId = req.headers["x-user-id"];
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
     // Check admin role
-    const isAdmin = await checkAdminRole(req.user.id);
+    const isAdmin = await checkAdminRole(userId);
     if (!isAdmin) {
       return res.status(403).json({
         success: false,
@@ -273,19 +340,29 @@ const addSizeToProduct = async (req, res) => {
       data: product,
     });
   } catch (e) {
-    console.log(e);
+    console.log("Error in addSizeToProduct:", e);
     res.status(500).json({
       success: false,
-      message: "Error occurred",
+      message: "Error occurred while adding size",
     });
   }
 };
 
-// Update stock for a specific size
+// Update stock for a specific size - FIXED
 const updateSizeStock = async (req, res) => {
   try {
+    // FIX: Get user ID from header
+    const userId = req.headers["x-user-id"];
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
     // Check admin role
-    const isAdmin = await checkAdminRole(req.user.id);
+    const isAdmin = await checkAdminRole(userId);
     if (!isAdmin) {
       return res.status(403).json({
         success: false,
@@ -327,19 +404,29 @@ const updateSizeStock = async (req, res) => {
       data: product,
     });
   } catch (e) {
-    console.log(e);
+    console.log("Error in updateSizeStock:", e);
     res.status(500).json({
       success: false,
-      message: "Error occurred",
+      message: "Error occurred while updating size stock",
     });
   }
 };
 
-// Remove a size from a product
+// Remove a size from a product - FIXED
 const removeSizeFromProduct = async (req, res) => {
   try {
+    // FIX: Get user ID from header
+    const userId = req.headers["x-user-id"];
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
     // Check admin role
-    const isAdmin = await checkAdminRole(req.user.id);
+    const isAdmin = await checkAdminRole(userId);
     if (!isAdmin) {
       return res.status(403).json({
         success: false,
@@ -372,19 +459,29 @@ const removeSizeFromProduct = async (req, res) => {
       data: product,
     });
   } catch (e) {
-    console.log(e);
+    console.log("Error in removeSizeFromProduct:", e);
     res.status(500).json({
       success: false,
-      message: "Error occurred",
+      message: "Error occurred while removing size",
     });
   }
 };
 
-// Increment sales count for a product
+// Increment sales count for a product - FIXED
 const incrementSalesCount = async (req, res) => {
   try {
+    // FIX: Get user ID from header
+    const userId = req.headers["x-user-id"];
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
     // Check admin role
-    const isAdmin = await checkAdminRole(req.user.id);
+    const isAdmin = await checkAdminRole(userId);
     if (!isAdmin) {
       return res.status(403).json({
         success: false,
@@ -411,10 +508,10 @@ const incrementSalesCount = async (req, res) => {
       data: product,
     });
   } catch (e) {
-    console.log(e);
+    console.log("Error in incrementSalesCount:", e);
     res.status(500).json({
       success: false,
-      message: "Error occurred",
+      message: "Error occurred while incrementing sales count",
     });
   }
 };

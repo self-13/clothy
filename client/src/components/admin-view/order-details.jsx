@@ -18,7 +18,7 @@ const initialFormData = {
 
 function AdminOrderDetailsView({ orderDetails }) {
   const [formData, setFormData] = useState(initialFormData);
-  const { user } = useSelector((state) => state.auth);
+  const { isLoading } = useSelector((state) => state.adminOrder);
   const dispatch = useDispatch();
   const { toast } = useToast();
 
@@ -49,18 +49,44 @@ function AdminOrderDetailsView({ orderDetails }) {
     event.preventDefault();
     const { status } = formData;
 
+    if (!status) {
+      toast({
+        title: "Please select a status",
+        variant: "destructive",
+      });
+      return;
+    }
+
     dispatch(
-      updateOrderStatus({ id: orderDetails?._id, orderStatus: status })
-    ).then((data) => {
-      if (data?.payload?.success) {
-        dispatch(getOrderDetailsForAdmin(orderDetails?._id));
-        dispatch(getAllOrdersForAdmin());
-        setFormData(initialFormData);
+      updateOrderStatus({
+        id: orderDetails?._id,
+        orderStatus: status,
+      })
+    )
+      .then((data) => {
+        if (data?.payload?.success) {
+          dispatch(getOrderDetailsForAdmin(orderDetails?._id));
+          dispatch(getAllOrdersForAdmin());
+          setFormData(initialFormData);
+          toast({
+            title: data?.payload?.message,
+          });
+        } else {
+          toast({
+            title: "Error updating status",
+            description: data?.payload?.message,
+            variant: "destructive",
+          });
+        }
+      })
+      .catch((error) => {
+        console.error("Update status error:", error);
         toast({
-          title: data?.payload?.message,
+          title: "Error updating status",
+          description: error.message,
+          variant: "destructive",
         });
-      }
-    });
+      });
   }
 
   return (
@@ -87,7 +113,9 @@ function AdminOrderDetailsView({ orderDetails }) {
               <span className="font-medium text-sm text-muted-foreground">
                 Order ID
               </span>
-              <Label className="text-base">{orderDetails?._id}</Label>
+              <Label className="font-mono text-sm">
+                {orderDetails?._id}
+              </Label>
             </div>
             <div className="flex flex-col">
               <span className="font-medium text-sm text-muted-foreground">
@@ -109,7 +137,9 @@ function AdminOrderDetailsView({ orderDetails }) {
               <span className="font-medium text-sm text-muted-foreground">
                 Payment Status
               </span>
-              <Label>{orderDetails?.paymentStatus}</Label>
+              <Label className="capitalize">
+                {orderDetails?.paymentStatus}
+              </Label>
             </div>
           </div>
         </div>
@@ -144,11 +174,15 @@ function AdminOrderDetailsView({ orderDetails }) {
                       </p>
                     )}
                     <p className="text-sm">Qty: {item.quantity}</p>
+                    <p className="text-sm font-semibold">
+                      ₹{(item.price * item.quantity).toFixed(2)}
+                    </p>
                   </div>
 
                   {/* Price */}
                   <div className="text-right">
                     <p className="font-semibold">₹{item.price}</p>
+                    <p className="text-sm text-muted-foreground">each</p>
                   </div>
                 </div>
               ))
@@ -224,8 +258,9 @@ function AdminOrderDetailsView({ orderDetails }) {
             ]}
             formData={formData}
             setFormData={setFormData}
-            buttonText={"Update Status"}
+            buttonText={isLoading ? "Updating..." : "Update Status"}
             onSubmit={handleUpdateStatus}
+            isBtnDisabled={!formData.status || isLoading}
           />
         </div>
       </div>
