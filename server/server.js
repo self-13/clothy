@@ -37,27 +37,37 @@ app.use(mongoSanitize());
 
 app.set("trust proxy", 1);
 
+// ✅ Enhanced CORS configuration
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
+      // Allow requests with no origin (like mobile apps, Postman)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         console.log("❌ Blocked by CORS:", origin);
         callback(new Error("Not allowed by CORS"));
       }
     },
-    methods: ["GET", "POST", "DELETE", "PUT"],
+    methods: ["GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"], // Added OPTIONS and PATCH
     allowedHeaders: [
       "Content-Type",
       "Authorization",
       "Cache-Control",
       "Expires",
       "Pragma",
+      "X-Requested-With",
+      "x-user-id",
     ],
     credentials: true,
+    optionsSuccessStatus: 204,
   })
 );
+
+// ✅ Handle preflight requests globally
+app.options("*", cors());
 
 // ✅ Rate limiting for auth routes
 const authLimiter = rateLimit({
@@ -67,6 +77,16 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 app.use("/api/auth", authLimiter);
+
+// ✅ Request logging middleware (for debugging)
+app.use((req, res, next) => {
+  console.log(
+    `${new Date().toISOString()} - ${req.method} ${req.path} - Origin: ${
+      req.headers.origin
+    }`
+  );
+  next();
+});
 
 // ✅ Routes
 app.use("/api/auth", authRouter);
@@ -84,6 +104,28 @@ app.use("/api/shop/wishlist", shopWishlistRouter);
 // Health check
 app.get("/", (req, res) => res.status(200).send("OK - Server is running"));
 
+// 404 handler
+app.use("*", (req, res) => {
+  res.status(404).json({ message: "Route not found" });
+});
+
+// Error handling middleware
+app.use((error, req, res, next) => {
+  console.error("Error:", error.message);
+
+  if (error.message === "Not allowed by CORS") {
+    return res.status(403).json({
+      message: "CORS Error: Origin not allowed",
+      allowedOrigins: allowedOrigins,
+    });
+  }
+
+  res.status(500).json({
+    message: "Internal Server Error",
+    error: process.env.NODE_ENV === "development" ? error.message : undefined,
+  });
+});
+
 // Start server
 const server = app.listen(PORT, "0.0.0.0", () =>
   console.log(`🚀 Server running on port ${PORT}`)
@@ -99,3 +141,13 @@ if (db_url) {
 } else {
   console.error("MONGODB_URI environment variable is not defined.");
 }
+
+// Graceful shutdown
+process.on("SIGINT", () => {
+  console.log("Shutting down gracefully...");
+  server.close(() => {
+    mongoose.connection.close();
+    console.log("Server closed.");
+    process.exit(0);
+  });
+});

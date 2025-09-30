@@ -1,10 +1,39 @@
 const Order = require("../../models/Order");
-const User = require("../../models/User"); // Import User model
-const { sendOrderStatusUpdateEmail } = require("../../helpers/emailService"); // Import the email function
+const User = require("../../models/User");
+const { sendOrderStatusUpdateEmail } = require("../../helpers/emailService");
+
+const checkAdminRole = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    return user && user.role === "admin";
+  } catch (error) {
+    console.log("Role check error:", error);
+    return false;
+  }
+};
 
 const getAllOrdersOfAllUsers = async (req, res) => {
   try {
-    const orders = await Order.find({});
+    // FIX: Get user ID from header
+    const userId = req.headers["x-user-id"];
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
+    // Check admin role
+    const isAdmin = await checkAdminRole(userId);
+    if (!isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Admin privileges required.",
+      });
+    }
+
+    const orders = await Order.find({}).sort({ orderDate: -1 });
 
     if (!orders.length) {
       return res.status(404).json({
@@ -18,16 +47,35 @@ const getAllOrdersOfAllUsers = async (req, res) => {
       data: orders,
     });
   } catch (e) {
-    console.log(e);
+    console.log("Error in getAllOrdersOfAllUsers:", e);
     res.status(500).json({
       success: false,
-      message: "Some error occured!",
+      message: "Error occurred while fetching orders",
     });
   }
 };
 
 const getOrderDetailsForAdmin = async (req, res) => {
   try {
+    // FIX: Get user ID from header
+    const userId = req.headers["x-user-id"];
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
+    // Check admin role
+    const isAdmin = await checkAdminRole(userId);
+    if (!isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Admin privileges required.",
+      });
+    }
+
     const { id } = req.params;
 
     const order = await Order.findById(id);
@@ -44,16 +92,35 @@ const getOrderDetailsForAdmin = async (req, res) => {
       data: order,
     });
   } catch (e) {
-    console.log(e);
+    console.log("Error in getOrderDetailsForAdmin:", e);
     res.status(500).json({
       success: false,
-      message: "Some error occured!",
+      message: "Error occurred while fetching order details",
     });
   }
 };
 
 const updateOrderStatus = async (req, res) => {
   try {
+    // FIX: Get user ID from header
+    const userId = req.headers["x-user-id"];
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
+    // Check admin role
+    const isAdmin = await checkAdminRole(userId);
+    if (!isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Admin privileges required.",
+      });
+    }
+
     const { id } = req.params;
     const { orderStatus } = req.body;
 
@@ -66,19 +133,16 @@ const updateOrderStatus = async (req, res) => {
       });
     }
 
-    // Save the old status for comparison
     const oldStatus = order.orderStatus;
 
     // Update the order status
-    await Order.findByIdAndUpdate(id, { orderStatus });
+    order.orderStatus = orderStatus;
+    await order.save();
 
-    // Only send email if status actually changed
     if (oldStatus !== orderStatus) {
       try {
-        // Get user details for email
         const user = await User.findById(order.userId);
         if (user) {
-          // Send order status update email to customer
           await sendOrderStatusUpdateEmail(user.email, user.name, {
             orderId: order._id,
             orderDate: order.orderDate,
@@ -89,19 +153,19 @@ const updateOrderStatus = async (req, res) => {
         }
       } catch (emailError) {
         console.error("Failed to send status update email:", emailError);
-        // Don't fail the order update if email fails
       }
     }
 
     res.status(200).json({
       success: true,
-      message: "Order status is updated successfully!",
+      message: "Order status updated successfully!",
+      data: order,
     });
   } catch (e) {
-    console.log(e);
+    console.log("Error in updateOrderStatus:", e);
     res.status(500).json({
       success: false,
-      message: "Some error occured!",
+      message: "Error occurred while updating order status",
     });
   }
 };

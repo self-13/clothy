@@ -8,109 +8,215 @@ const initialState = {
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
+// Helper to get userId from localStorage
+const getUserId = () => {
+  const user = localStorage.getItem("user");
+  if (!user) return null;
+  try {
+    return JSON.parse(user).id;
+  } catch (error) {
+    console.error("Error parsing user from localStorage", error);
+    return null;
+  }
+};
+
 // Add new product
 export const addNewProduct = createAsyncThunk(
-  "/products/addnewproduct",
-  async (formData) => {
-    const result = await axios.post(
-      `${BASE_URL}/api/admin/products/add`,
-      formData,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+  "adminProducts/addNewProduct",
+  async (formData, { rejectWithValue }) => {
+    try {
+      const userId = getUserId();
 
-    return result?.data;
+      if (!userId) {
+        throw new Error("User not authenticated");
+      }
+
+      console.log("🔄 Adding new product:", formData);
+
+      const response = await axios.post(
+        `${BASE_URL}/api/admin/products/add`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "x-user-id": userId,
+          },
+        }
+      );
+
+      console.log("✅ Product added response:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("❌ Error adding product:", error);
+      return rejectWithValue(error.response?.data || error.message);
+    }
   }
 );
 
 // Fetch all products
 export const fetchAllProducts = createAsyncThunk(
-  "/products/fetchAllProducts",
-  async () => {
-    const result = await axios.get(`${BASE_URL}/api/admin/products/fetch-all`);
+  "adminProducts/fetchAllProducts",
+  async (_, { rejectWithValue }) => {
+    try {
+      const userId = getUserId();
 
-    return result?.data;
+      if (!userId) {
+        throw new Error("User not authenticated");
+      }
+
+      const response = await axios.get(
+        `${BASE_URL}/api/admin/products/fetch-all`,
+        {
+          headers: { "x-user-id": userId },
+        }
+      );
+
+      console.log("✅ Fetched products:", response.data.data?.length);
+      return response.data;
+    } catch (error) {
+      console.error("❌ Error fetching products:", error);
+      return rejectWithValue(error.response?.data || error.message);
+    }
   }
 );
 
 // Edit product
 export const editProduct = createAsyncThunk(
-  "/products/editProduct",
-  async ({ id, formData }) => {
-    const result = await axios.put(
-      `${BASE_URL}/api/admin/products/edit/${id}`,
-      formData,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+  "adminProducts/editProduct",
+  async ({ id, formData }, { rejectWithValue }) => {
+    try {
+      const userId = getUserId();
 
-    return result?.data;
+      if (!userId) {
+        throw new Error("User not authenticated");
+      }
+
+      console.log("🔄 Editing product:", id, formData);
+
+      const response = await axios.put(
+        `${BASE_URL}/api/admin/products/edit/${id}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "x-user-id": userId,
+          },
+        }
+      );
+
+      console.log("✅ Product edited response:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("❌ Error editing product:", error);
+      return rejectWithValue(error.response?.data || error.message);
+    }
   }
 );
 
 // Delete product
 export const deleteProduct = createAsyncThunk(
-  "/products/deleteProduct",
-  async (id) => {
-    const result = await axios.delete(
-      `${BASE_URL}/api/admin/products/delete/${id}`
-    );
+  "adminProducts/deleteProduct",
+  async (id, { rejectWithValue }) => {
+    try {
+      const userId = getUserId();
 
-    return result?.data;
+      if (!userId) {
+        throw new Error("User not authenticated");
+      }
+
+      const response = await axios.delete(
+        `${BASE_URL}/api/admin/products/delete/${id}`,
+        {
+          headers: { "x-user-id": userId },
+        }
+      );
+
+      console.log("✅ Product deleted response:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("❌ Error deleting product:", error);
+      return rejectWithValue(error.response?.data || error.message);
+    }
   }
 );
 
 // Add size to product
 export const addSizeToProduct = createAsyncThunk(
-  "/products/addSizeToProduct",
-  async ({ productId, size, stock }) => {
-    const result = await axios.post(
-      `${BASE_URL}/api/admin/products/${productId}/sizes`,
-      { size, stock },
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+  "adminProducts/addSizeToProduct",
+  async ({ productId, size, stock }, { rejectWithValue }) => {
+    try {
+      const userId = getUserId();
 
-    return result?.data;
+      if (!userId) {
+        throw new Error("User not authenticated");
+      }
+
+      const response = await axios.post(
+        `${BASE_URL}/api/admin/products/${productId}/sizes`,
+        { size, stock },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "x-user-id": userId,
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
   }
 );
 
 // Update size stock
 export const updateSizeStock = createAsyncThunk(
-  "/products/updateSizeStock",
-  async ({ productId, sizeId, stock }) => {
-    const result = await axios.put(
-      `${BASE_URL}/api/admin/products/${productId}/sizes/${sizeId}`,
-      { stock },
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+  "adminProducts/updateSizeStock",
+  async ({ productId, sizeId, stock }, { rejectWithValue }) => {
+    try {
+      const userId = getUserId();
 
-    return result?.data;
+      if (!userId) {
+        throw new Error("User not authenticated");
+      }
+
+      const response = await axios.put(
+        `${BASE_URL}/api/admin/products/${productId}/sizes/${sizeId}`,
+        { stock },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "x-user-id": userId,
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
   }
 );
 
 // Remove size from product
 export const removeSizeFromProduct = createAsyncThunk(
-  "/products/removeSizeFromProduct",
-  async ({ productId, sizeId }) => {
-    const result = await axios.delete(
-      `${BASE_URL}/api/admin/products/${productId}/sizes/${sizeId}`
-    );
+  "adminProducts/removeSizeFromProduct",
+  async ({ productId, sizeId }, { rejectWithValue }) => {
+    try {
+      const userId = getUserId();
 
-    return result?.data;
+      if (!userId) {
+        throw new Error("User not authenticated");
+      }
+
+      const response = await axios.delete(
+        `${BASE_URL}/api/admin/products/${productId}/sizes/${sizeId}`,
+        {
+          headers: { "x-user-id": userId },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
   }
 );
 
@@ -121,9 +227,10 @@ const AdminProductsSlice = createSlice({
     updateProductSizesLocally: (state, action) => {
       const { productId, sizes } = action.payload;
       const product = state.productList.find((item) => item._id === productId);
-      if (product) {
-        product.sizes = sizes;
-      }
+      if (product) product.sizes = sizes;
+    },
+    clearProducts: (state) => {
+      state.productList = [];
     },
   },
   extraReducers: (builder) => {
@@ -134,7 +241,7 @@ const AdminProductsSlice = createSlice({
       })
       .addCase(fetchAllProducts.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.productList = action.payload.data;
+        state.productList = action.payload.data || [];
       })
       .addCase(fetchAllProducts.rejected, (state) => {
         state.isLoading = false;
@@ -147,7 +254,7 @@ const AdminProductsSlice = createSlice({
       })
       .addCase(addNewProduct.fulfilled, (state, action) => {
         state.isLoading = false;
-        if (action.payload.success) {
+        if (action.payload.success && action.payload.data) {
           state.productList.push(action.payload.data);
         }
       })
@@ -161,14 +268,12 @@ const AdminProductsSlice = createSlice({
       })
       .addCase(editProduct.fulfilled, (state, action) => {
         state.isLoading = false;
-        if (action.payload.success) {
+        if (action.payload.success && action.payload.data) {
           const updatedProduct = action.payload.data;
           const index = state.productList.findIndex(
-            (product) => product._id === updatedProduct._id
+            (p) => p._id === updatedProduct._id
           );
-          if (index !== -1) {
-            state.productList[index] = updatedProduct;
-          }
+          if (index !== -1) state.productList[index] = updatedProduct;
         }
       })
       .addCase(editProduct.rejected, (state) => {
@@ -179,51 +284,42 @@ const AdminProductsSlice = createSlice({
       .addCase(deleteProduct.fulfilled, (state, action) => {
         if (action.payload.success) {
           state.productList = state.productList.filter(
-            (product) => product._id !== action.meta.arg
+            (p) => p._id !== action.meta.arg
           );
         }
       })
 
-      // Add size to product
+      // Size management actions
       .addCase(addSizeToProduct.fulfilled, (state, action) => {
-        if (action.payload.success) {
+        if (action.payload.success && action.payload.data) {
           const updatedProduct = action.payload.data;
           const index = state.productList.findIndex(
-            (product) => product._id === updatedProduct._id
+            (p) => p._id === updatedProduct._id
           );
-          if (index !== -1) {
-            state.productList[index] = updatedProduct;
-          }
+          if (index !== -1) state.productList[index] = updatedProduct;
         }
       })
-
-      // Update size stock
       .addCase(updateSizeStock.fulfilled, (state, action) => {
-        if (action.payload.success) {
+        if (action.payload.success && action.payload.data) {
           const updatedProduct = action.payload.data;
           const index = state.productList.findIndex(
-            (product) => product._id === updatedProduct._id
+            (p) => p._id === updatedProduct._id
           );
-          if (index !== -1) {
-            state.productList[index] = updatedProduct;
-          }
+          if (index !== -1) state.productList[index] = updatedProduct;
         }
       })
-
-      // Remove size from product
       .addCase(removeSizeFromProduct.fulfilled, (state, action) => {
-        if (action.payload.success) {
+        if (action.payload.success && action.payload.data) {
           const updatedProduct = action.payload.data;
           const index = state.productList.findIndex(
-            (product) => product._id === updatedProduct._id
+            (p) => p._id === updatedProduct._id
           );
-          if (index !== -1) {
-            state.productList[index] = updatedProduct;
-          }
+          if (index !== -1) state.productList[index] = updatedProduct;
         }
       });
   },
 });
 
-export const { updateProductSizesLocally } = AdminProductsSlice.actions;
+export const { updateProductSizesLocally, clearProducts } =
+  AdminProductsSlice.actions;
 export default AdminProductsSlice.reducer;
