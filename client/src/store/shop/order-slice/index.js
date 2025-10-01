@@ -60,6 +60,29 @@ export const getOrderDetails = createAsyncThunk(
   }
 );
 
+// ✅ New async thunks for cancellation and return
+export const requestOrderCancellation = createAsyncThunk(
+  "order/requestCancellation",
+  async ({ orderId, reason }) => {
+    const response = await axios.post(
+      `${BASE_URL}/api/shop/order/${orderId}/cancel`,
+      { reason }
+    );
+    return response.data;
+  }
+);
+
+export const requestOrderReturn = createAsyncThunk(
+  "order/requestReturn",
+  async ({ orderId, reason }) => {
+    const response = await axios.post(
+      `${BASE_URL}/api/shop/order/${orderId}/return`,
+      { reason }
+    );
+    return response.data;
+  }
+);
+
 // ✅ Slice
 const shoppingOrderSlice = createSlice({
   name: "shoppingOrder",
@@ -112,6 +135,38 @@ const shoppingOrderSlice = createSlice({
       .addCase(getOrderDetails.rejected, (state) => {
         state.isLoading = false;
         state.orderDetails = null;
+      })
+
+      // Request Cancellation
+      .addCase(requestOrderCancellation.fulfilled, (state, action) => {
+        // Update the specific order in orderList
+        const updatedOrder = action.payload.data;
+        const orderIndex = state.orderList.findIndex(
+          (order) => order._id === updatedOrder._id
+        );
+        if (orderIndex !== -1) {
+          state.orderList[orderIndex] = updatedOrder;
+        }
+        // Also update orderDetails if it's the current order
+        if (state.orderDetails && state.orderDetails._id === updatedOrder._id) {
+          state.orderDetails = updatedOrder;
+        }
+      })
+
+      // Request Return
+      .addCase(requestOrderReturn.fulfilled, (state, action) => {
+        // Update the specific order in orderList
+        const updatedOrder = action.payload.data;
+        const orderIndex = state.orderList.findIndex(
+          (order) => order._id === updatedOrder._id
+        );
+        if (orderIndex !== -1) {
+          state.orderList[orderIndex] = updatedOrder;
+        }
+        // Also update orderDetails if it's the current order
+        if (state.orderDetails && state.orderDetails._id === updatedOrder._id) {
+          state.orderDetails = updatedOrder;
+        }
       });
   },
 });

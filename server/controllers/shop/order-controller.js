@@ -3,11 +3,13 @@ const crypto = require("crypto");
 const Order = require("../../models/Order");
 const Cart = require("../../models/Cart");
 const Product = require("../../models/Product");
-const { 
-  sendOrderConfirmationEmail, 
-  sendNewOrderNotificationEmail 
+const {
+  sendOrderConfirmationEmail,
+  sendNewOrderNotificationEmail,
+  sendCancellationRequestEmail, // ✅ Added missing imports
+  sendReturnRequestEmail, // ✅ Added missing imports
 } = require("../../helpers/emailService");
-const User = require("../../models/User"); // Import User model to get user details
+const User = require("../../models/User");
 
 // ✅ Create Order
 const createOrder = async (req, res) => {
@@ -32,6 +34,7 @@ const createOrder = async (req, res) => {
         paymentStatus: "cod",
         orderDate: new Date(),
         orderUpdateDate: new Date(),
+        deliveryDate: null, // ✅ Initialize delivery date as null
       });
 
       await newOrder.save();
@@ -94,7 +97,7 @@ const createOrder = async (req, res) => {
             orderDate: newOrder.orderDate,
             paymentMethod: newOrder.paymentMethod,
             totalAmount: newOrder.totalAmount,
-            addressInfo: newOrder.addressInfo
+            addressInfo: newOrder.addressInfo,
           });
         }
       } catch (emailError) {
@@ -106,7 +109,7 @@ const createOrder = async (req, res) => {
       try {
         const adminEmail = process.env.ADMIN_EMAIL || "admin@example.com";
         const user = await User.findById(newOrder.userId);
-        
+
         await sendNewOrderNotificationEmail(adminEmail, {
           orderId: newOrder._id,
           userName: user ? user.name : "Customer",
@@ -114,7 +117,7 @@ const createOrder = async (req, res) => {
           orderDate: newOrder.orderDate,
           paymentMethod: newOrder.paymentMethod,
           totalAmount: newOrder.totalAmount,
-          addressInfo: newOrder.addressInfo
+          addressInfo: newOrder.addressInfo,
         });
       } catch (emailError) {
         console.error("Failed to send admin notification email:", emailError);
@@ -218,6 +221,7 @@ const capturePayment = async (req, res) => {
       paymentId: razorpay_payment_id,
       orderDate: new Date(),
       orderUpdateDate: new Date(),
+      deliveryDate: null, // ✅ Initialize delivery date as null
     });
 
     await newOrder.save();
@@ -290,7 +294,7 @@ const capturePayment = async (req, res) => {
           orderDate: newOrder.orderDate,
           paymentMethod: newOrder.paymentMethod,
           totalAmount: newOrder.totalAmount,
-          addressInfo: newOrder.addressInfo
+          addressInfo: newOrder.addressInfo,
         });
       }
     } catch (emailError) {
@@ -302,7 +306,7 @@ const capturePayment = async (req, res) => {
     try {
       const adminEmail = process.env.ADMIN_EMAIL || "admin@example.com";
       const user = await User.findById(newOrder.userId);
-      
+
       await sendNewOrderNotificationEmail(adminEmail, {
         orderId: newOrder._id,
         userName: user ? user.name : "Customer",
@@ -310,7 +314,7 @@ const capturePayment = async (req, res) => {
         orderDate: newOrder.orderDate,
         paymentMethod: newOrder.paymentMethod,
         totalAmount: newOrder.totalAmount,
-        addressInfo: newOrder.addressInfo
+        addressInfo: newOrder.addressInfo,
       });
     } catch (emailError) {
       console.error("Failed to send admin notification email:", emailError);
@@ -379,9 +383,192 @@ const getOrderDetails = async (req, res) => {
   }
 };
 
+// ✅ Request Order Cancellation
+const requestCancellation = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { reason } = req.body;
+
+    if (!reason) {
+      return res.status(400).json({
+        success: false,
+        message: "Cancellation reason is required",
+      });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    // Check if order can be cancelled (only confirmed/processing orders)
+    if (!["confirmed", "processing"].includes(order.orderStatus)) {
+      return res.status(400).json({
+        success: false,
+        message: "Order cannot be cancelled at this stage",
+      });
+    }
+
+    // Check if cancellation is already requested
+    if (order.cancellation && order.cancellation.requested) {
+      return res.status(400).json({
+        success: false,
+        message: "Cancellation already requested for this order",
+      });
+    }
+
+    // Update order with cancellation request
+    order.cancellation = {
+      requested: true,
+      requestedAt: new Date(),
+      reason: reason,
+      status: "pending",
+    };
+    order.orderUpdateDate = new Date();
+
+    await order.save();
+
+    // Send cancellation request email to admin
+    try {
+      const adminEmail = process.env.ADMIN_EMAIL || "admin@example.com";
+      const user = await User.findById(order.userId);
+
+      await sendCancellationRequestEmail(adminEmail, {
+        orderId: order._id,
+        userName: user ? user.name : "Customer",
+        userEmail: user ? user.email : "N/A",
+        requestDate: order.cancellation.requestedAt,
+        reason: order.cancellation.reason,
+        orderDate: order.orderDate,
+        paymentMethod: order.paymentMethod,
+        totalAmount: order.totalAmount,
+        addressInfo: order.addressInfo,
+      });
+    } catch (emailError) {
+      console.error("Failed to send cancellation request email:", emailError);
+      // Don't fail the request if email fails
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Cancellation request submitted successfully",
+      data: order.cancellation,
+    });
+  } catch (e) {
+    console.error("Cancellation Request Error:", e);
+    res.status(500).json({
+      success: false,
+      message: "Error while processing cancellation request",
+      error: e.message,
+    });
+  }
+};
+
+// ✅ Request Order Return
+const requestReturn = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { reason } = req.body;
+
+    if (!reason) {
+      return res.status(400).json({
+        success: false,
+        message: "Return reason is required",
+      });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    // Check if order can be returned (only delivered orders within return period)
+    if (order.orderStatus !== "delivered") {
+      return res.status(400).json({
+        success: false,
+        message: "Only delivered orders can be returned",
+      });
+    }
+
+    // ✅ Use deliveryDate if available, otherwise use orderUpdateDate
+    const deliveryDate = order.deliveryDate || order.orderUpdateDate;
+    const returnDeadline = new Date(
+      deliveryDate.setDate(deliveryDate.getDate() + 7)
+    );
+
+    if (new Date() > returnDeadline) {
+      return res.status(400).json({
+        success: false,
+        message: "Return period has expired (7 days from delivery)",
+      });
+    }
+
+    // Check if return is already requested
+    if (order.return && order.return.requested) {
+      return res.status(400).json({
+        success: false,
+        message: "Return already requested for this order",
+      });
+    }
+
+    // Update order with return request
+    order.return = {
+      requested: true,
+      requestedAt: new Date(),
+      reason: reason,
+      status: "pending",
+    };
+    order.orderUpdateDate = new Date();
+
+    await order.save();
+
+    // Send return request email to admin
+    try {
+      const adminEmail = process.env.ADMIN_EMAIL || "admin@example.com";
+      const user = await User.findById(order.userId);
+
+      await sendReturnRequestEmail(adminEmail, {
+        orderId: order._id,
+        userName: user ? user.name : "Customer",
+        userEmail: user ? user.email : "N/A",
+        requestDate: order.return.requestedAt,
+        reason: order.return.reason,
+        orderDate: order.orderDate,
+        paymentMethod: order.paymentMethod,
+        totalAmount: order.totalAmount,
+        addressInfo: order.addressInfo,
+      });
+    } catch (emailError) {
+      console.error("Failed to send return request email:", emailError);
+      // Don't fail the request if email fails
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Return request submitted successfully",
+      data: order.return,
+    });
+  } catch (e) {
+    console.error("Return Request Error:", e);
+    res.status(500).json({
+      success: false,
+      message: "Error while processing return request",
+      error: e.message,
+    });
+  }
+};
+
 module.exports = {
   createOrder,
   capturePayment,
   getAllOrdersByUser,
   getOrderDetails,
+  requestCancellation,
+  requestReturn,
 };

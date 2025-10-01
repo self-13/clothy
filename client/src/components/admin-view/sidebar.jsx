@@ -3,6 +3,8 @@ import {
   ChartNoAxesCombined,
   LayoutDashboard,
   ShoppingBasket,
+  XCircle,
+  RefreshCw,
 } from "lucide-react";
 import { Fragment } from "react";
 import { useNavigate } from "react-router-dom";
@@ -26,6 +28,18 @@ const adminSidebarMenuItems = [
     label: "Orders",
     path: "/admin/orders",
     icon: <BadgeCheck />,
+  },
+  {
+    id: "cancellations",
+    label: "Cancellations",
+    path: "/admin/cancellations",
+    icon: <XCircle />,
+  },
+  {
+    id: "returns",
+    label: "Returns",
+    path: "/admin/returns",
+    icon: <RefreshCw />,
   },
 ];
 
@@ -61,7 +75,11 @@ function AdminSideBar({ open, setOpen }) {
           <div className="flex flex-col h-full">
             <SheetHeader className="border-b">
               <SheetTitle className="flex gap-2 mt-5 mb-5 items-center justify-center">
-                <img src="/luxeridge_favicon.png" alt="logo" className="size-24" />
+                <img
+                  src="/luxeridge_favicon.png"
+                  alt="logo"
+                  className="size-24"
+                />
                 <h1 className="text-2xl font-extrabold">Admin</h1>
               </SheetTitle>
             </SheetHeader>

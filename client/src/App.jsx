@@ -24,8 +24,12 @@ import SearchProducts from "./pages/shopping-view/search";
 import AuthVerifyOTP from "./pages/auth/verify-otp";
 import AuthForgotPassword from "./pages/auth/forgot-password";
 import AuthResetPassword from "./pages/auth/reset-password";
-import { Analytics } from "@vercel/analytics/react"
-import { SpeedInsights } from "@vercel/speed-insights/react"
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
+
+// Import the new admin pages
+import AdminCancellations from "./pages/admin-view/cancellations";
+import AdminReturns from "./pages/admin-view/returns";
 
 function App() {
   const { user, isAuthenticated, isLoading } = useSelector(
@@ -78,6 +82,9 @@ function App() {
           <Route path="products" element={<AdminProducts />} />
           <Route path="orders" element={<AdminOrders />} />
           <Route path="features" element={<AdminFeatures />} />
+          {/* Add the new cancellation and return routes */}
+          <Route path="cancellations" element={<AdminCancellations />} />
+          <Route path="returns" element={<AdminReturns />} />
         </Route>
         <Route
           path="/shop"
