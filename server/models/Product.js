@@ -14,23 +14,79 @@ const SizeStockSchema = new mongoose.Schema({
 
 const ProductSchema = new mongoose.Schema(
   {
-    image: String,
-    title: String,
+    // ✅ Multiple images - first image is main image
+    images: [
+      {
+        type: String,
+        required: true,
+      },
+    ],
+    title: {
+      type: String,
+      required: true,
+    },
     description: String,
-    category: String,
+
+    // ✅ Gender category (man, woman)
+    category: {
+      type: String,
+      enum: ["man", "woman", "unisex"],
+      required: true,
+    },
+
+    // ✅ Subcategory (t-shirt, lower, oversized, shoes, others)
+    subcategory: {
+      type: String,
+      enum: ["t-shirt", "lower", "oversized", "shoes", "others"],
+      required: true,
+    },
+
     brand: String,
-    price: Number,
+    price: {
+      type: Number,
+      required: true,
+    },
     salePrice: Number,
+
+    // ✅ Color selection
+    colors: [
+      {
+        type: String,
+        required: true,
+      },
+    ],
+
     totalStock: Number,
-    averageReview: Number,
+    averageReview: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 5,
+    },
     sizes: [SizeStockSchema], // Array of size and stock objects
     salesCount: {
       type: Number,
       default: 0,
       min: 0,
     },
+
+    // ✅ Additional fields for better filtering
+    isFeatured: {
+      type: Boolean,
+      default: false,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    tags: [String], // For additional categorization
   },
   { timestamps: true }
 );
+
+// ✅ Virtual for main image (first image in array)
+ProductSchema.virtual("mainImage").get(function () {
+  return this.images.length > 0 ? this.images[0] : null;
+});
 
 module.exports = mongoose.model("Product", ProductSchema);

@@ -12,6 +12,7 @@ const checkAdminRole = async (userId) => {
   }
 };
 
+// ✅ FIXED: Handle single image upload (matching your route)
 const handleImageUpload = async (req, res) => {
   try {
     const userId = req.headers["x-user-id"];
@@ -31,6 +32,7 @@ const handleImageUpload = async (req, res) => {
       });
     }
 
+    // ✅ FIX: Check req.file instead of req.files for single upload
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -38,6 +40,7 @@ const handleImageUpload = async (req, res) => {
       });
     }
 
+    // ✅ FIX: Upload single file (not multiple)
     const result = await imageUploadUtil(
       req.file.buffer,
       req.file.originalname
@@ -45,7 +48,7 @@ const handleImageUpload = async (req, res) => {
 
     res.json({
       success: true,
-      result,
+      result: result, // ✅ Return single result object (not array)
     });
   } catch (error) {
     console.log("Image upload error:", error);
@@ -57,10 +60,9 @@ const handleImageUpload = async (req, res) => {
   }
 };
 
-// Add a new product - FIXED
+// ✅ Updated: Add a new product with new fields
 const addProduct = async (req, res) => {
   try {
-    // FIX: Get user ID from header
     const userId = req.headers["x-user-id"];
 
     if (!userId) {
@@ -80,39 +82,73 @@ const addProduct = async (req, res) => {
     }
 
     const {
-      image,
+      images,
       title,
       description,
       category,
+      subcategory,
       brand,
       price,
       salePrice,
+      colors,
       totalStock,
       averageReview,
       sizes,
       salesCount = 0,
+      isFeatured = false,
+      isActive = true,
+      tags = [],
     } = req.body;
 
     console.log("Creating product with data:", {
       title,
       category,
+      subcategory,
       brand,
       price,
+      colors,
       sizes,
     });
 
+    // Validate required fields
+    if (!images || images.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one image is required",
+      });
+    }
+
+    if (!category || !subcategory) {
+      return res.status(400).json({
+        success: false,
+        message: "Category and subcategory are required",
+      });
+    }
+
+    if (!colors || colors.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one color is required",
+      });
+    }
+
     const newlyCreatedProduct = new Product({
-      image,
+      images: Array.isArray(images) ? images : [images],
       title,
       description,
       category,
+      subcategory,
       brand,
       price,
       salePrice,
+      colors: Array.isArray(colors) ? colors : [colors],
       totalStock,
       averageReview,
       sizes: sizes || [],
       salesCount,
+      isFeatured,
+      isActive,
+      tags: Array.isArray(tags) ? tags : [tags],
     });
 
     await newlyCreatedProduct.save();
@@ -131,10 +167,9 @@ const addProduct = async (req, res) => {
   }
 };
 
-// Fetch all products (admin version) - FIXED
+// ✅ Updated: Fetch all products with new fields
 const fetchAllProducts = async (req, res) => {
   try {
-    // FIX: Get user ID from header
     const userId = req.headers["x-user-id"];
 
     if (!userId) {
@@ -167,10 +202,9 @@ const fetchAllProducts = async (req, res) => {
   }
 };
 
-// Edit a product - FIXED
+// ✅ Updated: Edit product with new fields
 const editProduct = async (req, res) => {
   try {
-    // FIX: Get user ID from header
     const userId = req.headers["x-user-id"];
 
     if (!userId) {
@@ -191,17 +225,22 @@ const editProduct = async (req, res) => {
 
     const { id } = req.params;
     const {
-      image,
+      images,
       title,
       description,
       category,
+      subcategory,
       brand,
       price,
       salePrice,
+      colors,
       totalStock,
       averageReview,
       sizes,
       salesCount,
+      isFeatured,
+      isActive,
+      tags,
     } = req.body;
 
     let findProduct = await Product.findById(id);
@@ -214,16 +253,23 @@ const editProduct = async (req, res) => {
     findProduct.title = title || findProduct.title;
     findProduct.description = description || findProduct.description;
     findProduct.category = category || findProduct.category;
+    findProduct.subcategory = subcategory || findProduct.subcategory;
     findProduct.brand = brand || findProduct.brand;
     findProduct.price = price === "" ? 0 : price || findProduct.price;
     findProduct.salePrice =
       salePrice === "" ? 0 : salePrice || findProduct.salePrice;
+    findProduct.colors = colors || findProduct.colors;
     findProduct.totalStock = totalStock || findProduct.totalStock;
-    findProduct.image = image || findProduct.image;
+    findProduct.images = images || findProduct.images;
     findProduct.averageReview = averageReview || findProduct.averageReview;
     findProduct.sizes = sizes || findProduct.sizes;
     findProduct.salesCount =
       salesCount !== undefined ? salesCount : findProduct.salesCount;
+    findProduct.isFeatured =
+      isFeatured !== undefined ? isFeatured : findProduct.isFeatured;
+    findProduct.isActive =
+      isActive !== undefined ? isActive : findProduct.isActive;
+    findProduct.tags = tags || findProduct.tags;
 
     await findProduct.save();
     res.status(200).json({
@@ -240,10 +286,53 @@ const editProduct = async (req, res) => {
   }
 };
 
-// Delete a product - FIXED
+// ✅ Updated: Get product categories and subcategories
+const getProductCategories = async (req, res) => {
+  try {
+    const userId = req.headers["x-user-id"];
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
+    // Check admin role
+    const isAdmin = await checkAdminRole(userId);
+    if (!isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Admin privileges required.",
+      });
+    }
+
+    const categories = await Product.distinct("category");
+    const subcategories = await Product.distinct("subcategory");
+    const brands = await Product.distinct("brand");
+    const colors = await Product.distinct("colors");
+
+    res.status(200).json({
+      success: true,
+      data: {
+        categories,
+        subcategories,
+        brands,
+        colors: colors.flat(), // Flatten nested color arrays
+      },
+    });
+  } catch (e) {
+    console.log("Error in getProductCategories:", e);
+    res.status(500).json({
+      success: false,
+      message: "Error occurred while fetching categories",
+    });
+  }
+};
+
+// ✅ Updated: Delete a product
 const deleteProduct = async (req, res) => {
   try {
-    // FIX: Get user ID from header
     const userId = req.headers["x-user-id"];
 
     if (!userId) {
@@ -284,10 +373,9 @@ const deleteProduct = async (req, res) => {
   }
 };
 
-// Add size and stock to a product - FIXED
+// ✅ Updated: Add size and stock to a product
 const addSizeToProduct = async (req, res) => {
   try {
-    // FIX: Get user ID from header
     const userId = req.headers["x-user-id"];
 
     if (!userId) {
@@ -348,10 +436,9 @@ const addSizeToProduct = async (req, res) => {
   }
 };
 
-// Update stock for a specific size - FIXED
+// ✅ Updated: Update stock for a specific size
 const updateSizeStock = async (req, res) => {
   try {
-    // FIX: Get user ID from header
     const userId = req.headers["x-user-id"];
 
     if (!userId) {
@@ -412,10 +499,9 @@ const updateSizeStock = async (req, res) => {
   }
 };
 
-// Remove a size from a product - FIXED
+// ✅ Updated: Remove a size from a product
 const removeSizeFromProduct = async (req, res) => {
   try {
-    // FIX: Get user ID from header
     const userId = req.headers["x-user-id"];
 
     if (!userId) {
@@ -467,10 +553,9 @@ const removeSizeFromProduct = async (req, res) => {
   }
 };
 
-// Increment sales count for a product - FIXED
+// ✅ Updated: Increment sales count for a product
 const incrementSalesCount = async (req, res) => {
   try {
-    // FIX: Get user ID from header
     const userId = req.headers["x-user-id"];
 
     if (!userId) {
@@ -526,4 +611,5 @@ module.exports = {
   updateSizeStock,
   removeSizeFromProduct,
   incrementSalesCount,
+  getProductCategories, // ✅ New function
 };

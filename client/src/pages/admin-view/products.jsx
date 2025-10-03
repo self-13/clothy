@@ -2,6 +2,7 @@ import ProductImageUpload from "@/components/admin-view/image-upload";
 import AdminProductTile from "@/components/admin-view/product-tile";
 import CommonForm from "@/components/common/form";
 import SizeStockManager from "@/components/admin-view/size-stock-manager";
+import ColorManager from "@/components/admin-view/color-manager";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -20,29 +21,33 @@ import {
 } from "@/store/admin/products-slice";
 import { Fragment, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { X } from "lucide-react";
 
 const initialFormData = {
-  image: null,
+  images: [],
   title: "",
   description: "",
   category: "",
+  subcategory: "",
   brand: "",
   price: "",
   salePrice: "",
+  colors: [],
   totalStock: "",
   averageReview: 0,
   sizes: [],
+  isFeatured: false,
+  isActive: true,
+  tags: [],
 };
 
 function AdminProducts() {
   const [openCreateProductsDialog, setOpenCreateProductsDialog] =
     useState(false);
   const [formData, setFormData] = useState(initialFormData);
-  const [imageFile, setImageFile] = useState(null);
-  const [uploadedImageUrl, setUploadedImageUrl] = useState("");
-  const [imageLoadingState, setImageLoadingState] = useState(false);
   const [currentEditedId, setCurrentEditedId] = useState(null);
   const [activeTab, setActiveTab] = useState("basic");
+  const [imageUploadStates, setImageUploadStates] = useState({});
 
   const { productList, isLoading } = useSelector(
     (state) => state.adminProducts
@@ -50,6 +55,85 @@ function AdminProducts() {
   const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const { toast } = useToast();
+
+  // Function to handle image upload from individual upload components
+  const handleImageUploaded = (imageUrl, uploadKey) => {
+    if (imageUrl && !formData.images.includes(imageUrl)) {
+      setFormData((prev) => ({
+        ...prev,
+        images: [...prev.images, imageUrl],
+      }));
+      // Clear the upload state for this specific uploader
+      setImageUploadStates((prev) => ({
+        ...prev,
+        [uploadKey]: {
+          imageFile: null,
+          uploadedImageUrl: null,
+          imageLoadingState: false,
+        },
+      }));
+    }
+  };
+
+  // Function to remove image from the images array
+  const handleRemoveImage = (imageUrl) => {
+    setFormData((prev) => ({
+      ...prev,
+      images: prev.images.filter((img) => img !== imageUrl),
+    }));
+  };
+
+  // Function to set main image (move to first position)
+  const handleSetMainImage = (imageUrl) => {
+    const currentImages = [...formData.images];
+    const imageIndex = currentImages.indexOf(imageUrl);
+
+    if (imageIndex > 0) {
+      const [movedImage] = currentImages.splice(imageIndex, 1);
+      currentImages.unshift(movedImage);
+      setFormData((prev) => ({
+        ...prev,
+        images: currentImages,
+      }));
+    }
+  };
+
+  // Function to update individual upload component state
+  const updateImageUploadState = (uploadKey, updates) => {
+    setImageUploadStates((prev) => ({
+      ...prev,
+      [uploadKey]: { ...prev[uploadKey], ...updates },
+    }));
+  };
+
+  // Function to add a new image upload slot
+  const addImageUploadSlot = () => {
+    const newKey = `upload-${Date.now()}`;
+    setImageUploadStates((prev) => ({
+      ...prev,
+      [newKey]: {
+        imageFile: null,
+        uploadedImageUrl: null,
+        imageLoadingState: false,
+      },
+    }));
+  };
+
+  // Initialize with one upload slot
+  useEffect(() => {
+    if (
+      openCreateProductsDialog &&
+      Object.keys(imageUploadStates).length === 0
+    ) {
+      setImageUploadStates({
+        "upload-1": {
+          imageFile: null,
+          uploadedImageUrl: null,
+          imageLoadingState: false,
+        },
+      });
+    }
+  }, [openCreateProductsDialog]);
 
   function onSubmit(event) {
     event.preventDefault();
@@ -62,10 +146,23 @@ function AdminProducts() {
 
     const productData = {
       ...formData,
-      image: uploadedImageUrl,
+      price: parseFloat(formData.price) || 0,
+      salePrice: formData.salePrice
+        ? parseFloat(formData.salePrice)
+        : undefined,
       totalStock:
-        totalStockFromSizes > 0 ? totalStockFromSizes : formData.totalStock,
+        totalStockFromSizes > 0
+          ? totalStockFromSizes
+          : parseInt(formData.totalStock) || 0,
+      averageReview: parseFloat(formData.averageReview) || 0,
       sizes,
+      colors: formData.colors || [],
+      tags: Array.isArray(formData.tags)
+        ? formData.tags
+        : formData.tags
+            .split(",")
+            .map((tag) => tag.trim())
+            .filter((tag) => tag),
     };
 
     console.log("Submitting productData:", productData);
@@ -80,9 +177,7 @@ function AdminProducts() {
         .then((data) => {
           if (data?.payload?.success) {
             dispatch(fetchAllProducts());
-            setFormData(initialFormData);
-            setOpenCreateProductsDialog(false);
-            setCurrentEditedId(null);
+            handleResetForm();
             toast({
               title: "Product updated successfully",
             });
@@ -108,8 +203,7 @@ function AdminProducts() {
           if (data?.payload?.success) {
             dispatch(fetchAllProducts());
             setOpenCreateProductsDialog(false);
-            setImageFile(null);
-            setFormData(initialFormData);
+            handleResetForm();
             toast({
               title: "Product added successfully",
             });
@@ -132,7 +226,6 @@ function AdminProducts() {
     }
   }
 
-  // FIXED: Delete product function
   function handleDelete(getCurrentProductId) {
     console.log("Deleting product:", getCurrentProductId);
 
@@ -164,15 +257,15 @@ function AdminProducts() {
   }
 
   function isFormValid() {
-    const basicFieldsValid = Object.keys(formData)
-      .filter(
-        (currentKey) =>
-          currentKey !== "averageReview" &&
-          currentKey !== "sizes" &&
-          currentKey !== "totalStock"
-      )
-      .map((key) => formData[key] !== "")
-      .every((item) => item);
+    const basicFieldsValid =
+      formData.title.trim() !== "" &&
+      formData.description.trim() !== "" &&
+      formData.category !== "" &&
+      formData.subcategory !== "" &&
+      formData.brand.trim() !== "" &&
+      formData.price !== "" &&
+      formData.images.length > 0 &&
+      formData.colors.length > 0;
 
     const sizesValid =
       formData.sizes.length === 0 ||
@@ -189,18 +282,25 @@ function AdminProducts() {
       );
       if (productToEdit) {
         setFormData({
-          image: productToEdit.image,
+          images: productToEdit.images || [],
           title: productToEdit.title || "",
           description: productToEdit.description || "",
           category: productToEdit.category || "",
+          subcategory: productToEdit.subcategory || "",
           brand: productToEdit.brand || "",
           price: productToEdit.price || "",
           salePrice: productToEdit.salePrice || "",
+          colors: productToEdit.colors || [],
           totalStock: productToEdit.totalStock || "",
           averageReview: productToEdit.averageReview || 0,
           sizes: productToEdit.sizes || [],
+          isFeatured: productToEdit.isFeatured || false,
+          isActive:
+            productToEdit.isActive !== undefined
+              ? productToEdit.isActive
+              : true,
+          tags: productToEdit.tags || [],
         });
-        setUploadedImageUrl(productToEdit.image || "");
       }
     }
   }, [currentEditedId, openCreateProductsDialog, productList]);
@@ -209,9 +309,20 @@ function AdminProducts() {
     dispatch(fetchAllProducts());
   }, [dispatch]);
 
+  const handleResetForm = () => {
+    setFormData(initialFormData);
+    setCurrentEditedId(null);
+    setActiveTab("basic");
+    setImageUploadStates({});
+  };
+
   return (
     <Fragment>
-      <div className="mb-5 w-full flex justify-end ">
+      <div className="mb-5 w-full flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold">Products Management</h1>
+          <p className="text-gray-600">Manage your product catalog</p>
+        </div>
         <Button
           onClick={() => setOpenCreateProductsDialog(true)}
           disabled={isLoading}
@@ -223,7 +334,7 @@ function AdminProducts() {
       {isLoading ? (
         <div className="text-center py-8">Loading products...</div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {productList && productList.length > 0 ? (
             productList.map((productItem) => (
               <AdminProductTile
@@ -245,18 +356,16 @@ function AdminProducts() {
 
       <Sheet
         open={openCreateProductsDialog}
-        onOpenChange={() => {
-          setOpenCreateProductsDialog(false);
-          setCurrentEditedId(null);
-          setFormData(initialFormData);
-          setUploadedImageUrl("");
-          setImageFile(null);
-          setActiveTab("basic");
+        onOpenChange={(open) => {
+          setOpenCreateProductsDialog(open);
+          if (!open) {
+            handleResetForm();
+          }
         }}
       >
         <SheetContent
           side="right"
-          className="overflow-auto w-full sm:max-w-2xl"
+          className="overflow-auto w-full sm:max-w-3xl"
         >
           <SheetHeader>
             <SheetTitle>
@@ -269,60 +378,272 @@ function AdminProducts() {
             onValueChange={setActiveTab}
             className="w-full mt-6"
           >
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="basic">Basic Info</TabsTrigger>
+              <TabsTrigger value="media">Media & Colors</TabsTrigger>
               <TabsTrigger value="sizes">Sizes & Stock</TabsTrigger>
             </TabsList>
 
             <TabsContent value="basic">
-              <ProductImageUpload
-                imageFile={imageFile}
-                setImageFile={setImageFile}
-                uploadedImageUrl={uploadedImageUrl}
-                setUploadedImageUrl={setUploadedImageUrl}
-                setImageLoadingState={setImageLoadingState}
-                imageLoadingState={imageLoadingState}
-                isEditMode={currentEditedId !== null}
-              />
-              <div className="py-6">
+              <div className="space-y-6">
                 <CommonForm
                   onSubmit={(e) => e.preventDefault()}
                   formData={formData}
                   setFormData={setFormData}
-                  buttonText="Next: Sizes & Stock"
+                  buttonText="Next: Media & Colors"
                   formControls={addProductFormElements}
-                  isBtnDisabled={!isFormValid()}
-                  onButtonClick={() => setActiveTab("sizes")}
+                  isBtnDisabled={
+                    !formData.title ||
+                    !formData.category ||
+                    !formData.subcategory ||
+                    !formData.brand ||
+                    !formData.price
+                  }
+                  onButtonClick={() => setActiveTab("media")}
                 />
               </div>
             </TabsContent>
 
+            <TabsContent value="media">
+              <div className="space-y-6">
+                {/* Product Images Section */}
+                <div>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-medium">Product Images</h3>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addImageUploadSlot}
+                    >
+                      + Add Another Image
+                    </Button>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Upload multiple images for your product. First image will be
+                    used as the main product image.
+                  </p>
+
+                  {/* Multiple Image Upload Components */}
+                  <div className="space-y-4">
+                    {Object.keys(imageUploadStates).map((uploadKey) => (
+                      <ProductImageUpload
+                        key={uploadKey}
+                        imageFile={imageUploadStates[uploadKey]?.imageFile}
+                        setImageFile={(file) =>
+                          updateImageUploadState(uploadKey, { imageFile: file })
+                        }
+                        uploadedImageUrl={
+                          imageUploadStates[uploadKey]?.uploadedImageUrl
+                        }
+                        setUploadedImageUrl={(url) => {
+                          updateImageUploadState(uploadKey, {
+                            uploadedImageUrl: url,
+                          });
+                          if (url) {
+                            handleImageUploaded(url, uploadKey);
+                          }
+                        }}
+                        imageLoadingState={
+                          imageUploadStates[uploadKey]?.imageLoadingState
+                        }
+                        setImageLoadingState={(loading) =>
+                          updateImageUploadState(uploadKey, {
+                            imageLoadingState: loading,
+                          })
+                        }
+                        isEditMode={currentEditedId !== null}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Uploaded Images Preview */}
+                  {formData.images.length > 0 && (
+                    <div className="mt-6">
+                      <h4 className="text-sm font-medium mb-3">
+                        Uploaded Images ({formData.images.length})
+                        <span className="text-xs text-green-600 ml-2">
+                          ✓ {formData.images.length} image(s) ready
+                        </span>
+                      </h4>
+                      <div className="grid grid-cols-3 gap-3">
+                        {formData.images.map((imageUrl, index) => (
+                          <div key={index} className="relative group">
+                            <img
+                              src={imageUrl}
+                              alt={`Product ${index + 1}`}
+                              className="w-full h-24 object-cover rounded border"
+                            />
+                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center gap-1">
+                              {index === 0 && (
+                                <span className="absolute top-1 left-1 bg-green-500 text-white text-xs px-1 rounded">
+                                  Main
+                                </span>
+                              )}
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => handleSetMainImage(imageUrl)}
+                                className="opacity-0 group-hover:opacity-100 h-6 px-2 text-xs"
+                                disabled={index === 0}
+                              >
+                                Set Main
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleRemoveImage(imageUrl)}
+                                className="opacity-0 group-hover:opacity-100 h-6 w-6 p-0"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {formData.images.length === 0 && (
+                    <div className="text-center py-8 text-gray-500 border rounded-lg">
+                      <p className="text-sm">
+                        No images uploaded yet. Use the uploaders above to add
+                        images.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Color Manager */}
+                <div>
+                  <h3 className="text-lg font-medium mb-4">Product Colors</h3>
+                  <ColorManager
+                    colors={formData.colors}
+                    onColorsChange={(newColors) =>
+                      setFormData((prev) => ({ ...prev, colors: newColors }))
+                    }
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setActiveTab("basic")}
+                    className="flex-1"
+                  >
+                    Back to Basic Info
+                  </Button>
+                  <Button
+                    onClick={() => setActiveTab("sizes")}
+                    disabled={
+                      formData.images.length === 0 ||
+                      formData.colors.length === 0
+                    }
+                    className="flex-1"
+                  >
+                    Next: Sizes & Stock
+                  </Button>
+                </div>
+              </div>
+            </TabsContent>
+
             <TabsContent value="sizes">
-              <SizeStockManager
-                sizes={formData.sizes}
-                onSizesChange={(newSizes) =>
-                  setFormData((prev) => ({ ...prev, sizes: newSizes }))
-                }
-              />
-              <div className="flex gap-2 mt-6">
-                <Button
-                  variant="outline"
-                  onClick={() => setActiveTab("basic")}
-                  className="flex-1"
-                >
-                  Back to Basic Info
-                </Button>
-                <Button
-                  onClick={onSubmit}
-                  disabled={!isFormValid() || isLoading}
-                  className="flex-1"
-                >
-                  {isLoading
-                    ? "Processing..."
-                    : currentEditedId !== null
-                    ? "Update Product"
-                    : "Add Product"}
-                </Button>
+              <div className="space-y-6">
+                <SizeStockManager
+                  sizes={formData.sizes}
+                  onSizesChange={(newSizes) =>
+                    setFormData((prev) => ({ ...prev, sizes: newSizes }))
+                  }
+                />
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Additional Settings</h3>
+
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="isFeatured"
+                      checked={formData.isFeatured}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          isFeatured: e.target.checked,
+                        }))
+                      }
+                      className="rounded border-gray-300"
+                    />
+                    <label htmlFor="isFeatured" className="text-sm font-medium">
+                      Feature this product
+                    </label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="isActive"
+                      checked={formData.isActive}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          isActive: e.target.checked,
+                        }))
+                      }
+                      className="rounded border-gray-300"
+                    />
+                    <label htmlFor="isActive" className="text-sm font-medium">
+                      Product is active
+                    </label>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="tags"
+                      className="text-sm font-medium block mb-2"
+                    >
+                      Tags (comma separated)
+                    </label>
+                    <input
+                      id="tags"
+                      type="text"
+                      placeholder="e.g., summer, casual, new-arrival"
+                      value={
+                        Array.isArray(formData.tags)
+                          ? formData.tags.join(", ")
+                          : formData.tags
+                      }
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          tags: e.target.value,
+                        }))
+                      }
+                      className="w-full p-2 border rounded-md"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setActiveTab("media")}
+                    className="flex-1"
+                  >
+                    Back to Media & Colors
+                  </Button>
+                  <Button
+                    onClick={onSubmit}
+                    disabled={!isFormValid() || isLoading}
+                    className="flex-1"
+                  >
+                    {isLoading
+                      ? "Processing..."
+                      : currentEditedId !== null
+                      ? "Update Product"
+                      : "Add Product"}
+                  </Button>
+                </div>
               </div>
             </TabsContent>
           </Tabs>
