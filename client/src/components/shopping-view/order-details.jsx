@@ -47,6 +47,8 @@ function ShoppingOrderDetailsView({
   };
 
   const getCancellationStatus = (order) => {
+    // Commented out until your API supports cancellation status
+    /*
     if (!order?.cancellation?.requested) return null;
 
     switch (order.cancellation.status) {
@@ -59,9 +61,13 @@ function ShoppingOrderDetailsView({
       default:
         return null;
     }
+    */
+    return null;
   };
 
   const getReturnStatus = (order) => {
+    // Commented out until your API supports return status
+    /*
     if (!order?.return?.requested) return null;
 
     switch (order.return.status) {
@@ -74,6 +80,8 @@ function ShoppingOrderDetailsView({
       default:
         return null;
     }
+    */
+    return null;
   };
 
   const cancellationStatus = getCancellationStatus(orderDetails);
@@ -143,7 +151,7 @@ function ShoppingOrderDetailsView({
         <Separator />
 
         {/* Action Buttons */}
-        {(showCancelButton || showReturnButton) && (
+        {/* {(showCancelButton || showReturnButton) && (
           <>
             <div className="flex gap-2">
               {showCancelButton && (
@@ -167,13 +175,13 @@ function ShoppingOrderDetailsView({
             </div>
             <Separator />
           </>
-        )}
+        )} */}
 
-        {/* Order Items */}
+        {/* Order Items - FIXED: Changed cartItems to items */}
         <div className="grid gap-4">
           <div className="font-medium">Products</div>
           <ul className="grid gap-4">
-            {orderDetails.cartItems?.map((item, index) => (
+            {orderDetails.items?.map((item, index) => (
               <li
                 key={index}
                 className="flex items-center justify-between gap-4 border-b pb-3"
@@ -191,15 +199,67 @@ function ShoppingOrderDetailsView({
                         Size: {item.selectedSize}
                       </p>
                     )}
+                    {item.selectedColor && (
+                      <p className="text-sm text-muted-foreground">
+                        Color: {item.selectedColor}
+                      </p>
+                    )}
                     <p className="text-sm text-muted-foreground">
                       Qty: {item.quantity}
                     </p>
+                    <p className="text-sm text-muted-foreground">
+                      Price: ₹{item.price}
+                    </p>
                   </div>
                 </div>
-                <div className="text-right font-medium">₹{item.price}</div>
+                <div className="text-right font-medium">
+                  ₹{item.price * item.quantity}
+                </div>
               </li>
             ))}
           </ul>
+        </div>
+
+        <Separator />
+
+        {/* Price Breakdown */}
+        <div className="grid gap-2">
+          <div className="font-medium">Price Details</div>
+          <div className="grid gap-1 text-sm">
+            <div className="flex justify-between">
+              <span>Items Total:</span>
+              <span>
+                ₹
+                {orderDetails.totalAmount -
+                  (orderDetails.shippingFee || 0) -
+                  (orderDetails.cashHandlingFee || 0) +
+                  (orderDetails.discount || 0)}
+              </span>
+            </div>
+            {orderDetails.shippingFee > 0 && (
+              <div className="flex justify-between">
+                <span>Shipping Fee:</span>
+                <span>₹{orderDetails.shippingFee}</span>
+              </div>
+            )}
+            {orderDetails.cashHandlingFee > 0 && (
+              <div className="flex justify-between">
+                <span>Cash Handling Fee:</span>
+                <span>₹{orderDetails.cashHandlingFee}</span>
+              </div>
+            )}
+            {orderDetails.discount > 0 && (
+              <div className="flex justify-between text-green-600">
+                <span>Discount:</span>
+                <span>-₹{orderDetails.discount}</span>
+              </div>
+            )}
+            <Separator />
+            <div className="flex justify-between font-medium">
+              <span>Total Amount:</span>
+              <span>₹{orderDetails.totalAmount}</span>
+            </div>
+          </div>
         </div>
 
         <Separator />
@@ -208,11 +268,14 @@ function ShoppingOrderDetailsView({
         <div className="grid gap-2">
           <div className="font-medium">Shipping Info</div>
           <div className="grid gap-0.5 text-muted-foreground">
-            <span>{user?.userName}</span>
+            <span>{user?.userName || user?.name || "Customer"}</span>
             <span>{orderDetails.addressInfo?.address}</span>
             <span>{orderDetails.addressInfo?.city}</span>
-            <span>{orderDetails.addressInfo?.pincode}</span>
-            <span>{orderDetails.addressInfo?.phone}</span>
+            <span>Pincode: {orderDetails.addressInfo?.pincode}</span>
+            <span>Phone: {orderDetails.addressInfo?.phone}</span>
+            {orderDetails.addressInfo?.type && (
+              <span>Address Type: {orderDetails.addressInfo?.type}</span>
+            )}
             {orderDetails.addressInfo?.notes && (
               <span>Notes: {orderDetails.addressInfo?.notes}</span>
             )}

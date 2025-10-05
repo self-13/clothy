@@ -1,4 +1,3 @@
-import { Avatar, AvatarFallback } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent } from "../ui/dialog";
 import { Separator } from "../ui/separator";
@@ -6,11 +5,9 @@ import { Input } from "../ui/input";
 import { useDispatch, useSelector } from "react-redux";
 import { addToCart, fetchCartItems } from "@/store/shop/cart-slice";
 import { useToast } from "../ui/use-toast";
-import { setProductDetails } from "@/store/shop/products-slice";
+import { resetProductDetails } from "@/store/shop/products-slice";
 import { Label } from "../ui/label";
-import StarRatingComponent from "../common/star-rating";
 import { useEffect, useState } from "react";
-import { addReview, getReviews } from "@/store/shop/review-slice";
 import {
   Select,
   SelectContent,
@@ -18,30 +15,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { Heart, HeartOff } from "lucide-react";
-import {
-  addToWishlist,
-  removeFromWishlist,
-  checkProductInWishlist,
-} from "@/store/shop/wishlist-slice";
+import { ShoppingCart, Star, Truck, Shield, RotateCcw, X } from "lucide-react";
+import { Badge } from "../ui/badge";
 
 function ProductDetailsDialog({ open, setOpen, productDetails }) {
-  const [reviewMsg, setReviewMsg] = useState("");
-  const [rating, setRating] = useState(0);
   const [selectedSize, setSelectedSize] = useState("");
+  const [selectedColor, setSelectedColor] = useState("");
   const [quantity, setQuantity] = useState(1);
-  const [isInWishlist, setIsInWishlist] = useState(false);
+  const [activeImage, setActiveImage] = useState(0);
+
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const { cartItems } = useSelector((state) => state.shopCart);
-  const { reviews } = useSelector((state) => state.shopReview);
-  const { wishlistItems } = useSelector((state) => state.wishlist);
+  const { isLoading, error } = useSelector((state) => state.shopProducts);
 
   const { toast } = useToast();
 
-  function handleRatingChange(getRating) {
-    setRating(getRating);
-  }
+  // Debug logging
+  useEffect(() => {
+    if (productDetails) {
+      console.log("🔍 ProductDetailsDialog - productDetails:", productDetails);
+      console.log("🖼️ Product images:", productDetails.images);
+      console.log("📏 Product sizes:", productDetails.sizes);
+      console.log("🎨 Product colors:", productDetails.colors);
+    }
+  }, [productDetails]);
 
   function handleAddToCart() {
     if (!selectedSize) {
@@ -58,28 +56,12 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
     );
     if (!sizeStock || sizeStock.stock < quantity) {
       toast({
-        title: `Not enough stock for size ${selectedSize}`,
+        title: `Only ${
+          sizeStock?.stock || 0
+        } items available for size ${selectedSize}`,
         variant: "destructive",
       });
       return;
-    }
-
-    // Check if the same product with same size already exists in cart
-    const existingCartItem = cartItems.items?.find(
-      (item) =>
-        item.productId === productDetails?._id &&
-        item.selectedSize === selectedSize
-    );
-
-    if (existingCartItem) {
-      const newQuantity = existingCartItem.quantity + quantity;
-      if (sizeStock.stock < newQuantity) {
-        toast({
-          title: `Only ${sizeStock.stock} items available for size ${selectedSize}`,
-          variant: "destructive",
-        });
-        return;
-      }
     }
 
     dispatch(
@@ -88,15 +70,16 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
         productId: productDetails?._id,
         quantity: quantity,
         selectedSize: selectedSize,
+        selectedColor: selectedColor,
       })
     ).then((data) => {
       if (data?.payload?.success) {
         dispatch(fetchCartItems(user?.id));
         toast({
-          title: "Product added to cart successfully",
+          title: "Product added to cart successfully! 🎉",
+          description: `${productDetails?.title} has been added to your cart.`,
         });
         setQuantity(1);
-        setSelectedSize("");
       } else if (data?.payload?.message) {
         toast({
           title: data.payload.message,
@@ -106,176 +89,212 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
     });
   }
 
-  function handleToggleWishlist() {
-    if (!user) {
-      toast({
-        title: "Please login to add to wishlist",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (isInWishlist) {
-      dispatch(
-        removeFromWishlist({
-          userId: user?.id,
-          productId: productDetails?._id,
-        })
-      ).then((data) => {
-        if (data?.payload?.success) {
-          setIsInWishlist(false);
-          toast({
-            title: "Removed from wishlist",
-          });
-        }
-      });
-    } else {
-      dispatch(
-        addToWishlist({
-          userId: user?.id,
-          productId: productDetails?._id,
-        })
-      ).then((data) => {
-        if (data?.payload?.success) {
-          setIsInWishlist(true);
-          toast({
-            title: "Added to wishlist",
-          });
-        } else if (data?.payload?.message) {
-          toast({
-            title: data.payload.message,
-            variant: "destructive",
-          });
-        }
-      });
-    }
-  }
-
   function handleDialogClose() {
     setOpen(false);
-    dispatch(setProductDetails());
-    setRating(0);
-    setReviewMsg("");
-    setSelectedSize("");
-    setQuantity(1);
-    setIsInWishlist(false);
+    setTimeout(() => {
+      dispatch(resetProductDetails());
+      setSelectedSize("");
+      setSelectedColor("");
+      setQuantity(1);
+      setActiveImage(0);
+    }, 300);
   }
 
-  function handleAddReview() {
-    dispatch(
-      addReview({
-        productId: productDetails?._id,
-        userId: user?.id,
-        userName: user?.userName,
-        reviewMessage: reviewMsg,
-        reviewValue: rating,
-      })
-    ).then((data) => {
-      if (data.payload.success) {
-        setRating(0);
-        setReviewMsg("");
-        dispatch(getReviews(productDetails?._id));
-        toast({
-          title: "Review added successfully!",
-        });
-      }
-    });
+  // If no product details, show loading or error
+  if (!productDetails) {
+    return (
+      <Dialog open={open} onOpenChange={handleDialogClose}>
+        <DialogContent className="max-w-2xl">
+          <div className="flex flex-col items-center justify-center py-12">
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                <p className="text-gray-600">Loading product details...</p>
+              </>
+            ) : error ? (
+              <>
+                <X className="h-12 w-12 text-red-500 mb-4" />
+                <p className="text-red-600 mb-4">
+                  Failed to load product details
+                </p>
+                <Button onClick={handleDialogClose}>Close</Button>
+              </>
+            ) : (
+              <p className="text-gray-600">No product data available</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
   }
-
-  useEffect(() => {
-    if (productDetails !== null && user) {
-      dispatch(getReviews(productDetails?._id));
-
-      // Check if product is in wishlist
-      dispatch(
-        checkProductInWishlist({
-          userId: user.id,
-          productId: productDetails?._id,
-        })
-      ).then((data) => {
-        setIsInWishlist(data.payload?.data?.isInWishlist || false);
-      });
-    }
-  }, [productDetails, dispatch, user]);
-
-  const averageReview =
-    reviews && reviews.length > 0
-      ? reviews.reduce((sum, reviewItem) => sum + reviewItem.reviewValue, 0) /
-        reviews.length
-      : 0;
 
   // Get available sizes with stock
   const availableSizes =
     productDetails?.sizes?.filter((size) => size.stock > 0) || [];
 
+  // Get available colors
+  const availableColors = productDetails?.colors || [];
+
+  // Check if product is on sale
+  const hasSale =
+    productDetails?.salePrice > 0 &&
+    productDetails?.salePrice < productDetails?.price;
+  const discountPercentage = hasSale
+    ? Math.round(
+        ((productDetails.price - productDetails.salePrice) /
+          productDetails.price) *
+          100
+      )
+    : 0;
+
+  // Product images
+  const productImages = productDetails?.images || [];
+
   return (
     <Dialog open={open} onOpenChange={handleDialogClose}>
-      <DialogContent className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-10 p-4 sm:p-8 max-w-[95vw] sm:max-w-[90vw] lg:max-w-[70vw] overflow-y-auto max-h-[90vh]">
-        {/* Left Side - Product Image with Wishlist Button */}
-        <div className="w-full flex justify-center items-center relative">
-          <img
-            src={productDetails?.image}
-            alt={productDetails?.title}
-            className="w-full max-w-[500px] h-auto rounded-lg object-cover"
-          />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm rounded-full p-2 hover:bg-background"
-            onClick={handleToggleWishlist}
-            disabled={!user}
-          >
-            {isInWishlist ? (
-              <HeartOff className="h-5 w-5 text-red-500 fill-red-500" />
+      <DialogContent className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 p-4 sm:p-6 max-w-[95vw] sm:max-w-[90vw] lg:max-w-[80vw] xl:max-w-[70vw] overflow-y-auto max-h-[90vh]">
+        {/* Close Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute right-4 top-4 z-50 h-8 w-8 rounded-full bg-white/90 backdrop-blur-sm"
+          onClick={handleDialogClose}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+
+        {/* Left Side - Product Images */}
+        <div className="space-y-4">
+          {/* Main Image */}
+          <div className="relative aspect-square overflow-hidden rounded-lg border bg-gray-50">
+            {productImages.length > 0 ? (
+              <img
+                src={productImages[activeImage]}
+                alt={productDetails?.title}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.src = "/placeholder-image.jpg";
+                }}
+              />
             ) : (
-              <Heart className="h-5 w-5" />
+              <div className="w-full h-full flex items-center justify-center text-gray-400">
+                No Image Available
+              </div>
             )}
-          </Button>
+
+            {/* Sale Badge */}
+            {hasSale && (
+              <Badge className="absolute top-3 left-3 bg-red-500 text-white px-3 py-1 text-sm">
+                {discountPercentage}% OFF
+              </Badge>
+            )}
+
+            {/* Stock Badge */}
+            {productDetails?.totalStock === 0 && (
+              <Badge className="absolute top-3 right-3 bg-gray-500 text-white px-3 py-1 text-sm">
+                Out of Stock
+              </Badge>
+            )}
+          </div>
+
+          {/* Thumbnail Images */}
+          {productImages.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {productImages.map((image, index) => (
+                <button
+                  key={index}
+                  onClick={() => setActiveImage(index)}
+                  className={`flex-shrink-0 w-16 h-16 border-2 rounded-md overflow-hidden ${
+                    activeImage === index
+                      ? "border-blue-500"
+                      : "border-gray-200"
+                  }`}
+                >
+                  <img
+                    src={image}
+                    alt={`${productDetails?.title} ${index + 1}`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.src = "/placeholder-image.jpg";
+                    }}
+                  />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Right Side - Product Info */}
-        <div className="flex flex-col gap-4">
-          {/* Title + Description */}
+        <div className="flex flex-col gap-6">
+          {/* Title and Category */}
           <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold">
-              {productDetails?.title}
+            <div className="flex items-center gap-2 mb-2">
+              <Badge variant="secondary" className="text-xs capitalize">
+                {productDetails?.category}
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                {productDetails?.brand}
+              </Badge>
+              {productDetails?.isFeatured && (
+                <Badge className="bg-purple-500 text-white text-xs">
+                  Featured
+                </Badge>
+              )}
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+              {productDetails?.title || "Product Title"}
             </h1>
-            <p className="text-muted-foreground text-base sm:text-lg mt-2">
-              {productDetails?.description}
+            <p className="text-gray-600 mt-2 leading-relaxed">
+              {productDetails?.description || "No description available."}
             </p>
+          </div>
+
+          {/* Rating and Sales */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                <span className="font-semibold text-gray-900">
+                  {productDetails?.averageReview?.toFixed(1) || "0.0"}
+                </span>
+              </div>
+            </div>
+            <Separator orientation="vertical" className="h-4" />
+            <span className="text-gray-500 text-sm">
+              {productDetails?.salesCount || 0} sold
+            </span>
           </div>
 
           {/* Price */}
-          <div className="flex items-center justify-between">
-            <p
-              className={`text-xl sm:text-2xl font-bold text-primary ${
-                productDetails?.salePrice > 0 ? "line-through" : ""
-              }`}
-            >
-              ₹{productDetails?.price}
-            </p>
-            {productDetails?.salePrice > 0 && (
-              <p className="text-lg sm:text-xl font-bold text-muted-foreground">
-                ₹{productDetails?.salePrice}
-              </p>
+          <div className="flex items-baseline gap-3">
+            {hasSale ? (
+              <>
+                <span className="text-3xl font-bold text-gray-900">
+                  ₹{productDetails?.salePrice}
+                </span>
+                <span className="text-xl text-gray-500 line-through">
+                  ₹{productDetails?.price}
+                </span>
+                <Badge variant="destructive" className="text-sm">
+                  Save {discountPercentage}%
+                </Badge>
+              </>
+            ) : (
+              <span className="text-3xl font-bold text-gray-900">
+                ₹{productDetails?.price || "0.00"}
+              </span>
             )}
-          </div>
-
-          {/* Rating */}
-          <div className="flex items-center gap-2">
-            <StarRatingComponent rating={averageReview} />
-            <span className="text-muted-foreground text-sm">
-              ({averageReview.toFixed(2)})
-            </span>
           </div>
 
           {/* Size Selector */}
           {availableSizes.length > 0 && (
-            <div className="grid gap-2">
-              <Label htmlFor="size">Select Size</Label>
+            <div className="space-y-3">
+              <Label htmlFor="size" className="text-base font-semibold">
+                Select Size
+              </Label>
               <Select value={selectedSize} onValueChange={setSelectedSize}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Choose size" />
+                  <SelectValue placeholder="Choose your size" />
                 </SelectTrigger>
                 <SelectContent>
                   {availableSizes.map((size) => (
@@ -288,20 +307,46 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
             </div>
           )}
 
+          {/* Color Selector */}
+          {availableColors.length > 0 && (
+            <div className="space-y-3">
+              <Label htmlFor="color" className="text-base font-semibold">
+                Select Color
+              </Label>
+              <div className="flex flex-wrap gap-2">
+                {availableColors.map((color) => (
+                  <Button
+                    key={color}
+                    variant={selectedColor === color ? "default" : "outline"}
+                    onClick={() => setSelectedColor(color)}
+                    className="capitalize"
+                  >
+                    {color}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Quantity Selector */}
           {selectedSize && (
-            <div className="grid gap-2">
-              <Label htmlFor="quantity">Quantity</Label>
-              <div className="flex items-center gap-2">
+            <div className="space-y-3">
+              <Label htmlFor="quantity" className="text-base font-semibold">
+                Quantity
+              </Label>
+              <div className="flex items-center gap-3">
                 <Button
                   variant="outline"
                   size="icon"
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
                   disabled={quantity <= 1}
+                  className="h-10 w-10"
                 >
                   -
                 </Button>
-                <span className="px-4 py-2 border rounded-md">{quantity}</span>
+                <span className="px-6 py-2 border rounded-md text-lg font-semibold min-w-[60px] text-center">
+                  {quantity}
+                </span>
                 <Button
                   variant="outline"
                   size="icon"
@@ -316,6 +361,7 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                     (availableSizes.find((s) => s.size === selectedSize)
                       ?.stock || 0)
                   }
+                  className="h-10 w-10"
                 >
                   +
                 </Button>
@@ -323,75 +369,78 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
             </div>
           )}
 
-          {/* Add to Cart */}
-          <div>
-            {availableSizes.length === 0 ? (
-              <Button className="w-full opacity-60 cursor-not-allowed">
+          {/* Action Buttons */}
+          <div className="space-y-3">
+            {availableSizes.length === 0 || productDetails?.totalStock === 0 ? (
+              <Button
+                className="w-full opacity-60 cursor-not-allowed"
+                size="lg"
+              >
                 Out of Stock
               </Button>
             ) : (
               <Button
-                className="w-full"
+                className="w-full flex items-center gap-2"
                 onClick={handleAddToCart}
                 disabled={!selectedSize}
+                size="lg"
               >
-                Add to Cart
+                <ShoppingCart className="w-5 h-5" />
+                Add to Cart - ₹
+                {hasSale
+                  ? (productDetails.salePrice * quantity).toFixed(2)
+                  : (productDetails.price * quantity).toFixed(2)}
               </Button>
             )}
           </div>
 
-          <Separator />
-
-          {/* Reviews */}
-          <div className="flex flex-col gap-4 max-h-[250px] overflow-y-auto pr-2">
-            <h2 className="text-lg sm:text-xl font-bold">Reviews</h2>
-            <div className="grid gap-4">
-              {reviews && reviews.length > 0 ? (
-                reviews.map((reviewItem, index) => (
-                  <div key={index} className="flex gap-3">
-                    <Avatar className="w-9 h-9 border">
-                      <AvatarFallback>
-                        {reviewItem?.userName[0].toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col">
-                      <h3 className="font-semibold">{reviewItem?.userName}</h3>
-                      <div className="flex items-center gap-1">
-                        <StarRatingComponent rating={reviewItem?.reviewValue} />
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {reviewItem.reviewMessage}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground">No Reviews</p>
-              )}
+          {/* Product Features */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <Truck className="w-4 h-4" />
+              Free shipping
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <Shield className="w-4 h-4" />
+              1-year warranty
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <RotateCcw className="w-4 h-4" />
+              30-day returns
             </div>
           </div>
 
-          {/* Add Review */}
-          <div className="mt-4 flex flex-col gap-2">
-            <Label>Write a review</Label>
-            <div className="mt-4 flex flex-centre gap-2">
-              <StarRatingComponent
-                rating={rating}
-                handleRatingChange={handleRatingChange}
-              />
+          {/* Product Specifications */}
+          <div className="space-y-3 pt-4 border-t">
+            <h4 className="font-semibold text-gray-900">
+              Product Specifications
+            </h4>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-gray-600">Category:</span>
+                <span className="ml-2 font-medium capitalize">
+                  {productDetails?.category}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-600">Subcategory:</span>
+                <span className="ml-2 font-medium capitalize">
+                  {productDetails?.subcategory}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-600">Brand:</span>
+                <span className="ml-2 font-medium">
+                  {productDetails?.brand}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-600">Total Stock:</span>
+                <span className="ml-2 font-medium">
+                  {productDetails?.totalStock || 0}
+                </span>
+              </div>
             </div>
-            <Input
-              name="reviewMsg"
-              value={reviewMsg}
-              onChange={(e) => setReviewMsg(e.target.value)}
-              placeholder="Write a review..."
-            />
-            <Button
-              onClick={handleAddReview}
-              disabled={reviewMsg.trim() === ""}
-            >
-              Submit
-            </Button>
           </div>
         </div>
       </DialogContent>

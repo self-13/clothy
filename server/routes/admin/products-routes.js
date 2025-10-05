@@ -1,4 +1,5 @@
 const express = require("express");
+
 const {
   handleImageUpload,
   addProduct,
@@ -8,6 +9,8 @@ const {
   addSizeToProduct,
   updateSizeStock,
   removeSizeFromProduct,
+  incrementSalesCount,
+  getProductCategories,
 } = require("../../controllers/admin/products-controller");
 
 const { upload } = require("../../helpers/imagekit"); // <- bring this back
@@ -20,9 +23,15 @@ router.get("/fetch-all", fetchAllProducts);
 router.put("/edit/:id", editProduct);
 router.delete("/delete/:id", deleteProduct);
 
-// New routes for size management
+// Product categories and filters
+router.get("/categories", getProductCategories);
+
+// Size and stock management routes
 router.post("/:id/sizes", addSizeToProduct);
 router.put("/:id/sizes/:sizeId", updateSizeStock);
 router.delete("/:id/sizes/:sizeId", removeSizeFromProduct);
+
+// Sales and analytics routes
+router.put("/:id/increment-sales", incrementSalesCount);
 
 module.exports = router;

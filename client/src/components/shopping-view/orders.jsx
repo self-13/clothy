@@ -82,7 +82,10 @@ function ShoppingOrders() {
   // Check if order can be cancelled (within 3 days of order creation)
   const canCancelOrder = (order) => {
     if (!order) return false;
-    if (order.cancellation?.requested) return false; // Already requested
+
+    // Check if cancellation is already requested (you might need to add this field to your API)
+    // if (order.cancellation?.requested) return false;
+
     if (!["confirmed", "processing"].includes(order.orderStatus)) return false;
 
     const orderDate = new Date(order.orderDate);
@@ -95,7 +98,10 @@ function ShoppingOrders() {
   // Check if order can be returned (within 1 week of delivery OR within 15 days of order creation)
   const canReturnOrder = (order) => {
     if (!order) return false;
-    if (order.return?.requested) return false; // Already requested
+
+    // Check if return is already requested (you might need to add this field to your API)
+    // if (order.return?.requested) return false;
+
     if (order.orderStatus !== "delivered") return false;
 
     const orderDate = new Date(order.orderDate);
@@ -103,10 +109,12 @@ function ShoppingOrders() {
       orderDate.getTime() + 15 * 24 * 60 * 60 * 1000
     );
 
-    // If we have delivery date, use 1 week from delivery, otherwise use 15 days from order
-    const deliveryDate = order.orderUpdateDate || orderDate;
+    // Use delivery date if available, otherwise use order date + 15 days
+    const deliveryDate = order.deliveryDate
+      ? new Date(order.deliveryDate)
+      : orderDate;
     const oneWeekFromDelivery = new Date(
-      // deliveryDate?.getTime() + 7 * 24 * 60 * 60 * 1000
+      deliveryDate.getTime() + 7 * 24 * 60 * 60 * 1000
     );
 
     return (
@@ -135,7 +143,10 @@ function ShoppingOrders() {
     }
   };
 
+  // These functions might need to be updated based on your actual API response
   const getCancellationStatus = (order) => {
+    // Uncomment and modify when your API supports cancellation status
+    /*
     if (!order?.cancellation?.requested) return null;
 
     switch (order.cancellation.status) {
@@ -148,9 +159,13 @@ function ShoppingOrders() {
       default:
         return null;
     }
+    */
+    return null;
   };
 
   const getReturnStatus = (order) => {
+    // Uncomment and modify when your API supports return status
+    /*
     if (!order?.return?.requested) return null;
 
     switch (order.return.status) {
@@ -163,6 +178,8 @@ function ShoppingOrders() {
       default:
         return null;
     }
+    */
+    return null;
   };
 
   return (
@@ -187,7 +204,7 @@ function ShoppingOrders() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {orderList && orderList.length > 0 ? (
           orderList.map((order) => {
-            const product = order.cartItems?.[0]; // First product
+            const product = order.items?.[0]; // Use items instead of cartItems
             const cancellationStatus = getCancellationStatus(order);
             const returnStatus = getReturnStatus(order);
             const showCancelButton = canCancelOrder(order);
@@ -217,9 +234,9 @@ function ShoppingOrders() {
                   {/* Product title and quantity */}
                   <div className="text-md font-medium">
                     {product?.title}{" "}
-                    {order.cartItems.length > 1 && (
+                    {order.items.length > 1 && (
                       <span className="text-sm text-muted-foreground">
-                        + {order.cartItems.length - 1} more
+                        + {order.items.length - 1} more
                       </span>
                     )}
                   </div>
@@ -267,7 +284,7 @@ function ShoppingOrders() {
                     </Button>
 
                     {/* Cancellation Button */}
-                    {showCancelButton && (
+                    {/* {showCancelButton && (
                       <Button
                         onClick={() => handleCancellationRequest(order)}
                         className="w-full"
@@ -275,10 +292,10 @@ function ShoppingOrders() {
                       >
                         Request Cancellation
                       </Button>
-                    )}
+                    )} */}
 
                     {/* Return Button */}
-                    {showReturnButton && (
+                    {/* {showReturnButton && (
                       <Button
                         onClick={() => handleReturnRequest(order)}
                         className="w-full"
@@ -286,7 +303,7 @@ function ShoppingOrders() {
                       >
                         Request Return
                       </Button>
-                    )}
+                    )} */}
                   </div>
                 </CardContent>
               </Card>

@@ -9,6 +9,7 @@ const initialState = {
   cancellationRequests: [],
   returnRequests: [],
   pendingRequests: null,
+  analytics: null,
   isLoading: false,
 };
 
@@ -24,9 +25,10 @@ const getUserId = () => {
   }
 };
 
+// Enhanced getAllOrdersForAdmin with filters
 export const getAllOrdersForAdmin = createAsyncThunk(
   "adminOrders/getAllOrdersForAdmin",
-  async (_, { rejectWithValue }) => {
+  async (filters = {}, { rejectWithValue }) => {
     try {
       const userId = getUserId();
 
@@ -34,9 +36,38 @@ export const getAllOrdersForAdmin = createAsyncThunk(
         throw new Error("User not authenticated");
       }
 
-      console.log("🔄 Fetching all orders for admin");
+      console.log("🔄 Fetching all orders for admin with filters:", filters);
 
-      const response = await axios.get(`${BASE_URL}/api/admin/orders/get`, {
+      const params = new URLSearchParams();
+
+      // Add filter parameters
+      if (filters.paymentMethod && filters.paymentMethod !== "all") {
+        params.append("paymentMethod", filters.paymentMethod);
+      }
+      if (filters.orderStatus && filters.orderStatus !== "all") {
+        params.append("status", filters.orderStatus);
+      }
+      if (filters.search) {
+        params.append("search", filters.search);
+      }
+      if (filters.startDate) {
+        params.append("startDate", filters.startDate);
+      }
+      if (filters.endDate) {
+        params.append("endDate", filters.endDate);
+      }
+      if (filters.page) {
+        params.append("page", filters.page);
+      }
+      if (filters.limit) {
+        params.append("limit", filters.limit);
+      }
+
+      const url = `${BASE_URL}/api/admin/orders/get${
+        params.toString() ? `?${params.toString()}` : ""
+      }`;
+
+      const response = await axios.get(url, {
         headers: {
           "x-user-id": userId,
         },
@@ -83,7 +114,7 @@ export const getOrderDetailsForAdmin = createAsyncThunk(
 
 export const updateOrderStatus = createAsyncThunk(
   "adminOrders/updateOrderStatus",
-  async ({ id, orderStatus }, { rejectWithValue }) => {
+  async ({ id, orderStatus, tracking }, { rejectWithValue }) => {
     try {
       const userId = getUserId();
 
@@ -91,11 +122,16 @@ export const updateOrderStatus = createAsyncThunk(
         throw new Error("User not authenticated");
       }
 
-      console.log("🔄 Updating order status:", { id, orderStatus });
+      console.log("🔄 Updating order status:", { id, orderStatus, tracking });
+
+      const updateData = { orderStatus };
+      if (tracking) {
+        updateData.tracking = tracking;
+      }
 
       const response = await axios.put(
         `${BASE_URL}/api/admin/orders/update/${id}`,
-        { orderStatus },
+        updateData,
         {
           headers: {
             "x-user-id": userId,
@@ -113,78 +149,41 @@ export const updateOrderStatus = createAsyncThunk(
   }
 );
 
-// const adminOrderSlice = createSlice({
-//   name: "adminOrder",
-//   initialState,
-//   reducers: {
-//     resetOrderDetails: (state) => {
-//       state.orderDetails = null;
-//     },
-//     clearOrders: (state) => {
-//       state.orderList = [];
-//       state.orderDetails = null;
-//     },
-//   },
-//   extraReducers: (builder) => {
-//     builder
-//       // Get all orders
-//       .addCase(getAllOrdersForAdmin.pending, (state) => {
-//         state.isLoading = true;
-//       })
-//       .addCase(getAllOrdersForAdmin.fulfilled, (state, action) => {
-//         state.isLoading = false;
-//         state.orderList = action.payload.data || [];
-//       })
-//       .addCase(getAllOrdersForAdmin.rejected, (state) => {
-//         state.isLoading = false;
-//         state.orderList = [];
-//       })
-//       // Get order details
-//       .addCase(getOrderDetailsForAdmin.pending, (state) => {
-//         state.isLoading = true;
-//       })
-//       .addCase(getOrderDetailsForAdmin.fulfilled, (state, action) => {
-//         state.isLoading = false;
-//         state.orderDetails = action.payload.data;
-//       })
-//       .addCase(getOrderDetailsForAdmin.rejected, (state) => {
-//         state.isLoading = false;
-//         state.orderDetails = null;
-//       })
-//       // Update order status
-//       .addCase(updateOrderStatus.pending, (state) => {
-//         state.isLoading = true;
-//       })
-//       .addCase(updateOrderStatus.fulfilled, (state, action) => {
-//         state.isLoading = false;
-//         // Update the order in the list if it exists
-//         if (action.payload.success && action.payload.data) {
-//           const updatedOrder = action.payload.data;
-//           const index = state.orderList.findIndex(
-//             (order) => order._id === updatedOrder._id
-//           );
-//           if (index !== -1) {
-//             state.orderList[index] = updatedOrder;
-//           }
-//           // Also update order details if it's currently being viewed
-//           if (
-//             state.orderDetails &&
-//             state.orderDetails._id === updatedOrder._id
-//           ) {
-//             state.orderDetails = updatedOrder;
-//           }
-//         }
-//       })
-//       .addCase(updateOrderStatus.rejected, (state) => {
-//         state.isLoading = false;
-//       });
-//   },
-// });
+// Analytics thunk
+export const getOrderAnalytics = createAsyncThunk(
+  "adminOrders/getOrderAnalytics",
+  async (period = "30days", { rejectWithValue }) => {
+    try {
+      const userId = getUserId();
 
-// ✅ New thunks for cancellation and return management
+      if (!userId) {
+        throw new Error("User not authenticated");
+      }
+
+      console.log("🔄 Fetching order analytics for period:", period);
+
+      const response = await axios.get(
+        `${BASE_URL}/api/admin/orders/analytics?period=${period}`,
+        {
+          headers: {
+            "x-user-id": userId,
+          },
+        }
+      );
+
+      console.log("✅ Order analytics fetched");
+      return response.data;
+    } catch (error) {
+      console.error("❌ Error fetching order analytics:", error);
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+// Existing cancellation and return thunks remain the same...
 export const getCancellationRequests = createAsyncThunk(
   "adminOrders/getCancellationRequests",
-  async (_, { rejectWithValue }) => {
+  async (filters = {}, { rejectWithValue }) => {
     try {
       const userId = getUserId();
 
@@ -194,14 +193,20 @@ export const getCancellationRequests = createAsyncThunk(
 
       console.log("🔄 Fetching cancellation requests");
 
-      const response = await axios.get(
-        `${BASE_URL}/api/admin/orders/cancellation-requests`,
-        {
-          headers: {
-            "x-user-id": userId,
-          },
-        }
-      );
+      const params = new URLSearchParams();
+      if (filters.status) params.append("status", filters.status);
+      if (filters.page) params.append("page", filters.page);
+      if (filters.limit) params.append("limit", filters.limit);
+
+      const url = `${BASE_URL}/api/admin/orders/cancellation-requests${
+        params.toString() ? `?${params.toString()}` : ""
+      }`;
+
+      const response = await axios.get(url, {
+        headers: {
+          "x-user-id": userId,
+        },
+      });
 
       console.log(
         "✅ Cancellation requests fetched:",
@@ -217,7 +222,7 @@ export const getCancellationRequests = createAsyncThunk(
 
 export const getReturnRequests = createAsyncThunk(
   "adminOrders/getReturnRequests",
-  async (_, { rejectWithValue }) => {
+  async (filters = {}, { rejectWithValue }) => {
     try {
       const userId = getUserId();
 
@@ -227,14 +232,20 @@ export const getReturnRequests = createAsyncThunk(
 
       console.log("🔄 Fetching return requests");
 
-      const response = await axios.get(
-        `${BASE_URL}/api/admin/orders/return-requests`,
-        {
-          headers: {
-            "x-user-id": userId,
-          },
-        }
-      );
+      const params = new URLSearchParams();
+      if (filters.status) params.append("status", filters.status);
+      if (filters.page) params.append("page", filters.page);
+      if (filters.limit) params.append("limit", filters.limit);
+
+      const url = `${BASE_URL}/api/admin/orders/return-requests${
+        params.toString() ? `?${params.toString()}` : ""
+      }`;
+
+      const response = await axios.get(url, {
+        headers: {
+          "x-user-id": userId,
+        },
+      });
 
       console.log("✅ Return requests fetched:", response.data.data?.length);
       return response.data;
@@ -277,7 +288,10 @@ export const getPendingRequests = createAsyncThunk(
 
 export const updateCancellationStatus = createAsyncThunk(
   "adminOrders/updateCancellationStatus",
-  async ({ id, status, refundAmount, adminNotes }, { rejectWithValue }) => {
+  async (
+    { id, status, refundAmount, adminNotes, cancelledItems },
+    { rejectWithValue }
+  ) => {
     try {
       const userId = getUserId();
 
@@ -289,7 +303,7 @@ export const updateCancellationStatus = createAsyncThunk(
 
       const response = await axios.put(
         `${BASE_URL}/api/admin/orders/${id}/cancellation-status`,
-        { status, refundAmount, adminNotes },
+        { status, refundAmount, adminNotes, cancelledItems },
         {
           headers: {
             "x-user-id": userId,
@@ -310,7 +324,7 @@ export const updateCancellationStatus = createAsyncThunk(
 export const updateReturnStatus = createAsyncThunk(
   "adminOrders/updateReturnStatus",
   async (
-    { id, status, refundAmount, pickupAddress, adminNotes },
+    { id, status, refundAmount, pickupAddress, adminNotes, returnedItems },
     { rejectWithValue }
   ) => {
     try {
@@ -324,7 +338,7 @@ export const updateReturnStatus = createAsyncThunk(
 
       const response = await axios.put(
         `${BASE_URL}/api/admin/orders/${id}/return-status`,
-        { status, refundAmount, pickupAddress, adminNotes },
+        { status, refundAmount, pickupAddress, adminNotes, returnedItems },
         {
           headers: {
             "x-user-id": userId,
@@ -357,6 +371,9 @@ const adminOrderSlice = createSlice({
       state.cancellationRequests = [];
       state.returnRequests = [];
       state.pendingRequests = null;
+    },
+    resetAnalytics: (state) => {
+      state.analytics = null;
     },
   },
   extraReducers: (builder) => {
@@ -411,6 +428,10 @@ const adminOrderSlice = createSlice({
       })
       .addCase(updateOrderStatus.rejected, (state) => {
         state.isLoading = false;
+      })
+      // Get analytics
+      .addCase(getOrderAnalytics.fulfilled, (state, action) => {
+        state.analytics = action.payload.data;
       })
       // Get cancellation requests
       .addCase(getCancellationRequests.pending, (state) => {
@@ -491,6 +512,6 @@ const adminOrderSlice = createSlice({
   },
 });
 
-export const { resetOrderDetails, clearOrders, resetRequests } =
+export const { resetOrderDetails, clearOrders, resetRequests, resetAnalytics } =
   adminOrderSlice.actions;
 export default adminOrderSlice.reducer;

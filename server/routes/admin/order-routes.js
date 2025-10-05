@@ -9,6 +9,7 @@ const {
   updateCancellationStatus,
   updateReturnStatus,
   getAllPendingRequests,
+  getOrderAnalytics,
 } = require("../../controllers/admin/order-controller");
 
 const router = express.Router();
@@ -24,5 +25,8 @@ router.get("/return-requests", getReturnRequests);
 router.get("/pending-requests", getAllPendingRequests);
 router.put("/:id/cancellation-status", updateCancellationStatus);
 router.put("/:id/return-status", updateReturnStatus);
+
+// Analytics and reporting routes
+router.get("/analytics", getOrderAnalytics);
 
 module.exports = router;

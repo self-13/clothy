@@ -15,8 +15,9 @@ import { addToCart, fetchCartItems } from "@/store/shop/cart-slice";
 import {
   fetchAllFilteredProducts,
   fetchProductDetails,
+  resetProductDetails,
 } from "@/store/shop/products-slice";
-import { ArrowUpDownIcon } from "lucide-react";
+import { ArrowUpDownIcon, FilterIcon, Grid3X3, List } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useSearchParams } from "react-router-dom";
@@ -27,27 +28,26 @@ function createSearchParamsHelper(filterParams) {
   for (const [key, value] of Object.entries(filterParams)) {
     if (Array.isArray(value) && value.length > 0) {
       const paramValue = value.join(",");
-
       queryParams.push(`${key}=${encodeURIComponent(paramValue)}`);
     }
   }
-
-  console.log(queryParams, "queryParams");
 
   return queryParams.join("&");
 }
 
 function ShoppingListing() {
   const dispatch = useDispatch();
-  const { productList, productDetails } = useSelector(
+  const { productList, productDetails, isLoading } = useSelector(
     (state) => state.shopProducts
   );
   const { cartItems } = useSelector((state) => state.shopCart);
   const { user } = useSelector((state) => state.auth);
   const [filters, setFilters] = useState({});
-  const [sort, setSort] = useState(null);
+  const [sort, setSort] = useState("most-selling");
   const [searchParams, setSearchParams] = useSearchParams();
   const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
+  const [viewMode, setViewMode] = useState("grid");
+  const [showFilters, setShowFilters] = useState(false);
   const { toast } = useToast();
 
   const categorySearchParam = searchParams.get("category");
@@ -79,26 +79,38 @@ function ShoppingListing() {
   }
 
   function handleGetProductDetails(getCurrentProductId) {
-    console.log(getCurrentProductId);
     dispatch(fetchProductDetails(getCurrentProductId));
   }
 
-  function handleAddtoCart(getCurrentProductId, getTotalStock) {
-    console.log(cartItems);
+  function handleAddtoCart(getCurrentProductId, selectedSize = null) {
+    if (!selectedSize) {
+      toast({
+        title: "Please select a size first",
+        variant: "destructive",
+      });
+      return;
+    }
+
     let getCartItems = cartItems.items || [];
 
     if (getCartItems.length) {
       const indexOfCurrentItem = getCartItems.findIndex(
-        (item) => item.productId === getCurrentProductId
+        (item) =>
+          item.productId === getCurrentProductId &&
+          item.selectedSize === selectedSize
       );
       if (indexOfCurrentItem > -1) {
         const getQuantity = getCartItems[indexOfCurrentItem].quantity;
-        if (getQuantity + 1 > getTotalStock) {
+        // Get product stock for the specific size
+        const product = productList.find((p) => p._id === getCurrentProductId);
+        const sizeStock =
+          product?.sizes?.find((s) => s.size === selectedSize)?.stock || 0;
+
+        if (getQuantity + 1 > sizeStock) {
           toast({
-            title: `Only ${getQuantity} quantity can be added for this item`,
+            title: `Only ${sizeStock} items available for this size`,
             variant: "destructive",
           });
-
           return;
         }
       }
@@ -109,20 +121,36 @@ function ShoppingListing() {
         userId: user?.id,
         productId: getCurrentProductId,
         quantity: 1,
+        selectedSize: selectedSize,
       })
     ).then((data) => {
       if (data?.payload?.success) {
         dispatch(fetchCartItems(user?.id));
         toast({
-          title: "Product is added to cart",
+          title: "Product added to cart successfully!",
+        });
+      } else if (data?.payload?.message) {
+        toast({
+          title: data.payload.message,
+          variant: "destructive",
         });
       }
     });
   }
 
+  function handleCloseDialog() {
+    setOpenDetailsDialog(false);
+    setTimeout(() => {
+      dispatch(resetProductDetails());
+    }, 300);
+  }
+
   useEffect(() => {
-    setSort("price-lowtohigh");
-    setFilters(JSON.parse(sessionStorage.getItem("filters")) || {});
+    setSort("most-selling");
+    const savedFilters = sessionStorage.getItem("filters");
+    if (savedFilters) {
+      setFilters(JSON.parse(savedFilters));
+    }
   }, [categorySearchParam]);
 
   useEffect(() => {
@@ -130,72 +158,198 @@ function ShoppingListing() {
       const createQueryString = createSearchParamsHelper(filters);
       setSearchParams(new URLSearchParams(createQueryString));
     }
-  }, [filters]);
+  }, [filters, setSearchParams]);
 
   useEffect(() => {
-    if (filters !== null && sort !== null)
+    if (filters !== null && sort !== null) {
       dispatch(
-        fetchAllFilteredProducts({ filterParams: filters, sortParams: sort })
+        fetchAllFilteredProducts({
+          filterParams: { ...filters, isActive: true },
+          sortParams: sort,
+        })
       );
+    }
   }, [dispatch, sort, filters]);
 
   useEffect(() => {
-    if (productDetails !== null) setOpenDetailsDialog(true);
+    if (productDetails !== null) {
+      setOpenDetailsDialog(true);
+    }
   }, [productDetails]);
 
-  console.log(productList, "productListproductListproductList");
+  // Clear filters function
+  const clearFilters = () => {
+    setFilters({});
+    sessionStorage.removeItem("filters");
+  };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-6 p-4 md:p-6">
-      <ProductFilter filters={filters} handleFilter={handleFilter} />
-      <div className="bg-background w-full rounded-lg shadow-sm bg-slate-300 ">
-        <div className="p-4 border-b flex items-center justify-between">
-          <h2 className="text-lg font-extrabold">All Products</h2>
-          <div className="flex items-center gap-3">
-            <span className="text-muted-foreground">
-              {productList?.length} Products
-            </span>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-1"
-                >
-                  <ArrowUpDownIcon className="h-4 w-4" />
-                  <span>Sort by</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[200px]">
-                <DropdownMenuRadioGroup value={sort} onValueChange={handleSort}>
-                  {sortOptions.map((sortItem) => (
-                    <DropdownMenuRadioItem
-                      value={sortItem.id}
-                      key={sortItem.id}
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            All Products
+          </h1>
+          <p className="text-xl text-gray-600">
+            Discover our complete collection of amazing products
+          </p>
+        </div>
+
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Mobile Filter Toggle */}
+          <div className="lg:hidden flex gap-4 mb-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2"
+            >
+              <FilterIcon className="w-4 h-4" />
+              {showFilters ? "Hide Filters" : "Show Filters"}
+            </Button>
+            {/* <Button
+              variant="outline"
+              onClick={clearFilters}
+              disabled={Object?.keys(filters).length === 0}
+            >
+              Clear Filters
+            </Button> */}
+          </div>
+
+          {/* Filters Sidebar */}
+          <div
+            className={`${
+              showFilters ? "block" : "hidden"
+            } lg:block lg:w-80 flex-shrink-0`}
+          >
+            <div className="sticky top-4">
+              <ProductFilter
+                filters={filters}
+                handleFilter={handleFilter}
+                onClearFilters={clearFilters}
+              />
+            </div>
+          </div>
+
+          {/* Products Section */}
+          <div className="flex-1">
+            {/* Toolbar */}
+            <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="flex items-center gap-4">
+                  <span className="text-lg font-semibold text-gray-700">
+                    {productList?.length || 0} Products
+                  </span>
+                  {/* {Object.keys(filters).length > 0 && (
+                    <span className="text-sm text-gray-500">
+                      ({Object.values(filters).flat().length} filters applied)
+                    </span>
+                  )} */}
+                </div>
+
+                <div className="flex items-center gap-4">
+                  {/* View Mode Toggle */}
+                  <div className="flex border rounded-lg p-1">
+                    <Button
+                      variant={viewMode === "grid" ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setViewMode("grid")}
+                      className="h-8 w-8 p-0"
                     >
-                      {sortItem.label}
-                    </DropdownMenuRadioItem>
-                  ))}
-                </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                      <Grid3X3 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant={viewMode === "list" ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setViewMode("list")}
+                      className="h-8 w-8 p-0"
+                    >
+                      <List className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {/* Sort Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2"
+                      >
+                        <ArrowUpDownIcon className="h-4 w-4" />
+                        <span>Sort by</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-[200px]">
+                      <DropdownMenuRadioGroup
+                        value={sort}
+                        onValueChange={handleSort}
+                      >
+                        {sortOptions.map((sortItem) => (
+                          <DropdownMenuRadioItem
+                            value={sortItem.id}
+                            key={sortItem.id}
+                          >
+                            {sortItem.label}
+                          </DropdownMenuRadioItem>
+                        ))}
+                      </DropdownMenuRadioGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            </div>
+
+            {/* Products Grid/List */}
+            {isLoading ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              </div>
+            ) : (
+              <>
+                {productList && productList.length > 0 ? (
+                  <div
+                    className={
+                      viewMode === "grid"
+                        ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                        : "space-y-4"
+                    }
+                  >
+                    {productList.map((productItem) => (
+                      <ShoppingProductTile
+                        key={productItem._id}
+                        handleGetProductDetails={handleGetProductDetails}
+                        product={productItem}
+                        handleAddtoCart={handleAddtoCart}
+                        viewMode={viewMode}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="text-gray-400 text-lg mb-2">
+                      No products found
+                    </div>
+                    <p className="text-gray-500 mb-4">
+                      {Object.keys(filters).length > 0
+                        ? "Try adjusting your filters to see more products"
+                        : "No products available at the moment"}
+                    </p>
+                    {Object.keys(filters).length > 0 && (
+                      <Button onClick={clearFilters}>Clear All Filters</Button>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
-          {productList && productList.length > 0
-            ? productList.map((productItem) => (
-                <ShoppingProductTile
-                  handleGetProductDetails={handleGetProductDetails}
-                  product={productItem}
-                  handleAddtoCart={handleAddtoCart}
-                />
-              ))
-            : null}
-        </div>
       </div>
+
+      {/* Product Details Dialog */}
       <ProductDetailsDialog
-        open={openDetailsDialog}
-        setOpen={setOpenDetailsDialog}
+        open={openDetailsDialog && productDetails !== null}
+        setOpen={handleCloseDialog}
         productDetails={productDetails}
       />
     </div>

@@ -6,12 +6,14 @@ import UserCartItemsContent from "@/components/shopping-view/cart-items-content"
 import { Button } from "@/components/ui/button";
 import { createNewOrder, capturePayment } from "@/store/shop/order-slice";
 import { useToast } from "@/components/ui/use-toast";
-import { CreditCard, Wallet, AlertCircle } from "lucide-react";
+import { CreditCard, Wallet, AlertCircle, Truck, Shield } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { clearCart } from "@/store/shop/cart-slice";
 
 function ShoppingCheckout() {
   const { cartItems } = useSelector((state) => state.shopCart);
   const { user } = useSelector((state) => state.auth);
-  const { orderId } = useSelector((state) => state.shopOrder);
+  const { orderId, isLoading } = useSelector((state) => state.shopOrder);
   const [currentSelectedAddress, setCurrentSelectedAddress] = useState(null);
   const [isPaymentStart, setIsPaymentStart] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("online");
@@ -53,22 +55,20 @@ function ShoppingCheckout() {
     loadRazorpay();
   }, []);
 
-  const totalCartAmount =
-    cartItems && cartItems.items && cartItems.items.length > 0
-      ? cartItems.items.reduce(
-          (sum, currentItem) =>
-            sum +
-            (currentItem?.salePrice > 0
-              ? currentItem?.salePrice
-              : currentItem?.price) *
-              currentItem?.quantity,
-          0
-        )
-      : 0;
+  // Calculate cart totals
+  const cartSummary = cartItems?.summary || {
+    totalItems: 0,
+    subtotal: 0,
+    totalDiscount: 0,
+    estimatedTotal: 0,
+  };
 
-  // Calculate cash handling fee for COD
+  const totalCartAmount = cartSummary.subtotal || 0;
+
+  // Calculate fees
+  const shippingFee = 0;
   const cashHandlingFee = paymentMethod === "cod" ? 60 : 0;
-  const finalAmount = totalCartAmount + cashHandlingFee;
+  const finalAmount = totalCartAmount + shippingFee + cashHandlingFee;
 
   const resetPaymentState = () => {
     setIsPaymentStart(false);
@@ -77,14 +77,17 @@ function ShoppingCheckout() {
   async function handleInitiatePayment() {
     if (!cartItems?.items || cartItems.items.length === 0) {
       toast({
-        title: "Your cart is empty. Please add items to proceed",
+        title: "Your cart is empty",
+        description: "Please add items to your cart before proceeding",
         variant: "destructive",
       });
       return;
     }
+
     if (!currentSelectedAddress) {
       toast({
-        title: "Please select one address to proceed.",
+        title: "Shipping address required",
+        description: "Please select a shipping address to proceed",
         variant: "destructive",
       });
       return;
@@ -111,49 +114,57 @@ function ShoppingCheckout() {
     setRazorpayError(null);
 
     try {
-      // ✅ Order data sent to backend
+      // Prepare order data
       const orderData = {
         userId: user?.id,
         cartId: cartItems?._id,
-        cartItems: cartItems.items.map((singleCartItem) => ({
-          productId: singleCartItem?.productId,
-          title: singleCartItem?.title,
-          image: singleCartItem?.image,
-          price:
-            singleCartItem?.salePrice > 0
-              ? singleCartItem?.salePrice
-              : singleCartItem?.price,
-          quantity: singleCartItem?.quantity,
-          selectedSize: singleCartItem?.selectedSize, // Include selected size
+        cartItems: cartItems.items.map((item) => ({
+          productId: item?.productId,
+          title: item?.title,
+          image: item?.image || item?.images?.[0],
+          price: item?.salePrice > 0 ? item?.salePrice : item?.price,
+          salePrice: item?.salePrice,
+          quantity: item?.quantity,
+          selectedSize: item?.selectedSize,
+          selectedColor: item?.selectedColor,
+          brand: item?.brand,
         })),
         addressInfo: {
-          addressId: currentSelectedAddress?._id,
+          name: currentSelectedAddress?.name,
           address: currentSelectedAddress?.address,
           city: currentSelectedAddress?.city,
+          state: currentSelectedAddress?.state,
           pincode: currentSelectedAddress?.pincode,
           phone: currentSelectedAddress?.phone,
           notes: currentSelectedAddress?.notes,
+          type: currentSelectedAddress?.type || "home",
         },
         paymentMethod: paymentMethod,
         totalAmount: totalCartAmount,
       };
 
+      console.log("🔄 Creating order with data:", orderData);
+
       const res = await dispatch(createNewOrder(orderData));
 
       if (res?.payload?.success) {
-        // For COD orders, redirect to success page directly
+        // For COD orders
         if (paymentMethod === "cod") {
-          sessionStorage.removeItem("currentOrderId");
+          // Clear cart after successful COD order
+          dispatch(clearCart(user?.id));
+          toast({
+            title: "Order placed successfully!",
+            description: "Your COD order has been confirmed.",
+          });
           window.location.href = "/shop/payment-success";
           return;
         }
 
-        // For online payments, proceed with Razorpay
+        // For online payments
         const { razorpayOrderId, amount, currency } = res.payload;
 
-        // Verify we have the required Razorpay data
         if (!razorpayOrderId || !amount) {
-          throw new Error("Missing Razorpay order information from server");
+          throw new Error("Missing payment information from server");
         }
 
         const options = {
@@ -165,18 +176,18 @@ function ShoppingCheckout() {
           order_id: razorpayOrderId,
           handler: async function (response) {
             try {
-              // ✅ Send payment details + original order data to create DB entry
               const verifyRes = await dispatch(
                 capturePayment({
                   razorpay_order_id: response.razorpay_order_id,
                   razorpay_payment_id: response.razorpay_payment_id,
                   razorpay_signature: response.razorpay_signature,
-                  orderData: orderData, // Send the original order data
+                  orderData: orderData,
                 })
               );
 
               if (verifyRes?.payload?.success) {
-                sessionStorage.removeItem("currentOrderId");
+                // Clear cart after successful payment
+                dispatch(clearCart(user?.id));
                 window.location.href = "/shop/payment-success";
               } else {
                 resetPaymentState();
@@ -207,13 +218,12 @@ function ShoppingCheckout() {
               resetPaymentState();
               toast({
                 title: "Payment cancelled",
-                description: "You closed the payment window",
+                description: "You can try again anytime",
               });
             },
           },
         };
 
-        // Double check that Razorpay is available
         if (typeof window.Razorpay !== "function") {
           throw new Error("Razorpay is not available");
         }
@@ -250,42 +260,63 @@ function ShoppingCheckout() {
   }
 
   return (
-    <div className="flex flex-col bg-slate-100 min-h-screen">
-      <div className="relative h-[200px] w-full overflow-hidden">
-        <img src={img} className="h-full w-full object-cover object-center" />
+    <div className="flex flex-col bg-gradient-to-b from-slate-50 to-white min-h-screen">
+      {/* Hero Section */}
+      <div className="relative h-48 w-full overflow-hidden bg-gradient-to-r from-blue-600 to-purple-600">
         <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-          <h1 className="text-3xl font-bold text-white">Checkout</h1>
+          <div className="text-center text-white">
+            <h1 className="text-4xl font-bold mb-2">Checkout</h1>
+            <p className="text-lg">Complete your purchase</p>
+          </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <Address
-            selectedId={currentSelectedAddress}
-            setCurrentSelectedAddress={setCurrentSelectedAddress}
-          />
+          {/* Left Column - Address & Cart Items */}
+          <div className="space-y-6">
+            {/* Address Section */}
+            <div className="bg-white rounded-xl shadow-sm border p-6">
+              <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                <Truck className="w-6 h-6 text-blue-600" />
+                Shipping Address
+              </h2>
+              <Address
+                selectedId={currentSelectedAddress}
+                setCurrentSelectedAddress={setCurrentSelectedAddress}
+              />
+            </div>
 
-          <div className="flex flex-col gap-6">
-            <div className="bg-white rounded-xl shadow-md p-6">
-              <h2 className="text-xl font-bold mb-4">Order Items</h2>
+            {/* Order Items Section */}
+            <div className="bg-white rounded-xl shadow-sm border p-6">
+              <h2 className="text-2xl font-bold mb-4">Order Items</h2>
               <div className="space-y-4">
                 {cartItems && cartItems.items && cartItems.items.length > 0 ? (
                   cartItems.items.map((item) => (
                     <UserCartItemsContent
-                      key={item.productId}
+                      key={`${item.productId}-${item.selectedSize}-${item.selectedColor}`}
                       cartItem={item}
                     />
                   ))
                 ) : (
-                  <p className="text-gray-500">Your cart is empty</p>
+                  <div className="text-center py-8 text-gray-500">
+                    <p>Your cart is empty</p>
+                  </div>
                 )}
               </div>
             </div>
+          </div>
 
-            {/* Payment Method Selection */}
-            <div className="bg-white rounded-xl shadow-md p-6">
-              <h2 className="text-xl font-bold mb-4">Payment Method</h2>
+          {/* Right Column - Payment & Summary */}
+          <div className="space-y-6">
+            {/* Payment Method */}
+            <div className="bg-white rounded-xl shadow-sm border p-6">
+              <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                <Shield className="w-6 h-6 text-green-600" />
+                Payment Method
+              </h2>
               <div className="space-y-4">
+                {/* Online Payment Option */}
                 <div
                   className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
                     paymentMethod === "online"
@@ -307,13 +338,12 @@ function ShoppingCheckout() {
                   </div>
                   <CreditCard className="h-6 w-6 mr-3 text-blue-500" />
                   <div className="flex-1">
-                    <h3 className="font-medium">Online Payment</h3>
-                    <p className="text-sm text-gray-500">
-                      Pay securely with Razorpay
-                    </p>
+                    <h3 className="font-semibold text-lg">Online Payment</h3>
+                    <p className="text-gray-600">Pay securely with Razorpay</p>
                   </div>
                 </div>
 
+                {/* COD Option */}
                 <div
                   className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
                     paymentMethod === "cod"
@@ -333,16 +363,19 @@ function ShoppingCheckout() {
                       <div className="h-2 w-2 rounded-full bg-white"></div>
                     )}
                   </div>
-                  <Wallet className="h-6 w-6 mr-3 text-blue-500" />
+                  <Wallet className="h-6 w-6 mr-3 text-orange-500" />
                   <div className="flex-1">
-                    <h3 className="font-medium">Cash on Delivery (COD)</h3>
-                    <p className="text-sm text-gray-500">
+                    <h3 className="font-semibold text-lg">Cash on Delivery</h3>
+                    <p className="text-gray-600">
                       Pay when you receive your order
                     </p>
                   </div>
-                  <div className="bg-amber-100 text-amber-800 px-2 py-1 rounded text-sm font-medium">
+                  <Badge
+                    variant="secondary"
+                    className="bg-orange-100 text-orange-800"
+                  >
                     + ₹60 fee
-                  </div>
+                  </Badge>
                 </div>
               </div>
 
@@ -355,57 +388,82 @@ function ShoppingCheckout() {
             </div>
 
             {/* Order Summary */}
-            <div className="bg-white rounded-xl shadow-md p-6">
-              <h2 className="text-xl font-bold mb-4">Order Summary</h2>
+            <div className="bg-white rounded-xl shadow-sm border p-6">
+              <h2 className="text-2xl font-bold mb-4">Order Summary</h2>
               <div className="space-y-3">
-                <div className="flex justify-between">
+                <div className="flex justify-between text-lg">
                   <span className="text-gray-600">Subtotal</span>
-                  <span>₹{totalCartAmount.toFixed(2)}</span>
+                  <span className="font-semibold">
+                    ₹{totalCartAmount.toFixed(2)}
+                  </span>
+                </div>
+
+                <div className="flex justify-between text-lg">
+                  <span className="text-gray-600">Shipping</span>
+                  <span className="font-semibold">
+                    ₹{shippingFee.toFixed(2)}
+                  </span>
                 </div>
 
                 {paymentMethod === "cod" && (
-                  <div className="flex justify-between">
+                  <div className="flex justify-between text-lg">
                     <span className="text-gray-600">Cash Handling Fee</span>
-                    <span className="text-amber-600">
+                    <span className="font-semibold text-orange-600">
                       ₹{cashHandlingFee.toFixed(2)}
                     </span>
                   </div>
                 )}
 
-                <div className="border-t pt-3 mt-2">
-                  <div className="flex justify-between font-bold text-lg">
-                    <span>Total</span>
-                    <span className="text-blue-600">
-                      ₹{finalAmount.toFixed(2)}
+                {cartSummary.totalDiscount > 0 && (
+                  <div className="flex justify-between text-lg">
+                    <span className="text-gray-600">Save</span>
+                    <span className="font-semibold text-green-600">
+                      -₹{cartSummary.totalDiscount.toFixed(2)}
                     </span>
                   </div>
+                )}
+
+
+                <div className="flex justify-between text-xl font-bold">
+                  <span>Total Amount</span>
+                  <span className="text-blue-600">
+                    ₹{finalAmount.toFixed(2)}
+                  </span>
+                </div>
+
+                <div className="text-sm text-gray-500 mt-2">
+                  {cartSummary.totalItems} items
                 </div>
               </div>
 
+              {/* Place Order Button */}
               <Button
                 onClick={handleInitiatePayment}
-                className="w-full mt-6 py-3 text-lg"
+                className="w-full mt-6 py-3 text-lg font-semibold"
                 disabled={
                   isPaymentStart ||
+                  isLoading ||
+                  !cartItems?.items?.length ||
+                  !currentSelectedAddress ||
                   (paymentMethod === "online" &&
                     !isRazorpayLoaded &&
                     !razorpayError)
                 }
                 size="lg"
               >
-                {isPaymentStart ? (
-                  <div className="flex items-center">
+                {isPaymentStart || isLoading ? (
+                  <div className="flex items-center justify-center">
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                     Processing...
                   </div>
                 ) : paymentMethod === "cod" ? (
-                  "Place COD Order"
+                  `Place COD Order - ₹${finalAmount.toFixed(2)}`
                 ) : !isRazorpayLoaded && !razorpayError ? (
                   "Loading Payment..."
                 ) : razorpayError ? (
                   "Try Again"
                 ) : (
-                  "Pay with Razorpay"
+                  `Pay Now - ₹${finalAmount.toFixed(2)}`
                 )}
               </Button>
 

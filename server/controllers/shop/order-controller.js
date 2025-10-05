@@ -6,68 +6,100 @@ const Product = require("../../models/Product");
 const {
   sendOrderConfirmationEmail,
   sendNewOrderNotificationEmail,
-  sendCancellationRequestEmail, // ✅ Added missing imports
-  sendReturnRequestEmail, // ✅ Added missing imports
+  sendCancellationRequestEmail,
+  sendReturnRequestEmail,
+  sendOrderStatusUpdateEmail,
 } = require("../../helpers/emailService");
 const User = require("../../models/User");
 
-// ✅ Create Order
+// ✅ Enhanced: Create Order with all new fields
 const createOrder = async (req, res) => {
   try {
     const { totalAmount, paymentMethod, ...orderData } = req.body;
 
+    // Validate required fields
+    if (!orderData.userId || !orderData.cartItems || !orderData.addressInfo) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required order data",
+      });
+    }
+
     // Calculate cash handling fee if COD is selected
-    let finalAmount = totalAmount;
+    let finalAmount = parseFloat(totalAmount);
     let cashHandlingFee = 0;
+    let shippingFee = 0;
 
     if (paymentMethod === "cod") {
       cashHandlingFee = 60;
-      finalAmount = totalAmount + cashHandlingFee;
+      shippingFee = 40;
+      finalAmount = finalAmount + cashHandlingFee + shippingFee;
+    } else {
+      shippingFee = 40;
+      finalAmount = finalAmount + shippingFee;
+    }
 
+    // Validate stock availability for all items
+    for (let item of orderData.cartItems) {
+      const product = await Product.findById(item.productId);
+      if (!product || !product.isActive) {
+        return res.status(404).json({
+          success: false,
+          message: `Product "${item.title}" not found or inactive`,
+        });
+      }
+
+      const sizeItem = product.sizes.find((s) => s.size === item.selectedSize);
+      if (!sizeItem) {
+        return res.status(400).json({
+          success: false,
+          message: `Size ${item.selectedSize} not available for ${item.title}`,
+        });
+      }
+
+      if (sizeItem.stock < item.quantity) {
+        return res.status(400).json({
+          success: false,
+          message: `Not enough stock for ${item.title} (Size: ${item.selectedSize}). Only ${sizeItem.stock} available.`,
+        });
+      }
+    }
+
+    if (paymentMethod === "cod") {
       // For COD, create the order directly in DB with confirmed status
       const newOrder = new Order({
         ...orderData,
         totalAmount: finalAmount,
-        cashHandlingFee: cashHandlingFee,
+        cashHandlingFee,
+        shippingFee,
         paymentMethod,
         orderStatus: "confirmed",
-        paymentStatus: "cod",
+        paymentStatus: "pending",
         orderDate: new Date(),
         orderUpdateDate: new Date(),
-        deliveryDate: null, // ✅ Initialize delivery date as null
+        deliveryDate: null,
+        items: orderData.cartItems.map((item) => ({
+          productId: item.productId,
+          title: item.title,
+          image: item.image,
+          price: item.price,
+          salePrice: item.salePrice,
+          quantity: item.quantity,
+          selectedSize: item.selectedSize,
+          selectedColor: item.selectedColor,
+          brand: item.brand,
+        })),
       });
 
       await newOrder.save();
 
       // Update stock for each product and size for COD orders
-      for (let item of newOrder.cartItems) {
+      for (let item of newOrder.items) {
         let product = await Product.findById(item.productId);
 
-        if (!product) {
-          return res.status(404).json({
-            success: false,
-            message: `Product ${item.title} not found`,
-          });
-        }
-
-        // Find the specific size and update stock
         const sizeItem = product.sizes.find(
           (s) => s.size === item.selectedSize
         );
-        if (!sizeItem) {
-          return res.status(400).json({
-            success: false,
-            message: `Size ${item.selectedSize} not available for product ${item.title}`,
-          });
-        }
-
-        if (sizeItem.stock < item.quantity) {
-          return res.status(400).json({
-            success: false,
-            message: `Not enough stock for size ${item.selectedSize} of product ${item.title}`,
-          });
-        }
-
         sizeItem.stock -= item.quantity;
 
         // Update total stock
@@ -97,12 +129,14 @@ const createOrder = async (req, res) => {
             orderDate: newOrder.orderDate,
             paymentMethod: newOrder.paymentMethod,
             totalAmount: newOrder.totalAmount,
+            items: newOrder.items,
             addressInfo: newOrder.addressInfo,
+            shippingFee: newOrder.shippingFee,
+            cashHandlingFee: newOrder.cashHandlingFee,
           });
         }
       } catch (emailError) {
         console.error("Failed to send confirmation email:", emailError);
-        // Don't fail the order if email fails
       }
 
       // Send notification email to admin
@@ -117,11 +151,11 @@ const createOrder = async (req, res) => {
           orderDate: newOrder.orderDate,
           paymentMethod: newOrder.paymentMethod,
           totalAmount: newOrder.totalAmount,
+          items: newOrder.items,
           addressInfo: newOrder.addressInfo,
         });
       } catch (emailError) {
         console.error("Failed to send admin notification email:", emailError);
-        // Don't fail the order if email fails
       }
 
       return res.status(201).json({
@@ -129,13 +163,19 @@ const createOrder = async (req, res) => {
         orderId: newOrder._id,
         paymentMethod,
         message: "COD order created successfully",
+        data: newOrder,
       });
     } else {
-      // For online payments, create Razorpay order only
+      // For online payments, create Razorpay order
       const options = {
         amount: Math.round(finalAmount * 100),
         currency: "INR",
         receipt: `rcpt_${Date.now()}`,
+        notes: {
+          userId: orderData.userId,
+          cartId: orderData.cartId,
+          paymentMethod: paymentMethod,
+        },
       };
 
       const razorpayOrder = await razorpay.orders.create(options);
@@ -146,6 +186,12 @@ const createOrder = async (req, res) => {
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency,
         paymentMethod,
+        orderData: {
+          ...orderData,
+          totalAmount: finalAmount,
+          shippingFee,
+          cashHandlingFee: paymentMethod === "cod" ? cashHandlingFee : 0,
+        },
       });
     }
   } catch (e) {
@@ -158,7 +204,7 @@ const createOrder = async (req, res) => {
   }
 };
 
-// ✅ Verify and Capture Payment - Only for online payments
+// ✅ Enhanced: Verify and Capture Payment
 const capturePayment = async (req, res) => {
   try {
     const {
@@ -195,25 +241,25 @@ const capturePayment = async (req, res) => {
       });
     }
 
-    // Calculate final amount
-    let finalAmount = orderData.totalAmount;
-    let cashHandlingFee = 0;
-
-    if (orderData.paymentMethod === "cod") {
-      cashHandlingFee = 60;
-      finalAmount = orderData.totalAmount + cashHandlingFee;
-    }
-
-    console.log("Creating order with final amount:", finalAmount);
-
     // Create the order in DB only after successful payment verification
     const newOrder = new Order({
       userId: orderData.userId,
       cartId: orderData.cartId,
-      cartItems: orderData.cartItems,
+      items: orderData.cartItems.map((item) => ({
+        productId: item.productId,
+        title: item.title,
+        image: item.image,
+        price: item.price,
+        salePrice: item.salePrice,
+        quantity: item.quantity,
+        selectedSize: item.selectedSize,
+        selectedColor: item.selectedColor,
+        brand: item.brand,
+      })),
       addressInfo: orderData.addressInfo,
-      totalAmount: finalAmount,
-      cashHandlingFee: cashHandlingFee,
+      totalAmount: orderData.totalAmount,
+      shippingFee: orderData.shippingFee || 0,
+      cashHandlingFee: orderData.cashHandlingFee || 0,
       paymentMethod: orderData.paymentMethod,
       orderStatus: "confirmed",
       paymentStatus: "paid",
@@ -221,46 +267,17 @@ const capturePayment = async (req, res) => {
       paymentId: razorpay_payment_id,
       orderDate: new Date(),
       orderUpdateDate: new Date(),
-      deliveryDate: null, // ✅ Initialize delivery date as null
+      deliveryDate: null,
     });
 
     await newOrder.save();
     console.log("Order saved to database:", newOrder._id);
 
     // Update stock for each product and size
-    for (let item of newOrder.cartItems) {
+    for (let item of newOrder.items) {
       let product = await Product.findById(item.productId);
 
-      if (!product) {
-        console.log(`Product not found: ${item.productId}`);
-        return res.status(404).json({
-          success: false,
-          message: `Product ${item.title} not found`,
-        });
-      }
-
-      // Find the specific size and update stock
       const sizeItem = product.sizes.find((s) => s.size === item.selectedSize);
-      if (!sizeItem) {
-        console.log(
-          `Size not found: ${item.selectedSize} for product ${item.title}`
-        );
-        return res.status(400).json({
-          success: false,
-          message: `Size ${item.selectedSize} not available for product ${item.title}`,
-        });
-      }
-
-      if (sizeItem.stock < item.quantity) {
-        console.log(
-          `Not enough stock for size ${item.selectedSize} of product ${item.title}`
-        );
-        return res.status(400).json({
-          success: false,
-          message: `Not enough stock for size ${item.selectedSize} of product ${item.title}`,
-        });
-      }
-
       sizeItem.stock -= item.quantity;
 
       // Update total stock
@@ -294,12 +311,13 @@ const capturePayment = async (req, res) => {
           orderDate: newOrder.orderDate,
           paymentMethod: newOrder.paymentMethod,
           totalAmount: newOrder.totalAmount,
+          items: newOrder.items,
           addressInfo: newOrder.addressInfo,
+          shippingFee: newOrder.shippingFee,
         });
       }
     } catch (emailError) {
       console.error("Failed to send confirmation email:", emailError);
-      // Don't fail the order if email fails
     }
 
     // Send notification email to admin for online payment orders
@@ -314,11 +332,11 @@ const capturePayment = async (req, res) => {
         orderDate: newOrder.orderDate,
         paymentMethod: newOrder.paymentMethod,
         totalAmount: newOrder.totalAmount,
+        items: newOrder.items,
         addressInfo: newOrder.addressInfo,
       });
     } catch (emailError) {
       console.error("Failed to send admin notification email:", emailError);
-      // Don't fail the order if email fails
     }
 
     res.status(200).json({
@@ -337,11 +355,50 @@ const capturePayment = async (req, res) => {
   }
 };
 
-// ✅ Get all orders by user
+// ✅ Enhanced: Get all orders by user with product details
 const getAllOrdersByUser = async (req, res) => {
   try {
     const { userId } = req.params;
-    const orders = await Order.find({ userId }).sort({ orderDate: -1 });
+    const { page = 1, limit = 10, status } = req.query;
+
+    let filters = { userId };
+    if (status && status !== "all") {
+      filters.orderStatus = status;
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const orders = await Order.find(filters)
+      .sort({ orderDate: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const totalOrders = await Order.countDocuments(filters);
+    const totalPages = Math.ceil(totalOrders / parseInt(limit));
+
+    // Get order statistics
+    const orderStats = await Order.aggregate([
+      { $match: { userId } },
+      {
+        $group: {
+          _id: "$orderStatus",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const stats = {
+      total: totalOrders,
+      confirmed: 0,
+      processing: 0,
+      shipped: 0,
+      delivered: 0,
+      cancelled: 0,
+    };
+
+    orderStats.forEach((stat) => {
+      stats[stat._id] = stat.count;
+    });
 
     if (!orders.length) {
       return res.status(404).json({
@@ -350,17 +407,28 @@ const getAllOrdersByUser = async (req, res) => {
       });
     }
 
-    res.status(200).json({ success: true, data: orders });
+    res.status(200).json({
+      success: true,
+      data: orders,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages,
+        totalOrders,
+        hasNext: parseInt(page) < totalPages,
+        hasPrev: parseInt(page) > 1,
+      },
+      stats,
+    });
   } catch (e) {
     console.error("Get Orders Error:", e);
     res.status(500).json({
       success: false,
-      message: "Some error occurred!",
+      message: "Some error occurred while fetching orders!",
     });
   }
 };
 
-// ✅ Get single order details
+// ✅ Enhanced: Get single order details with product info
 const getOrderDetails = async (req, res) => {
   try {
     const { id } = req.params;
@@ -373,21 +441,50 @@ const getOrderDetails = async (req, res) => {
       });
     }
 
-    res.status(200).json({ success: true, data: order });
+    // Populate product details for each item
+    const populatedItems = await Promise.all(
+      order.items.map(async (item) => {
+        const product = await Product.findById(item.productId).select(
+          "images colors sizes isActive category subcategory"
+        );
+
+        return {
+          ...item.toObject(),
+          productDetails: product
+            ? {
+                images: product.images,
+                colors: product.colors,
+                sizes: product.sizes,
+                isActive: product.isActive,
+                category: product.category,
+                subcategory: product.subcategory,
+              }
+            : null,
+        };
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      data: {
+        ...order.toObject(),
+        items: populatedItems,
+      },
+    });
   } catch (e) {
     console.error("Get Order Details Error:", e);
     res.status(500).json({
       success: false,
-      message: "Some error occurred!",
+      message: "Some error occurred while fetching order details!",
     });
   }
 };
 
-// ✅ Request Order Cancellation
+// ✅ Enhanced: Request Order Cancellation
 const requestCancellation = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const { reason } = req.body;
+    const { reason, items } = req.body;
 
     if (!reason) {
       return res.status(400).json({
@@ -404,7 +501,7 @@ const requestCancellation = async (req, res) => {
       });
     }
 
-    // Check if order can be cancelled (only confirmed/processing orders)
+    // Check if order can be cancelled
     if (!["confirmed", "processing"].includes(order.orderStatus)) {
       return res.status(400).json({
         success: false,
@@ -425,6 +522,7 @@ const requestCancellation = async (req, res) => {
       requested: true,
       requestedAt: new Date(),
       reason: reason,
+      items: items || order.items.map((item) => item._id), // Specific items to cancel
       status: "pending",
     };
     order.orderUpdateDate = new Date();
@@ -445,11 +543,11 @@ const requestCancellation = async (req, res) => {
         orderDate: order.orderDate,
         paymentMethod: order.paymentMethod,
         totalAmount: order.totalAmount,
+        items: order.items,
         addressInfo: order.addressInfo,
       });
     } catch (emailError) {
       console.error("Failed to send cancellation request email:", emailError);
-      // Don't fail the request if email fails
     }
 
     res.status(200).json({
@@ -467,11 +565,11 @@ const requestCancellation = async (req, res) => {
   }
 };
 
-// ✅ Request Order Return
+// ✅ Enhanced: Request Order Return
 const requestReturn = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const { reason } = req.body;
+    const { reason, items } = req.body;
 
     if (!reason) {
       return res.status(400).json({
@@ -496,11 +594,10 @@ const requestReturn = async (req, res) => {
       });
     }
 
-    // ✅ Use deliveryDate if available, otherwise use orderUpdateDate
+    // Use deliveryDate if available, otherwise use orderUpdateDate
     const deliveryDate = order.deliveryDate || order.orderUpdateDate;
-    const returnDeadline = new Date(
-      deliveryDate.setDate(deliveryDate.getDate() + 7)
-    );
+    const returnDeadline = new Date(deliveryDate);
+    returnDeadline.setDate(returnDeadline.getDate() + 7);
 
     if (new Date() > returnDeadline) {
       return res.status(400).json({
@@ -522,6 +619,7 @@ const requestReturn = async (req, res) => {
       requested: true,
       requestedAt: new Date(),
       reason: reason,
+      items: items || order.items.map((item) => item._id), // Specific items to return
       status: "pending",
     };
     order.orderUpdateDate = new Date();
@@ -542,11 +640,11 @@ const requestReturn = async (req, res) => {
         orderDate: order.orderDate,
         paymentMethod: order.paymentMethod,
         totalAmount: order.totalAmount,
+        items: order.items,
         addressInfo: order.addressInfo,
       });
     } catch (emailError) {
       console.error("Failed to send return request email:", emailError);
-      // Don't fail the request if email fails
     }
 
     res.status(200).json({
@@ -564,6 +662,90 @@ const requestReturn = async (req, res) => {
   }
 };
 
+// ✅ New: Track order
+const trackOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    const trackingEvents = [
+      {
+        status: "confirmed",
+        title: "Order Confirmed",
+        description: "Your order has been confirmed",
+        date: order.orderDate,
+        completed: true,
+      },
+      {
+        status: "processing",
+        title: "Processing",
+        description: "Your order is being processed",
+        date: order.orderStatus === "processing" ? order.orderUpdateDate : null,
+        completed: [
+          "processing",
+          "shipped",
+          "out_for_delivery",
+          "delivered",
+        ].includes(order.orderStatus),
+      },
+      {
+        status: "shipped",
+        title: "Shipped",
+        description: "Your order has been shipped",
+        date: order.orderStatus === "shipped" ? order.orderUpdateDate : null,
+        completed: ["shipped", "out_for_delivery", "delivered"].includes(
+          order.orderStatus
+        ),
+      },
+      {
+        status: "out_for_delivery",
+        title: "Out for Delivery",
+        description: "Your order is out for delivery",
+        date:
+          order.orderStatus === "out_for_delivery"
+            ? order.orderUpdateDate
+            : null,
+        completed: ["out_for_delivery", "delivered"].includes(
+          order.orderStatus
+        ),
+      },
+      {
+        status: "delivered",
+        title: "Delivered",
+        description: "Your order has been delivered",
+        date: order.deliveryDate,
+        completed: order.orderStatus === "delivered",
+      },
+    ];
+
+    res.status(200).json({
+      success: true,
+      data: {
+        orderId: order._id,
+        orderStatus: order.orderStatus,
+        trackingEvents,
+        estimatedDelivery: order.estimatedDelivery,
+        deliveryDate: order.deliveryDate,
+        shippingAddress: order.addressInfo,
+      },
+    });
+  } catch (e) {
+    console.error("Track Order Error:", e);
+    res.status(500).json({
+      success: false,
+      message: "Error while tracking order",
+      error: e.message,
+    });
+  }
+};
+
 module.exports = {
   createOrder,
   capturePayment,
@@ -571,4 +753,5 @@ module.exports = {
   getOrderDetails,
   requestCancellation,
   requestReturn,
+  trackOrder,
 };
