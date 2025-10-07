@@ -165,11 +165,6 @@ export const shoppingViewHeaderMenuItems = [
     path: "/shop/home",
   },
   {
-    id: "products",
-    label: "Products",
-    path: "/shop/listing",
-  },
-  {
     id: "men",
     label: "Men",
     path: "/shop/listing",
@@ -177,11 +172,6 @@ export const shoppingViewHeaderMenuItems = [
   {
     id: "women",
     label: "Women",
-    path: "/shop/listing",
-  },
-  {
-    id: "kids",
-    label: "Kids",
     path: "/shop/listing",
   },
   {
@@ -210,7 +200,7 @@ export const filterOptions = {
   category: [
     { id: "men", label: "Men" },
     { id: "women", label: "Women" },
-    { id: "kids", label: "Kids" },
+    { id: "", label: "Kids" },
   ],
 };
 

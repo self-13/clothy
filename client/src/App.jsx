@@ -5,6 +5,7 @@ import AuthRegister from "./pages/auth/register";
 import AdminLayout from "./components/admin-view/layout";
 import AdminDashboard from "./pages/admin-view/dashboard";
 import AdminProducts from "./pages/admin-view/products";
+import PrivacyPolicy from "./components/shopping-view/privacy-policy";
 import AdminOrders from "./pages/admin-view/orders";
 import AdminFeatures from "./pages/admin-view/features";
 import ShoppingLayout from "./components/shopping-view/layout";
@@ -100,8 +101,10 @@ function App() {
           <Route path="account" element={<ShoppingAccount />} />
           <Route path="payment-success" element={<PaymentSuccessPage />} />
           <Route path="search" element={<SearchProducts />} />
+          
         </Route>
         <Route path="/unauth-page" element={<UnauthPage />} />
+<Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Analytics />

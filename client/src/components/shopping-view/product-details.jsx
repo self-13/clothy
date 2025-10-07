@@ -15,7 +15,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { ShoppingCart, Star, Truck, Shield, RotateCcw, X } from "lucide-react";
+import { 
+  ShoppingCart, 
+  Star, 
+  Truck, 
+  Shield, 
+  RotateCcw, 
+  X,
+  Check,
+  ChevronRight,
+  Heart,
+  Share2,
+  Menu,
+  ArrowLeft
+} from "lucide-react";
 import { Badge } from "../ui/badge";
 
 function ProductDetailsDialog({ open, setOpen, productDetails }) {
@@ -23,6 +36,7 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
   const [selectedColor, setSelectedColor] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
 
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
@@ -31,15 +45,16 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
 
   const { toast } = useToast();
 
-  // Debug logging
+  // Check mobile screen size
   useEffect(() => {
-    if (productDetails) {
-      console.log("🔍 ProductDetailsDialog - productDetails:", productDetails);
-      console.log("🖼️ Product images:", productDetails.images);
-      console.log("📏 Product sizes:", productDetails.sizes);
-      console.log("🎨 Product colors:", productDetails.colors);
-    }
-  }, [productDetails]);
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   function handleAddToCart() {
     if (!selectedSize) {
@@ -50,7 +65,6 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
       return;
     }
 
-    // Check if the selected size has sufficient stock
     const sizeStock = productDetails?.sizes?.find(
       (s) => s.size === selectedSize
     );
@@ -76,7 +90,7 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
       if (data?.payload?.success) {
         dispatch(fetchCartItems(user?.id));
         toast({
-          title: "Product added to cart successfully! 🎉",
+          title: "Added to Cart",
           description: `${productDetails?.title} has been added to your cart.`,
         });
         setQuantity(1);
@@ -104,11 +118,11 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
   if (!productDetails) {
     return (
       <Dialog open={open} onOpenChange={handleDialogClose}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl w-[95vw] sm:w-[90vw]">
           <div className="flex flex-col items-center justify-center py-12">
             {isLoading ? (
               <>
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mb-4"></div>
                 <p className="text-gray-600">Loading product details...</p>
               </>
             ) : error ? (
@@ -152,297 +166,369 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
 
   return (
     <Dialog open={open} onOpenChange={handleDialogClose}>
-      <DialogContent className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 p-4 sm:p-6 max-w-[95vw] sm:max-w-[90vw] lg:max-w-[80vw] xl:max-w-[70vw] overflow-y-auto max-h-[90vh]">
-        {/* Close Button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute right-4 top-4 z-50 h-8 w-8 rounded-full bg-white/90 backdrop-blur-sm"
-          onClick={handleDialogClose}
-        >
-          <X className="h-4 w-4" />
-        </Button>
+      <DialogContent className="max-w-6xl w-[95vw] h-[90vh] sm:h-[85vh] lg:h-[80vh] p-0 overflow-hidden flex flex-col">
+        {/* Mobile Header */}
+        {isMobile && (
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleDialogClose}
+              className="h-8 w-8"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h2 className="text-lg font-medium text-gray-900">Product Details</h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleDialogClose}
+              className="h-8 w-8"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
 
-        {/* Left Side - Product Images */}
-        <div className="space-y-4">
-          {/* Main Image */}
-          <div className="relative aspect-square overflow-hidden rounded-lg border bg-gray-50">
-            {productImages.length > 0 ? (
-              <img
-                src={productImages[activeImage]}
-                alt={productDetails?.title}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.target.src = "/placeholder-image.jpg";
-                }}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-gray-400">
-                No Image Available
+        {/* Desktop Close Button */}
+        {!isMobile && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-4 top-4 z-50 h-8 w-8 rounded-full bg-white border border-gray-300 hover:bg-gray-100"
+            onClick={handleDialogClose}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+
+        <div className="flex-1 overflow-y-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
+            {/* Left Side - Product Images */}
+            <div className="lg:col-span-7 p-4 sm:p-6 border-r border-gray-200">
+              <div className={`flex ${isMobile ? 'flex-col' : 'flex-row'} gap-4`}>
+                {/* Thumbnail Images */}
+                <div className={`flex ${isMobile ? 'flex-row order-2' : 'flex-col order-1'} gap-2 overflow-x-auto ${isMobile ? 'pb-2' : ''}`}>
+                  {productImages.map((image, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setActiveImage(index)}
+                      className={`flex-shrink-0 ${isMobile ? 'w-16 h-16' : 'w-14 h-14'} border rounded overflow-hidden ${
+                        activeImage === index
+                          ? "border-orange-500 border-2"
+                          : "border-gray-300"
+                      }`}
+                    >
+                      <img
+                        src={image}
+                        alt={`${productDetails?.title} ${index + 1}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.src = "/placeholder-image.jpg";
+                        }}
+                      />
+                    </button>
+                  ))}
+                </div>
+
+                {/* Main Image */}
+                <div className={`flex-1 ${isMobile ? 'order-1' : 'order-2'}`}>
+                  <div className="aspect-square bg-white border border-gray-200 rounded-lg overflow-hidden">
+                    {productImages.length > 0 ? (
+                      <img
+                        src={productImages[activeImage]}
+                        alt={productDetails?.title}
+                        className="w-full h-full object-contain p-4"
+                        onError={(e) => {
+                          e.target.src = "/placeholder-image.jpg";
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400">
+                        No Image Available
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-            )}
+            </div>
 
-            {/* Sale Badge */}
-            {hasSale && (
-              <Badge className="absolute top-3 left-3 bg-red-500 text-white px-3 py-1 text-sm">
-                {discountPercentage}% OFF
-              </Badge>
-            )}
+            {/* Right Side - Product Info */}
+            <div className="lg:col-span-5 p-4 sm:p-6 bg-white">
+              <div className="space-y-4">
+                {/* Breadcrumb - Hide on mobile */}
+                {!isMobile && (
+                  <div className="text-sm text-gray-500">
+                    <span>Home</span>
+                    <ChevronRight className="w-3 h-3 inline mx-1" />
+                    <span className="capitalize">{productDetails?.category}</span>
+                    <ChevronRight className="w-3 h-3 inline mx-1" />
+                    <span className="capitalize">{productDetails?.subcategory}</span>
+                  </div>
+                )}
 
-            {/* Stock Badge */}
-            {productDetails?.totalStock === 0 && (
-              <Badge className="absolute top-3 right-3 bg-gray-500 text-white px-3 py-1 text-sm">
-                Out of Stock
-              </Badge>
-            )}
+                {/* Title */}
+                <h1 className="text-xl sm:text-2xl font-normal text-gray-900 leading-tight">
+                  {productDetails?.title}
+                </h1>
+
+                {/* Rating */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`w-4 h-4 ${
+                          star <= Math.floor(productDetails?.averageReview || 0)
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "fill-gray-300 text-gray-300"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-blue-600 text-sm hover:underline cursor-pointer">
+                    {productDetails?.averageReview?.toFixed(1) || "0.0"} ratings
+                  </span>
+                  <Separator orientation="vertical" className="h-4" />
+                  <span className="text-blue-600 text-sm hover:underline cursor-pointer">
+                    {productDetails?.salesCount || 0} sold
+                  </span>
+                </div>
+
+                {/* Price */}
+                <div className="space-y-1">
+                  {hasSale ? (
+                    <>
+                      <div className="flex items-baseline gap-2 flex-wrap">
+                        <span className="text-2xl sm:text-3xl text-gray-900">
+                          ₹{productDetails?.salePrice}
+                        </span>
+                        <span className="text-lg text-gray-500 line-through">
+                          ₹{productDetails?.price}
+                        </span>
+                        <Badge className="bg-red-500 text-white text-sm">
+                          {discountPercentage}% off
+                        </Badge>
+                      </div>
+                    </>
+                  ) : (
+                    <span className="text-2xl sm:text-3xl text-gray-900">
+                      ₹{productDetails?.price || "0.00"}
+                    </span>
+                  )}
+                </div>
+
+                
+
+                {/* Size Selection */}
+                {availableSizes.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <Label className="text-sm font-bold text-gray-900">
+                        Size: <span className="font-normal">{selectedSize}</span>
+                      </Label>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {availableSizes.map((size) => (
+                        <button
+                          key={size.size}
+                          onClick={() => setSelectedSize(size.size)}
+                          className={`px-3 py-2 border rounded-lg text-sm font-medium transition-all ${
+                            selectedSize === size.size
+                              ? "border-orange-500 bg-orange-50 text-orange-700"
+                              : "border-gray-300 hover:border-gray-400"
+                          }`}
+                        >
+                          {size.size}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Color Selection */}
+                {availableColors.length > 0 && (
+                  <div className="space-y-3">
+                    <Label className="text-sm font-bold text-gray-900">
+                      Color: <span className="font-normal capitalize">{selectedColor}</span>
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
+                      {availableColors.map((color) => (
+                        <button
+                          key={color}
+                          onClick={() => setSelectedColor(color)}
+                          className={`px-3 py-2 border rounded-lg text-sm font-medium capitalize transition-all ${
+                            selectedColor === color
+                              ? "border-orange-500 bg-orange-50 text-orange-700"
+                              : "border-gray-300 hover:border-gray-400"
+                          }`}
+                        >
+                          {color}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Quantity */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-bold text-gray-900">Quantity:</Label>
+                  <div className="flex items-center gap-3">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      disabled={quantity <= 1}
+                      className="h-8 w-8"
+                    >
+                      -
+                    </Button>
+                    <span className="px-4 py-1 border rounded text-sm font-medium min-w-[40px] text-center">
+                      {quantity}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        const selectedSizeStock =
+                          availableSizes.find((s) => s.size === selectedSize)
+                            ?.stock || 0;
+                        setQuantity(Math.min(selectedSizeStock, quantity + 1));
+                      }}
+                      disabled={
+                        quantity >=
+                        (availableSizes.find((s) => s.size === selectedSize)
+                          ?.stock || 0)
+                      }
+                      className="h-8 w-8"
+                    >
+                      +
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="space-y-3 pt-4">
+                  {availableSizes.length === 0 || productDetails?.totalStock === 0 ? (
+                    <Button
+                      className="w-full bg-gray-400 hover:bg-gray-400 cursor-not-allowed"
+                      size="lg"
+                      disabled
+                    >
+                      Out of Stock
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        className="w-full bg-orange-500 hover:bg-orange-600 text-white border-orange-500 text-base sm:text-lg"
+                        onClick={handleAddToCart}
+                        disabled={!selectedSize}
+                        size="lg"
+                      >
+                        Add to Cart
+                      </Button>
+                      <Button
+                        className="w-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 border-yellow-400 text-base sm:text-lg"
+                        size="lg"
+                      >
+                        Buy Now
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+                {/* Delivery Info */}
+                <div className="border-t pt-4 space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Truck className="w-4 h-4 text-gray-600 flex-shrink-0" />
+                    <span>
+                      <strong>Free delivery</strong>{" "}on orders above ₹500
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <RotateCcw className="w-4 h-4 text-gray-600 flex-shrink-0" />
+                    <span>
+                      <strong>Return Policy</strong> 30 days returnable
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Shield className="w-4 h-4 text-gray-600 flex-shrink-0" />
+                    <span>
+                      <strong>Warranty</strong> 1 year manufacturer warranty
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Thumbnail Images */}
-          {productImages.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {productImages.map((image, index) => (
-                <button
-                  key={index}
-                  onClick={() => setActiveImage(index)}
-                  className={`flex-shrink-0 w-16 h-16 border-2 rounded-md overflow-hidden ${
-                    activeImage === index
-                      ? "border-blue-500"
-                      : "border-gray-200"
-                  }`}
-                >
-                  <img
-                    src={image}
-                    alt={`${productDetails?.title} ${index + 1}`}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.src = "/placeholder-image.jpg";
-                    }}
-                  />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Right Side - Product Info */}
-        <div className="flex flex-col gap-6">
-          {/* Title and Category */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Badge variant="secondary" className="text-xs capitalize">
-                {productDetails?.category}
-              </Badge>
-              <Badge variant="outline" className="text-xs">
-                {productDetails?.brand}
-              </Badge>
-              {productDetails?.isFeatured && (
-                <Badge className="bg-purple-500 text-white text-xs">
-                  Featured
-                </Badge>
+          {/* Product Details Section */}
+          <div className="col-span-full border-t border-gray-200">
+            <div className="p-4 sm:p-6">
+              <h2 className="text-lg sm:text-xl font-bold mb-4">Product details</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                <div className="space-y-3">
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-gray-600 text-sm sm:text-base">Brand</span>
+                    <span className="font-medium text-sm sm:text-base">{productDetails?.brand}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-gray-600 text-sm sm:text-base">Category</span>
+                    <span className="font-medium text-sm sm:text-base capitalize">{productDetails?.category}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-gray-600 text-sm sm:text-base">Subcategory</span>
+                    <span className="font-medium text-sm sm:text-base capitalize">{productDetails?.subcategory}</span>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-gray-600 text-sm sm:text-base">In Stock</span>
+                    <span className="font-medium text-sm sm:text-base">{productDetails?.totalStock || 0} units</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-gray-600 text-sm sm:text-base">Sold</span>
+                    <span className="font-medium text-sm sm:text-base">{productDetails?.salesCount || 0} units</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-gray-600 text-sm sm:text-base">Rating</span>
+                    <span className="font-medium text-sm sm:text-base">{productDetails?.averageReview?.toFixed(1) || "0.0"}/5</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Description */}
+              {productDetails?.description && (
+                <div className="mt-6">
+                  <h3 className="font-bold mb-2 text-sm sm:text-base">Description</h3>
+                  <p className="text-gray-700 leading-relaxed text-sm sm:text-base">{productDetails.description}</p>
+                </div>
               )}
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-              {productDetails?.title || "Product Title"}
-            </h1>
-            <p className="text-gray-600 mt-2 leading-relaxed">
-              {productDetails?.description || "No description available."}
-            </p>
           </div>
+        </div>
 
-          {/* Rating and Sales */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1">
-                <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                <span className="font-semibold text-gray-900">
-                  {productDetails?.averageReview?.toFixed(1) || "0.0"}
-                </span>
-              </div>
-            </div>
-            <Separator orientation="vertical" className="h-4" />
-            <span className="text-gray-500 text-sm">
-              {productDetails?.salesCount || 0} sold
-            </span>
-          </div>
-
-          {/* Price */}
-          <div className="flex items-baseline gap-3">
-            {hasSale ? (
-              <>
-                <span className="text-3xl font-bold text-gray-900">
-                  ₹{productDetails?.salePrice}
-                </span>
-                <span className="text-xl text-gray-500 line-through">
-                  ₹{productDetails?.price}
-                </span>
-                <Badge variant="destructive" className="text-sm">
-                  Save {discountPercentage}%
-                </Badge>
-              </>
-            ) : (
-              <span className="text-3xl font-bold text-gray-900">
-                ₹{productDetails?.price || "0.00"}
-              </span>
-            )}
-          </div>
-
-          {/* Size Selector */}
-          {availableSizes.length > 0 && (
-            <div className="space-y-3">
-              <Label htmlFor="size" className="text-base font-semibold">
-                Select Size
-              </Label>
-              <Select value={selectedSize} onValueChange={setSelectedSize}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose your size" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableSizes.map((size) => (
-                    <SelectItem key={size.size} value={size.size}>
-                      {size.size} ({size.stock} available)
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Color Selector */}
-          {availableColors.length > 0 && (
-            <div className="space-y-3">
-              <Label htmlFor="color" className="text-base font-semibold">
-                Select Color
-              </Label>
-              <div className="flex flex-wrap gap-2">
-                {availableColors.map((color) => (
-                  <Button
-                    key={color}
-                    variant={selectedColor === color ? "default" : "outline"}
-                    onClick={() => setSelectedColor(color)}
-                    className="capitalize"
-                  >
-                    {color}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Quantity Selector */}
-          {selectedSize && (
-            <div className="space-y-3">
-              <Label htmlFor="quantity" className="text-base font-semibold">
-                Quantity
-              </Label>
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  disabled={quantity <= 1}
-                  className="h-10 w-10"
-                >
-                  -
-                </Button>
-                <span className="px-6 py-2 border rounded-md text-lg font-semibold min-w-[60px] text-center">
-                  {quantity}
-                </span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => {
-                    const selectedSizeStock =
-                      availableSizes.find((s) => s.size === selectedSize)
-                        ?.stock || 0;
-                    setQuantity(Math.min(selectedSizeStock, quantity + 1));
-                  }}
-                  disabled={
-                    quantity >=
-                    (availableSizes.find((s) => s.size === selectedSize)
-                      ?.stock || 0)
-                  }
-                  className="h-10 w-10"
-                >
-                  +
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="space-y-3">
-            {availableSizes.length === 0 || productDetails?.totalStock === 0 ? (
+        {/* Mobile Bottom Action Bar */}
+        {isMobile && (availableSizes.length > 0 && productDetails?.totalStock > 0) && (
+          <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 shadow-lg">
+            <div className="flex gap-3">
               <Button
-                className="w-full opacity-60 cursor-not-allowed"
-                size="lg"
-              >
-                Out of Stock
-              </Button>
-            ) : (
-              <Button
-                className="w-full flex items-center gap-2"
+                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white border-orange-500"
                 onClick={handleAddToCart}
                 disabled={!selectedSize}
                 size="lg"
               >
-                <ShoppingCart className="w-5 h-5" />
-                Add to Cart - ₹
-                {hasSale
-                  ? (productDetails.salePrice * quantity).toFixed(2)
-                  : (productDetails.price * quantity).toFixed(2)}
+                Add to Cart
               </Button>
-            )}
-          </div>
-
-          {/* Product Features */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t">
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Truck className="w-4 h-4" />
-              Free shipping
-            </div>
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Shield className="w-4 h-4" />
-              1-year warranty
-            </div>
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <RotateCcw className="w-4 h-4" />
-              30-day returns
+              <Button
+                className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-gray-900 border-yellow-400"
+                size="lg"
+              >
+                Buy Now
+              </Button>
             </div>
           </div>
-
-          {/* Product Specifications */}
-          <div className="space-y-3 pt-4 border-t">
-            <h4 className="font-semibold text-gray-900">
-              Product Specifications
-            </h4>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-gray-600">Category:</span>
-                <span className="ml-2 font-medium capitalize">
-                  {productDetails?.category}
-                </span>
-              </div>
-              <div>
-                <span className="text-gray-600">Subcategory:</span>
-                <span className="ml-2 font-medium capitalize">
-                  {productDetails?.subcategory}
-                </span>
-              </div>
-              <div>
-                <span className="text-gray-600">Brand:</span>
-                <span className="ml-2 font-medium">
-                  {productDetails?.brand}
-                </span>
-              </div>
-              <div>
-                <span className="text-gray-600">Total Stock:</span>
-                <span className="ml-2 font-medium">
-                  {productDetails?.totalStock || 0}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+        )}
       </DialogContent>
     </Dialog>
   );
