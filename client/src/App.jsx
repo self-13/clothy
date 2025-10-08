@@ -6,6 +6,7 @@ import AdminLayout from "./components/admin-view/layout";
 import AdminDashboard from "./pages/admin-view/dashboard";
 import AdminProducts from "./pages/admin-view/products";
 import PrivacyPolicy from "./components/shopping-view/privacy-policy";
+import TermsAndConditions from "./components/shopping-view/terms-condition";
 import AdminOrders from "./pages/admin-view/orders";
 import AdminFeatures from "./pages/admin-view/features";
 import ShoppingLayout from "./components/shopping-view/layout";
@@ -104,7 +105,8 @@ function App() {
           
         </Route>
         <Route path="/unauth-page" element={<UnauthPage />} />
-<Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Analytics />

@@ -1,6 +1,7 @@
 import ProductFilter from "@/components/shopping-view/filter";
 import ProductDetailsDialog from "@/components/shopping-view/product-details";
 import ShoppingProductTile from "@/components/shopping-view/product-tile";
+import ShoppingSubheader from "@/components/shopping-view/sub-header";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -48,7 +49,24 @@ function ShoppingListing() {
   const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
   const [viewMode, setViewMode] = useState("grid");
   const [showFilters, setShowFilters] = useState(false);
+  const [genderView, setGenderView] = useState("MEN");
+  const [activeCategory, setActiveCategory] = useState("");
   const { toast } = useToast();
+
+  const categories = [
+    "MEN",
+    "WOMEN", 
+    "WINTERWEAR",
+    "PLUS SIZE",
+    "SHIRTS",
+    "T-SHIRTS",
+    "JEANS",
+    "DRESSES",
+    "SHORTS",
+    "ACTIVEWEAR",
+    "ACCESSORIES",
+    "SALE"
+  ];
 
   const categorySearchParam = searchParams.get("category");
 
@@ -184,77 +202,50 @@ function ShoppingListing() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            All Products
-          </h1>
-          <p className="text-xl text-gray-600">
-            Discover our complete collection of amazing products
-          </p>
-        </div>
+    <div className="flex flex-col min-h-screen bg-white">
+      {/* Subheader */}
+      <ShoppingSubheader
+        genderView={genderView}
+        setGenderView={setGenderView}
+        activeCategory={activeCategory}
+        setActiveCategory={setActiveCategory}
+        categories={categories}
+      />
 
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Mobile Filter Toggle */}
-          <div className="lg:hidden flex gap-4 mb-4">
-            <Button
-              variant="outline"
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2"
-            >
-              <FilterIcon className="w-4 h-4" />
-              {showFilters ? "Hide Filters" : "Show Filters"}
-            </Button>
-            {/* <Button
-              variant="outline"
-              onClick={clearFilters}
-              disabled={Object?.keys(filters).length === 0}
-            >
-              Clear Filters
-            </Button> */}
+      <div className="flex-1">
+        <div className="container mx-auto px-4 py-8">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-black mb-2">
+              All Products
+            </h1>
+            <p className="text-lg text-gray-600">
+              Discover our complete collection of amazing products
+            </p>
           </div>
 
-          {/* Filters Sidebar */}
-          <div
-            className={`${
-              showFilters ? "block" : "hidden"
-            } lg:block lg:w-80 flex-shrink-0`}
-          >
-            <div className="sticky top-4">
-              <ProductFilter
-                filters={filters}
-                handleFilter={handleFilter}
-                onClearFilters={clearFilters}
-              />
-            </div>
-          </div>
-
-          {/* Products Section */}
-          <div className="flex-1">
+          <div className="flex flex-col">
             {/* Toolbar */}
-            <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
+            <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="flex items-center gap-4">
                   <span className="text-lg font-semibold text-gray-700">
                     {productList?.length || 0} Products
                   </span>
-                  {/* {Object.keys(filters).length > 0 && (
-                    <span className="text-sm text-gray-500">
-                      ({Object.values(filters).flat().length} filters applied)
-                    </span>
-                  )} */}
                 </div>
 
                 <div className="flex items-center gap-4">
                   {/* View Mode Toggle */}
-                  <div className="flex border rounded-lg p-1">
+                  <div className="flex border border-gray-300 rounded-lg p-1 bg-white">
                     <Button
                       variant={viewMode === "grid" ? "default" : "ghost"}
                       size="sm"
                       onClick={() => setViewMode("grid")}
-                      className="h-8 w-8 p-0"
+                      className={`h-8 w-8 p-0 ${
+                        viewMode === "grid" 
+                          ? "bg-black text-white hover:bg-gray-800" 
+                          : "hover:bg-gray-100"
+                      }`}
                     >
                       <Grid3X3 className="h-4 w-4" />
                     </Button>
@@ -262,7 +253,11 @@ function ShoppingListing() {
                       variant={viewMode === "list" ? "default" : "ghost"}
                       size="sm"
                       onClick={() => setViewMode("list")}
-                      className="h-8 w-8 p-0"
+                      className={`h-8 w-8 p-0 ${
+                        viewMode === "list" 
+                          ? "bg-black text-white hover:bg-gray-800" 
+                          : "hover:bg-gray-100"
+                      }`}
                     >
                       <List className="h-4 w-4" />
                     </Button>
@@ -274,13 +269,13 @@ function ShoppingListing() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2 border-gray-300 text-gray-700 hover:bg-gray-50"
                       >
                         <ArrowUpDownIcon className="h-4 w-4" />
                         <span>Sort by</span>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-[200px]">
+                    <DropdownMenuContent align="end" className="w-[200px] bg-white border border-gray-200">
                       <DropdownMenuRadioGroup
                         value={sort}
                         onValueChange={handleSort}
@@ -289,6 +284,7 @@ function ShoppingListing() {
                           <DropdownMenuRadioItem
                             value={sortItem.id}
                             key={sortItem.id}
+                            className="text-gray-700 hover:bg-gray-100 cursor-pointer"
                           >
                             {sortItem.label}
                           </DropdownMenuRadioItem>
@@ -303,7 +299,7 @@ function ShoppingListing() {
             {/* Products Grid/List */}
             {isLoading ? (
               <div className="flex justify-center items-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
               </div>
             ) : (
               <>
@@ -336,7 +332,12 @@ function ShoppingListing() {
                         : "No products available at the moment"}
                     </p>
                     {Object.keys(filters).length > 0 && (
-                      <Button onClick={clearFilters}>Clear All Filters</Button>
+                      <Button 
+                        onClick={clearFilters}
+                        className="bg-black text-white hover:bg-gray-800"
+                      >
+                        Clear All Filters
+                      </Button>
                     )}
                   </div>
                 )}
