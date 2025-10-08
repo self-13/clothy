@@ -427,12 +427,6 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                       >
                         Add to Cart
                       </Button>
-                      <Button
-                        className="w-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 border-yellow-400 text-base sm:text-lg"
-                        size="lg"
-                      >
-                        Buy Now
-                      </Button>
                     </>
                   )}
                 </div>
@@ -442,21 +436,16 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                   <div className="flex items-center gap-2 text-sm">
                     <Truck className="w-4 h-4 text-gray-600 flex-shrink-0" />
                     <span>
-                      <strong>Free delivery</strong>{" "}on orders above ₹500
+                      <strong>Free delivery</strong>{" "}on online payments.
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <RotateCcw className="w-4 h-4 text-gray-600 flex-shrink-0" />
                     <span>
-                      <strong>Return Policy</strong> 30 days returnable
+                      <strong>Return Policy</strong> 7 days returnable
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Shield className="w-4 h-4 text-gray-600 flex-shrink-0" />
-                    <span>
-                      <strong>Warranty</strong> 1 year manufacturer warranty
-                    </span>
-                  </div>
+                  
                 </div>
               </div>
             </div>

@@ -14,6 +14,7 @@ import { Dialog } from "../ui/dialog";
 import ShoppingOrderDetailsView from "./order-details";
 import { Badge } from "../ui/badge";
 import ReasonFormDialog from "./reason-form-dialog";
+import { Package, Calendar, Eye, X, RotateCcw } from "lucide-react";
 
 function ShoppingOrders() {
   const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
@@ -83,9 +84,6 @@ function ShoppingOrders() {
   const canCancelOrder = (order) => {
     if (!order) return false;
 
-    // Check if cancellation is already requested (you might need to add this field to your API)
-    // if (order.cancellation?.requested) return false;
-
     if (!["confirmed", "processing"].includes(order.orderStatus)) return false;
 
     const orderDate = new Date(order.orderDate);
@@ -98,9 +96,6 @@ function ShoppingOrders() {
   // Check if order can be returned (within 1 week of delivery OR within 15 days of order creation)
   const canReturnOrder = (order) => {
     if (!order) return false;
-
-    // Check if return is already requested (you might need to add this field to your API)
-    // if (order.return?.requested) return false;
 
     if (order.orderStatus !== "delivered") return false;
 
@@ -125,192 +120,181 @@ function ShoppingOrders() {
   const getStatusColor = (status) => {
     switch (status) {
       case "confirmed":
-        return "bg-green-500";
+        return "bg-gray-100 text-gray-800 border border-gray-300";
       case "processing":
-        return "bg-yellow-500";
+        return "bg-blue-50 text-blue-800 border border-blue-200";
       case "shipped":
-        return "bg-blue-500";
+        return "bg-purple-50 text-purple-800 border border-purple-200";
       case "out_for_delivery":
-        return "bg-purple-500";
+        return "bg-orange-50 text-orange-800 border border-orange-200";
       case "delivered":
-        return "bg-green-600";
+        return "bg-green-50 text-green-800 border border-green-200";
       case "cancelled":
-        return "bg-red-600";
+        return "bg-red-50 text-red-800 border border-red-200";
       case "returned":
-        return "bg-gray-600";
+        return "bg-gray-100 text-gray-800 border border-gray-300";
       default:
-        return "bg-black";
+        return "bg-gray-100 text-gray-800 border border-gray-300";
     }
+  };
+
+  const getStatusText = (status) => {
+    return status.split('_').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
   };
 
   // These functions might need to be updated based on your actual API response
   const getCancellationStatus = (order) => {
-    // Uncomment and modify when your API supports cancellation status
-    /*
-    if (!order?.cancellation?.requested) return null;
-
-    switch (order.cancellation.status) {
-      case "pending":
-        return { text: "Cancellation Requested", color: "bg-yellow-500" };
-      case "approved":
-        return { text: "Cancellation Approved", color: "bg-green-500" };
-      case "rejected":
-        return { text: "Cancellation Rejected", color: "bg-red-500" };
-      default:
-        return null;
-    }
-    */
     return null;
   };
 
   const getReturnStatus = (order) => {
-    // Uncomment and modify when your API supports return status
-    /*
-    if (!order?.return?.requested) return null;
-
-    switch (order.return.status) {
-      case "pending":
-        return { text: "Return Requested", color: "bg-yellow-500" };
-      case "approved":
-        return { text: "Return Approved", color: "bg-green-500" };
-      case "rejected":
-        return { text: "Return Rejected", color: "bg-red-500" };
-      default:
-        return null;
-    }
-    */
     return null;
   };
 
   return (
-    <div className="space-y-6">
-      {/* Reason Form Dialogs */}
-      <ReasonFormDialog
-        open={openCancellationDialog}
-        onOpenChange={setOpenCancellationDialog}
-        onSubmit={submitCancellationRequest}
-        type="cancellation"
-        isLoading={isLoading}
-      />
+    <div className="min-h-screen bg-white p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-black mb-2">My Orders</h1>
+          <p className="text-gray-600">Track and manage your orders</p>
+        </div>
 
-      <ReasonFormDialog
-        open={openReturnDialog}
-        onOpenChange={setOpenReturnDialog}
-        onSubmit={submitReturnRequest}
-        type="return"
-        isLoading={isLoading}
-      />
+        {/* Reason Form Dialogs */}
+        <ReasonFormDialog
+          open={openCancellationDialog}
+          onOpenChange={setOpenCancellationDialog}
+          onSubmit={submitCancellationRequest}
+          type="cancellation"
+          isLoading={isLoading}
+        />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <ReasonFormDialog
+          open={openReturnDialog}
+          onOpenChange={setOpenReturnDialog}
+          onSubmit={submitReturnRequest}
+          type="return"
+          isLoading={isLoading}
+        />
+
+        {/* Orders Grid */}
         {orderList && orderList.length > 0 ? (
-          orderList.map((order) => {
-            const product = order.items?.[0]; // Use items instead of cartItems
-            const cancellationStatus = getCancellationStatus(order);
-            const returnStatus = getReturnStatus(order);
-            const showCancelButton = canCancelOrder(order);
-            const showReturnButton = canReturnOrder(order);
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {orderList.map((order) => {
+              const product = order.items?.[0];
+              const cancellationStatus = getCancellationStatus(order);
+              const returnStatus = getReturnStatus(order);
+              const showCancelButton = canCancelOrder(order);
+              const showReturnButton = canReturnOrder(order);
 
-            return (
-              <Card key={order._id} className="flex flex-col justify-between">
-                <CardHeader>
-                  <CardTitle className="text-lg">
-                    Order #{order._id.slice(-6)}
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date(order.orderDate).toLocaleDateString()}
-                  </p>
-                </CardHeader>
-
-                <CardContent className="space-y-4">
-                  {/* Product image */}
-                  {product?.image && (
-                    <img
-                      src={product.image}
-                      alt={product.title}
-                      className="w-full h-40 object-cover rounded-md"
-                    />
-                  )}
-
-                  {/* Product title and quantity */}
-                  <div className="text-md font-medium">
-                    {product?.title}{" "}
-                    {order.items.length > 1 && (
-                      <span className="text-sm text-muted-foreground">
-                        + {order.items.length - 1} more
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Order status */}
-                  <div className="space-y-2">
-                    <Badge
-                      className={`py-1 px-3 ${getStatusColor(
-                        order.orderStatus
-                      )}`}
-                    >
-                      {order.orderStatus.replace("_", " ")}
-                    </Badge>
-
-                    {/* Cancellation Status */}
-                    {cancellationStatus && (
-                      <Badge
-                        className={`py-1 px-3 ${cancellationStatus.color}`}
-                      >
-                        {cancellationStatus.text}
+              return (
+                <Card 
+                  key={order._id} 
+                  className="flex flex-col justify-between border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-300"
+                >
+                  <CardHeader className="pb-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <CardTitle className="text-lg font-semibold text-black">
+                        Order #{order._id.slice(-8).toUpperCase()}
+                      </CardTitle>
+                      <Badge className={getStatusColor(order.orderStatus)}>
+                        {getStatusText(order.orderStatus)}
                       </Badge>
-                    )}
+                    </div>
+                    
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      {new Date(order.orderDate).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      })}
+                    </div>
+                  </CardHeader>
 
-                    {/* Return Status */}
-                    {returnStatus && (
-                      <Badge className={`py-1 px-3 ${returnStatus.color}`}>
-                        {returnStatus.text}
-                      </Badge>
-                    )}
-                  </div>
+                  <CardContent className="space-y-4">
+                    {/* Product Info */}
+                    <div className="flex space-x-4">
+                      {product?.image && (
+                        <img
+                          src={product.image}
+                          alt={product.title}
+                          className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-black truncate">
+                          {product?.title}
+                        </h3>
+                        {order.items.length > 1 && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            + {order.items.length - 1} more item(s)
+                          </p>
+                        )}
+                        <div className="flex items-center mt-2 text-sm text-gray-600">
+                          <Package className="w-4 h-4 mr-1" />
+                          {order.items.reduce((total, item) => total + item.quantity, 0)} items
+                        </div>
+                      </div>
+                    </div>
 
-                  {/* Total price */}
-                  <div className="text-lg font-semibold">
-                    ₹{order.totalAmount}
-                  </div>
+                    {/* Total Price */}
+                    <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+                      <span className="text-sm font-medium text-gray-600">Total Amount:</span>
+                      <span className="text-lg font-bold text-black">₹{order.totalAmount}</span>
+                    </div>
 
-                  {/* Action Buttons */}
-                  <div className="space-y-2">
-                    <Button
-                      onClick={() => handleFetchOrderDetails(order._id)}
-                      className="w-full"
-                      variant="outline"
-                    >
-                      View Details
-                    </Button>
-
-                    {/* Cancellation Button */}
-                    {/* {showCancelButton && (
+                    {/* Action Buttons */}
+                    <div className="space-y-2 pt-2">
                       <Button
-                        onClick={() => handleCancellationRequest(order)}
-                        className="w-full"
-                        variant="destructive"
+                        onClick={() => handleFetchOrderDetails(order._id)}
+                        className="w-full bg-black text-white hover:bg-gray-800 border border-black"
+                        variant="default"
                       >
-                        Request Cancellation
+                        <Eye className="w-4 h-4 mr-2" />
+                        View Details
                       </Button>
-                    )} */}
 
-                    {/* Return Button */}
-                    {/* {showReturnButton && (
-                      <Button
-                        onClick={() => handleReturnRequest(order)}
-                        className="w-full"
-                        variant="outline"
-                      >
-                        Request Return
-                      </Button>
-                    )} */}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })
+                      {/* Action Buttons Row */}
+                      <div className="flex space-x-2">
+                        {showCancelButton && (
+                          <Button
+                            onClick={() => handleCancellationRequest(order)}
+                            className="flex-1 bg-white text-black border border-gray-300 hover:bg-gray-50"
+                            variant="outline"
+                            size="sm"
+                          >
+                            <X className="w-4 h-4 mr-1" />
+                            Cancel
+                          </Button>
+                        )}
+                        
+                        {showReturnButton && (
+                          <Button
+                            onClick={() => handleReturnRequest(order)}
+                            className="flex-1 bg-white text-black border border-gray-300 hover:bg-gray-50"
+                            variant="outline"
+                            size="sm"
+                          >
+                            <RotateCcw className="w-4 h-4 mr-1" />
+                            Return
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         ) : (
-          <p className="text-center col-span-full">No orders found.</p>
+          <div className="text-center py-12">
+            <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No orders found</h3>
+            <p className="text-gray-600">You haven't placed any orders yet.</p>
+          </div>
         )}
       </div>
 
