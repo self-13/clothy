@@ -72,13 +72,13 @@ function ShoppingFooter() {
             </h3>
             <ul className="space-y-3">
               {[
-                { icon: FileText, text: "Terms & Conditions" },
-                { icon: Shield, text: "Privacy Policy" }
+                { icon: FileText, text: "Terms & Conditions", link: "/terms-and-conditions" },
+                { icon: Shield, text: "Privacy Policy", link: "/privacy-policy" }
               ].map((item, index) => (
                 <li key={index} className="flex items-center gap-3 group cursor-pointer transition-all duration-300 hover:translate-x-1">
                   <item.icon className="w-4 h-4 text-gray-600 group-hover:scale-110 transition-transform" />
                   <Link 
-                    to="/privacy-policy" 
+                    to={item.link}
                     className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors"
                   >
                     {item.text}
