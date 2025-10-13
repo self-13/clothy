@@ -65,7 +65,6 @@ function ShoppingListing() {
     "SHORTS",
     "ACTIVEWEAR",
     "ACCESSORIES",
-    "SALE"
   ];
 
   const categorySearchParam = searchParams.get("category");

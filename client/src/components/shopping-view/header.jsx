@@ -57,7 +57,7 @@ function MenuItems() {
         .map((menuItem) => (
         <Label
           onClick={() => handleNavigate(menuItem)}
-          className="text-sm font-medium cursor-pointer text-gray-700 hover:text-gray-900 transition-colors font-bold"
+          className="text-sm font-medium cursor-pointer text-gray-700 hover:text-gray-900 transition-colors"
           key={menuItem.id}
         >
           {menuItem.label}

@@ -15,7 +15,7 @@ import {
   Heart,
   ShoppingBag,
 } from "lucide-react";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchAllFilteredProducts,
@@ -54,14 +54,18 @@ function ShoppingHome() {
   const menProducts = useMemo(() => {
     if (!productList) return [];
     return [...productList]
-      .filter((product) => product.category === "men" || product.gender === "men")
+      .filter(
+        (product) => product.category === "men" || product.gender === "men"
+      )
       .slice(0, 8);
   }, [productList]);
 
   const womenProducts = useMemo(() => {
     if (!productList) return [];
     return [...productList]
-      .filter((product) => product.category === "women" || product.gender === "women")
+      .filter(
+        (product) => product.category === "women" || product.gender === "women"
+      )
       .slice(0, 8);
   }, [productList]);
 
@@ -85,7 +89,7 @@ function ShoppingHome() {
 
   const categories = [
     "MEN",
-    "WOMEN", 
+    "WOMEN",
     "WINTERWEAR",
     "PLUS SIZE",
     "SHIRTS",
@@ -95,8 +99,38 @@ function ShoppingHome() {
     "SHORTS",
     "ACTIVEWEAR",
     "ACCESSORIES",
-    "SALE"
   ];
+
+  // Enhanced carousel functions
+  const goToNextSlide = useCallback(() => {
+    setCurrentSlide((prevSlide) =>
+      prevSlide === featureImageList.length - 1 ? 0 : prevSlide + 1
+    );
+  }, [featureImageList.length]);
+
+  const goToPrevSlide = useCallback(() => {
+    setCurrentSlide((prevSlide) =>
+      prevSlide === 0 ? featureImageList.length - 1 : prevSlide - 1
+    );
+  }, [featureImageList.length]);
+
+  const goToSlide = useCallback((index) => {
+    setCurrentSlide(index);
+  }, []);
+
+  // Get visible slides for desktop (current and next two)
+  const getVisibleSlides = useCallback(() => {
+    if (!featureImageList || featureImageList.length === 0) return [];
+
+    const slides = [];
+    for (let i = 0; i < Math.min(3, featureImageList.length); i++) {
+      const slideIndex = (currentSlide + i) % featureImageList.length;
+      slides.push(featureImageList[slideIndex]);
+    }
+    return slides;
+  }, [featureImageList, currentSlide]);
+
+  const visibleSlides = getVisibleSlides();
 
   useEffect(() => {
     if (activeCategory === "MEN" || activeCategory === "WOMEN") {
@@ -161,15 +195,16 @@ function ShoppingHome() {
     }
   }, [productDetails]);
 
+  // Auto-slide functionality
   useEffect(() => {
-    if (featureImageList.length === 0) return;
+    if (featureImageList.length <= 1) return;
 
     const timer = setInterval(() => {
-      setCurrentSlide((prevSlide) => (prevSlide + 1) % featureImageList.length);
+      goToNextSlide();
     }, 4000);
 
     return () => clearInterval(timer);
-  }, [featureImageList]);
+  }, [featureImageList.length, goToNextSlide]);
 
   useEffect(() => {
     dispatch(
@@ -183,31 +218,6 @@ function ShoppingHome() {
   useEffect(() => {
     dispatch(getFeatureImages());
   }, [dispatch]);
-
-  const goToNextSlide = () => {
-    setCurrentSlide((prevSlide) => (prevSlide + 1) % featureImageList.length);
-  };
-
-  const goToPrevSlide = () => {
-    setCurrentSlide(
-      (prevSlide) =>
-        (prevSlide - 1 + featureImageList.length) % featureImageList.length
-    );
-  };
-
-  // Get visible slides (current and next two)
-  const getVisibleSlides = () => {
-    if (!featureImageList || featureImageList.length === 0) return [];
-    
-    const slides = [];
-    for (let i = 0; i < 3; i++) {
-      const slideIndex = (currentSlide + i) % featureImageList.length;
-      slides.push(featureImageList[slideIndex]);
-    }
-    return slides;
-  };
-
-  const visibleSlides = getVisibleSlides();
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
@@ -224,40 +234,89 @@ function ShoppingHome() {
         {/* Hero Carousel */}
         <div className="relative w-full h-[300px] md:h-[400px] overflow-hidden bg-gray-100">
           {featureImageList && featureImageList.length > 0 ? (
-            <div className="flex h-full transition-transform duration-500 ease-in-out">
-              {visibleSlides.map((slide, index) => (
-                <div
-                  key={`${slide?.id}-${index}`}
-                  className="flex-shrink-0 w-1/3 h-full relative"
-                >
+            <>
+              {/* Mobile View - Single Full Image */}
+              <div className="block lg:hidden">
+                <div className="relative h-[500px] w-full">
                   <img
-                    src={slide?.image}
-                    alt={`Slide ${index + 1}`}
-                    className="w-full h-full object-cover"
+                    src={featureImageList[currentSlide]?.image}
+                    alt={`Slide ${currentSlide + 1}`}
+                    className="w-full h-full object-contain bg-white"
                   />
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gray-100">
-            </div>
-          )}
+              </div>
 
-          {/* Slide indicators */}
-          {featureImageList && featureImageList.length > 1 && (
-            <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-2 z-10">
-              {featureImageList.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentSlide(index)}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                    index === currentSlide 
-                      ? "bg-red-600 scale-125" 
-                      : "bg-white/50 hover:bg-white/80"
-                  }`}
-                  aria-label={`Go to slide ${index + 1}`}
-                />
-              ))}
+              {/* Desktop View - Multi Image Carousel */}
+              <div className="hidden lg:block relative h-[600px] overflow-hidden">
+                <div className="flex h-full transition-transform duration-500 ease-in-out">
+                  {visibleSlides.map((slide, index) => (
+                    <div
+                      key={`${slide?.id}-${index}`}
+                      className="flex-shrink-0 w-1/3 h-full relative"
+                    >
+                      <img
+                        src={slide?.image}
+                        alt={`Slide ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Navigation Arrows - Desktop Only */}
+              {featureImageList.length > 1 && (
+                <>
+                  <button
+                    onClick={goToPrevSlide}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-all duration-300 opacity-0 group-hover:opacity-100 lg:opacity-50 lg:hover:opacity-100 hidden lg:block"
+                    aria-label="Previous slide"
+                  >
+                    <ChevronLeftIcon className="w-6 h-6" />
+                  </button>
+                  <button
+                    onClick={goToNextSlide}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-all duration-300 opacity-0 group-hover:opacity-100 lg:opacity-50 lg:hover:opacity-100 hidden lg:block"
+                    aria-label="Next slide"
+                  >
+                    <ChevronRightIcon className="w-6 h-6" />
+                  </button>
+                </>
+              )}
+
+              {/* Slide indicators */}
+              {featureImageList.length > 1 && (
+                <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-2 z-10">
+                  {featureImageList.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => goToSlide(index)}
+                      className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                        index === currentSlide
+                          ? "bg-red-600 scale-125"
+                          : "bg-white/50 hover:bg-white/80"
+                      }`}
+                      aria-label={`Go to slide ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Mobile slide counter */}
+              <div className="absolute top-4 right-4 lg:hidden">
+                <div className="text-black text-sm font-medium bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full">
+                  {currentSlide + 1} / {featureImageList.length}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="w-full h-[400px] lg:h-[600px] flex items-center justify-center bg-gray-100">
+              <div className="text-center text-gray-500">
+                <div className="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <SparklesIcon className="w-8 h-8 text-gray-400" />
+                </div>
+                <p>Featured images coming soon</p>
+              </div>
             </div>
           )}
         </div>
@@ -306,25 +365,40 @@ function ShoppingHome() {
                     <Heart className="w-8 h-8 text-gray-600 mr-3" />
                   )}
                   <Badge className="px-4 py-2 text-sm bg-red-600 text-white border-none">
-                    {genderView === "MEN" ? "Men's Collection" : "Women's Collection"}
+                    {genderView === "MEN"
+                      ? "Men's Collection"
+                      : "Women's Collection"}
                   </Badge>
                 </div>
                 <h2 className="text-4xl font-bold text-black mb-4">
                   {genderView === "MEN" ? "Style for Men" : "Fashion for Women"}
                 </h2>
                 <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-                  {genderView === "MEN" 
+                  {genderView === "MEN"
                     ? "Discover premium menswear that combines comfort, quality, and contemporary style"
-                    : "Express your unique style with our carefully curated women's collection"
-                  }
+                    : "Express your unique style with our carefully curated women's collection"}
                 </p>
               </div>
 
               {/* Category Quick Links */}
               <div className="flex flex-wrap justify-center gap-4 mb-12">
-                {(genderView === "MEN" 
-                  ? ['T-Shirts', 'Shirts', 'Jeans', 'Jackets', 'Activewear', 'Accessories']
-                  : ['Dresses', 'Tops', 'Jeans', 'Skirts', 'Activewear', 'Accessories']
+                {(genderView === "MEN"
+                  ? [
+                      "T-Shirts",
+                      "Shirts",
+                      "Jeans",
+                      "Jackets",
+                      "Activewear",
+                      "Accessories",
+                    ]
+                  : [
+                      "Dresses",
+                      "Tops",
+                      "Jeans",
+                      "Skirts",
+                      "Activewear",
+                      "Accessories",
+                    ]
                 ).map((category) => (
                   <Button
                     key={category}
@@ -336,10 +410,13 @@ function ShoppingHome() {
                   </Button>
                 ))}
               </div>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                 {currentGenderProducts.map((productItem) => (
-                  <div key={productItem._id} className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-100">
+                  <div
+                    key={productItem._id}
+                    className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-100"
+                  >
                     <ShoppingProductTile
                       handleGetProductDetails={handleGetProductDetails}
                       product={productItem}
@@ -348,14 +425,20 @@ function ShoppingHome() {
                   </div>
                 ))}
               </div>
-              
+
               <div className="text-center mt-12">
                 <Button
                   className="bg-black text-white hover:bg-gray-800 px-8 py-3 border-none"
-                  onClick={() => handleNavigateToListingPage({ id: genderView.toLowerCase() }, 'category')}
+                  onClick={() =>
+                    handleNavigateToListingPage(
+                      { id: genderView.toLowerCase() },
+                      "category"
+                    )
+                  }
                 >
                   <ShoppingBag className="w-5 h-5 mr-2" />
-                  Explore {genderView === "MEN" ? "Men's" : "Women's"} Collection
+                  Explore {genderView === "MEN" ? "Men's" : "Women's"}{" "}
+                  Collection
                 </Button>
               </div>
             </div>
@@ -377,10 +460,11 @@ function ShoppingHome() {
                   Featured Products
                 </h2>
                 <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-                  Curated excellence - handpicked items that define style and quality
+                  Curated excellence - handpicked items that define style and
+                  quality
                 </p>
               </div>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                 {featuredProducts.map((productItem) => (
                   <div key={productItem._id} className="group">
@@ -392,11 +476,16 @@ function ShoppingHome() {
                   </div>
                 ))}
               </div>
-              
+
               <div className="text-center mt-12">
                 <Button
                   className="bg-black text-white hover:bg-gray-800 px-8 py-3 border-none"
-                  onClick={() => handleNavigateToListingPage({ id: 'featured' }, 'isFeatured')}
+                  onClick={() =>
+                    handleNavigateToListingPage(
+                      { id: "featured" },
+                      "isFeatured"
+                    )
+                  }
                 >
                   <Star className="w-5 h-5 mr-2" />
                   View All Featured
@@ -421,20 +510,25 @@ function ShoppingHome() {
                   Best Sellers
                 </h2>
                 <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-                  Join the trendsetters - products loved by thousands of customers
+                  Join the trendsetters - products loved by thousands of
+                  customers
                 </p>
               </div>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                 {bestSellingProducts.map((productItem, index) => (
                   <div key={productItem._id} className="relative">
                     {index < 3 && (
                       <div className="absolute -top-3 -left-3 z-20">
-                        <div className={`px-3 py-1 text-xs font-bold text-white rounded-full ${
-                          index === 0 ? 'bg-red-600' :
-                          index === 1 ? 'bg-black' :
-                          'bg-gray-700'
-                        }`}>
+                        <div
+                          className={`px-3 py-1 text-xs font-bold text-white rounded-full ${
+                            index === 0
+                              ? "bg-red-600"
+                              : index === 1
+                              ? "bg-black"
+                              : "bg-gray-700"
+                          }`}
+                        >
                           #{index + 1}
                         </div>
                       </div>
@@ -449,11 +543,16 @@ function ShoppingHome() {
                   </div>
                 ))}
               </div>
-              
+
               <div className="text-center mt-12">
                 <Button
                   className="bg-black text-white hover:bg-gray-800 px-8 py-3 border-none"
-                  onClick={() => handleNavigateToListingPage({ id: 'bestSellers' }, 'bestSellers')}
+                  onClick={() =>
+                    handleNavigateToListingPage(
+                      { id: "bestSellers" },
+                      "bestSellers"
+                    )
+                  }
                 >
                   <TrendingUpIcon className="w-5 h-5 mr-2" />
                   See All Best Sellers
@@ -478,13 +577,17 @@ function ShoppingHome() {
                   New Arrivals
                 </h2>
                 <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-                  Fresh off the shelf - be the first to experience our latest additions
+                  Fresh off the shelf - be the first to experience our latest
+                  additions
                 </p>
               </div>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                 {newArrivals.map((productItem) => (
-                  <div key={productItem._id} className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-100 relative">
+                  <div
+                    key={productItem._id}
+                    className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-100 relative"
+                  >
                     <div className="absolute top-4 left-4 z-10">
                       <Badge className="bg-red-600 text-white border-none">
                         NEW
@@ -498,11 +601,16 @@ function ShoppingHome() {
                   </div>
                 ))}
               </div>
-              
+
               <div className="text-center mt-12">
                 <Button
                   className="bg-black text-white hover:bg-gray-800 px-8 py-3 border-none"
-                  onClick={() => handleNavigateToListingPage({ id: 'newArrivals' }, 'newArrivals')}
+                  onClick={() =>
+                    handleNavigateToListingPage(
+                      { id: "newArrivals" },
+                      "newArrivals"
+                    )
+                  }
                 >
                   <Clock4 className="w-5 h-5 mr-2" />
                   Explore New Arrivals
@@ -520,7 +628,8 @@ function ShoppingHome() {
               Ready to Find Your Style?
             </h2>
             <p className="text-xl text-gray-200 mb-8 max-w-2xl mx-auto leading-relaxed">
-              Explore our complete collection and discover products that match your unique personality
+              Explore our complete collection and discover products that match
+              your unique personality
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button
