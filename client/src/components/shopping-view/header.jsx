@@ -1,4 +1,12 @@
-import { HousePlug, LogOut, Menu, ShoppingCart, UserCog, Search, X } from "lucide-react";
+import {
+  HousePlug,
+  LogOut,
+  Menu,
+  ShoppingCart,
+  UserCog,
+  Search,
+  X,
+} from "lucide-react";
 import {
   Link,
   useLocation,
@@ -25,7 +33,7 @@ import { fetchCartItems } from "@/store/shop/cart-slice";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
 
-function MenuItems() {
+function MenuItems({ onItemClick }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -48,21 +56,26 @@ function MenuItems() {
           new URLSearchParams(`?category=${getCurrentMenuItem.id}`)
         )
       : navigate(getCurrentMenuItem.path);
+
+    // Call the onItemClick callback to close the menu
+    if (onItemClick) {
+      onItemClick();
+    }
   }
 
   return (
     <nav className="flex flex-col mb-3 lg:mb-0 lg:items-center gap-6 lg:flex-row">
       {shoppingViewHeaderMenuItems
-        .filter(menuItem => menuItem.id !== 'search')
+        .filter((menuItem) => menuItem.id !== "search")
         .map((menuItem) => (
-        <Label
-          onClick={() => handleNavigate(menuItem)}
-          className="text-sm font-medium cursor-pointer text-gray-700 hover:text-gray-900 transition-colors"
-          key={menuItem.id}
-        >
-          {menuItem.label}
-        </Label>
-      ))}
+          <Label
+            onClick={() => handleNavigate(menuItem)}
+            className="text-sm font-medium cursor-pointer text-gray-700 hover:text-gray-900 transition-colors"
+            key={menuItem.id}
+          >
+            {menuItem.label}
+          </Label>
+        ))}
     </nav>
   );
 }
@@ -77,10 +90,15 @@ function UserMenu({ user, handleLogout, navigate }) {
           </AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
-      <DropdownMenuContent side="right" className="w-56 bg-white border-2 border-gray-300 shadow-lg">
-        <DropdownMenuLabel className="text-gray-800 font-bold">Welcome, {user?.userName}! 👋</DropdownMenuLabel>
+      <DropdownMenuContent
+        side="right"
+        className="w-56 bg-white border-2 border-gray-300 shadow-lg"
+      >
+        <DropdownMenuLabel className="text-gray-800 font-bold">
+          Welcome, {user?.userName}! 👋
+        </DropdownMenuLabel>
         <DropdownMenuSeparator className="bg-gray-300" />
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => navigate("/shop/account")}
           className="text-gray-700 hover:bg-gray-100 cursor-pointer font-medium"
         >
@@ -88,7 +106,7 @@ function UserMenu({ user, handleLogout, navigate }) {
           Account
         </DropdownMenuItem>
         <DropdownMenuSeparator className="bg-gray-300" />
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={handleLogout}
           className="text-gray-700 hover:bg-gray-100 cursor-pointer font-medium"
         >
@@ -106,6 +124,7 @@ function ShoppingHeader() {
   const [openCartSheet, setOpenCartSheet] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -122,6 +141,18 @@ function ShoppingHeader() {
     }
   }
 
+  // Function to close mobile menu
+  const closeMobileMenu = () => {
+    setMobileMenuOpen(false);
+    // Find and click the sheet close button
+    const closeButton = document.querySelector(
+      '[data-state="open"] [aria-label="Toggle header menu"]'
+    );
+    if (closeButton) {
+      closeButton.click();
+    }
+  };
+
   useEffect(() => {
     if (user?.id) {
       dispatch(fetchCartItems(user.id));
@@ -132,8 +163,11 @@ function ShoppingHeader() {
     <header className="sticky top-0 z-40 w-full border-b-2 border-gray-300 bg-gradient-to-r from-gray-50 via-white to-gray-50 text-gray-800 shadow-lg">
       <div className="flex h-16 items-center justify-between px-4 md:px-6 gap-3">
         {/* Logo */}
-        <Link to="/shop/home" className="flex items-center gap-2 hover:scale-105 transition-transform">
-            <img src="/logo.png" alt="logo" className="size-24" />
+        <Link
+          to="/shop/home"
+          className="flex items-center gap-2 hover:scale-105 transition-transform"
+        >
+          <img src="/logo.png" alt="logo" className="size-24" />
         </Link>
 
         {/* Desktop menu */}
@@ -144,17 +178,20 @@ function ShoppingHeader() {
         {/* Right Section */}
         <div className="flex items-center gap-4">
           {/* Search Icon */}
-          <Button
+          {/* <Button
             onClick={() => setSearchOpen(true)}
             variant="ghost"
             size="icon"
             className="text-gray-600 hover:bg-gray-200 rounded-full border border-gray-300 shadow-md"
           >
             <Search className="w-5 h-5" />
-          </Button>
+          </Button> */}
 
           {/* Cart with Black & White Style */}
-          <Sheet open={openCartSheet} onOpenChange={() => setOpenCartSheet(false)}>
+          <Sheet
+            open={openCartSheet}
+            onOpenChange={() => setOpenCartSheet(false)}
+          >
             <Button
               onClick={() => setOpenCartSheet(true)}
               variant="ghost"
@@ -174,48 +211,95 @@ function ShoppingHeader() {
           </Sheet>
 
           {/* Mobile menu trigger */}
-          <Sheet>
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="lg:hidden text-gray-600 hover:bg-gray-200 rounded-full border border-gray-300 shadow-md">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden text-gray-600 hover:bg-gray-200 rounded-full border border-gray-300 shadow-md"
+              >
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Toggle header menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-full max-w-xs bg-white text-gray-800 border-r-2 border-gray-300">
+            <SheetContent
+              side="left"
+              className="w-full max-w-xs bg-white text-gray-800 border-r-2 border-gray-300"
+            >
               <div className="flex flex-col h-full">
                 {/* Mobile Search */}
                 <div className="p-4 border-b border-gray-200">
-                  <form onSubmit={handleSearch} className="flex items-center gap-2">
-                    <Input
+                  <form
+                    onSubmit={handleSearch}
+                    className="flex items-center gap-2"
+                  >
+                    {/* <Input
                       type="text"
                       placeholder="Search..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="flex-1 bg-white border-2 border-gray-300 text-gray-800 placeholder-gray-400"
-                    />
-                    <Button
+                    /> */}
+                    {/* <Button
                       type="submit"
                       size="icon"
                       className="bg-gray-700 text-white hover:scale-110 transition-transform"
                     >
                       <Search className="h-4 w-4" />
-                    </Button>
+                    </Button> */}
                   </form>
                 </div>
 
                 <div className="flex-1">
-                  <MenuItems />
+                  <MenuItems onItemClick={closeMobileMenu} />
                 </div>
-                
+
                 <div className="mt-6 p-4 border-t border-gray-200">
                   {user ? (
-                    <div className="flex items-center gap-3 p-3 bg-gray-100 rounded-lg">
-                      <UserMenu user={user} handleLogout={handleLogout} navigate={navigate} />
-                      <div className="text-sm font-bold text-gray-700">Hello{user?.userName}! 🎉</div>
+                    <div className="space-y-4">
+                      {/* User Info */}
+                      <div className="flex items-center gap-3 p-3 bg-gray-100 rounded-lg">
+                        <Avatar className="bg-gray-600 cursor-pointer border-2 border-gray-400 shadow-md">
+                          <AvatarFallback className="bg-transparent text-white font-bold">
+                            {user?.userName?.[0]?.toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="text-sm font-bold text-gray-700">
+                          Hello {user?.userName}! 🎉
+                        </div>
+                      </div>
+
+                      {/* Separate Account Button */}
+                      <Button
+                        onClick={() => {
+                          navigate("/shop/account");
+                          closeMobileMenu();
+                        }}
+                        className="w-full bg-gray-700 text-white font-bold hover:scale-105 transition-transform shadow-md flex items-center gap-2"
+                      >
+                        <UserCog className="h-4 w-4" />
+                        Account
+                      </Button>
+
+                      {/* Separate Logout Button */}
+                      <Button
+                        onClick={() => {
+                          handleLogout();
+                          closeMobileMenu();
+                        }}
+                        variant="destructive"
+                        className="w-full font-bold hover:scale-105 transition-transform shadow-md flex items-center gap-2"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Logout
+                      </Button>
                     </div>
                   ) : (
                     <Button
-                      onClick={() => navigate("/auth/login")}
+                      onClick={() => {
+                        navigate("/auth/login");
+                        closeMobileMenu();
+                      }}
                       className="w-full bg-gray-800 text-white font-bold hover:scale-105 transition-transform shadow-md"
                     >
                       Login
@@ -229,7 +313,11 @@ function ShoppingHeader() {
           {/* Desktop user menu */}
           <div className="hidden lg:block">
             {user ? (
-              <UserMenu user={user} handleLogout={handleLogout} navigate={navigate} />
+              <UserMenu
+                user={user}
+                handleLogout={handleLogout}
+                navigate={navigate}
+              />
             ) : (
               <Button
                 onClick={() => navigate("/auth/login")}
@@ -247,21 +335,21 @@ function ShoppingHeader() {
         <div className="fixed inset-0 bg-white bg-opacity-95 z-50 flex items-start justify-center pt-20">
           <div className="w-full max-w-2xl px-6">
             <form onSubmit={handleSearch} className="relative">
-              <Input
+              {/* <Input
                 type="text"
                 placeholder="🔍 Search for awesome products..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full h-14 bg-white border-2 border-gray-300 text-gray-800 placeholder-gray-400 pl-6 pr-16 text-lg rounded-full shadow-lg"
                 autoFocus
-              />
-              <Button
+              /> */}
+              {/* <Button
                 type="submit"
                 size="icon"
                 className="absolute right-2 top-2 h-10 w-10 bg-gray-700 hover:scale-110 transition-transform rounded-full shadow-md"
               >
                 <Search className="h-5 w-5 text-white" />
-              </Button>
+              </Button> */}
             </form>
             <Button
               variant="ghost"
