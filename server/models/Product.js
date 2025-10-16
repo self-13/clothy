@@ -30,14 +30,12 @@ const ProductSchema = new mongoose.Schema(
     // ✅ Gender category (man, woman)
     category: {
       type: String,
-      enum: ["man", "woman", "unisex"],
       required: true,
     },
 
     // ✅ Subcategory (t-shirt, lower, oversized, shoes, others)
     subcategory: {
       type: String,
-      enum: ["t-shirt", "lower", "oversized", "shoes", "others"],
       required: true,
     },
 

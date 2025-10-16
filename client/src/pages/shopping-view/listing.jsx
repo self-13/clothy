@@ -19,7 +19,7 @@ import {
   resetProductDetails,
 } from "@/store/shop/products-slice";
 import { ArrowUpDownIcon, FilterIcon, Grid3X3, List } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useSearchParams } from "react-router-dom";
 
@@ -49,15 +49,30 @@ function ShoppingListing() {
   const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
   const [viewMode, setViewMode] = useState("grid");
   const [showFilters, setShowFilters] = useState(false);
-  const [genderView, setGenderView] = useState("MEN");
+
+  // Get URL parameters
+  const categoryParam = searchParams.get("category");
+  const subcategoryParam = searchParams.get("subcategory");
+
+  // Initialize genderView from localStorage or URL params or default to "MEN"
+  const [genderView, setGenderView] = useState(() => {
+    // First check URL params
+    if (categoryParam) {
+      return categoryParam.toUpperCase();
+    }
+    // Then check localStorage
+    const savedGender = localStorage.getItem("selectedGender");
+    return savedGender ? savedGender.toUpperCase() : "MEN";
+  });
+
   const [activeCategory, setActiveCategory] = useState("");
   const { toast } = useToast();
 
   const categories = [
     "MEN",
-    "WOMEN", 
+    "WOMEN",
     "WINTERWEAR",
-    "PLUS SIZE",
+    "PLUS-SIZE",
     "SHIRTS",
     "T-SHIRTS",
     "JEANS",
@@ -67,7 +82,29 @@ function ShoppingListing() {
     "ACCESSORIES",
   ];
 
-  const categorySearchParam = searchParams.get("category");
+  // Get current gender for filtering (from localStorage or state)
+  const getCurrentGender = () => {
+    return localStorage.getItem("selectedGender") || "men";
+  };
+
+  // Build filter parameters for API call
+  const buildFilterParams = useMemo(() => {
+    const filterParams = { ...filters, isActive: true };
+
+    // Always include gender filter from localStorage
+    const currentGender = getCurrentGender();
+    if (currentGender) {
+      filterParams.category = [currentGender];
+    }
+
+    // Include subcategory from URL if present
+    if (subcategoryParam) {
+      filterParams.subcategory = [subcategoryParam];
+    }
+
+    console.log("🔍 Filter params for API:", filterParams);
+    return filterParams;
+  }, [filters, subcategoryParam]);
 
   function handleSort(value) {
     setSort(value);
@@ -168,7 +205,7 @@ function ShoppingListing() {
     if (savedFilters) {
       setFilters(JSON.parse(savedFilters));
     }
-  }, [categorySearchParam]);
+  }, [categoryParam, subcategoryParam]);
 
   useEffect(() => {
     if (filters && Object.keys(filters).length > 0) {
@@ -177,16 +214,21 @@ function ShoppingListing() {
     }
   }, [filters, setSearchParams]);
 
+  // Main useEffect for fetching products
   useEffect(() => {
-    if (filters !== null && sort !== null) {
-      dispatch(
-        fetchAllFilteredProducts({
-          filterParams: { ...filters, isActive: true },
-          sortParams: sort,
-        })
-      );
-    }
-  }, [dispatch, sort, filters]);
+    console.log("🔄 Fetching products with:", {
+      filters: buildFilterParams,
+      sort,
+      gender: getCurrentGender(),
+    });
+
+    dispatch(
+      fetchAllFilteredProducts({
+        filterParams: buildFilterParams,
+        sortParams: sort,
+      })
+    );
+  }, [dispatch, sort, buildFilterParams]);
 
   useEffect(() => {
     if (productDetails !== null) {
@@ -198,6 +240,31 @@ function ShoppingListing() {
   const clearFilters = () => {
     setFilters({});
     sessionStorage.removeItem("filters");
+  };
+
+  // Generate page title based on current filters
+  const getPageTitle = () => {
+    const currentGender = getCurrentGender();
+    const genderText = currentGender === "man" ? "Men's" : "Women's";
+
+    if (subcategoryParam) {
+      const subcategoryText =
+        subcategoryParam.charAt(0).toUpperCase() + subcategoryParam.slice(1);
+      return `${subcategoryText} - ${genderText} Collection`;
+    }
+
+    return `${genderText} Collection`;
+  };
+
+  const getPageDescription = () => {
+    const currentGender = getCurrentGender();
+    const genderText = currentGender === "men" ? "men's" : "women's";
+
+    if (subcategoryParam) {
+      return `Discover our amazing ${subcategoryParam} collection for ${genderText}`;
+    }
+
+    return `Discover our complete collection of amazing ${genderText} products`;
   };
 
   return (
@@ -216,11 +283,9 @@ function ShoppingListing() {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-black mb-2">
-              All Products
+              {getPageTitle()}
             </h1>
-            <p className="text-lg text-gray-600">
-              Discover our complete collection of amazing products
-            </p>
+            <p className="text-lg text-gray-600">{getPageDescription()}</p>
           </div>
 
           <div className="flex flex-col">
@@ -231,6 +296,26 @@ function ShoppingListing() {
                   <span className="text-lg font-semibold text-gray-700">
                     {productList?.length || 0} Products
                   </span>
+                  {(subcategoryParam || Object.keys(filters).length > 0) && (
+                    <div className="flex items-center gap-2">
+                      {/* {subcategoryParam && (
+                        // <Badge
+                        //   variant="secondary"
+                        //   className="bg-gray-100 text-gray-700"
+                        // >
+                        //   {subcategoryParam}
+                        // </Badge>
+                      )} */}
+                      {Object.keys(filters).length > 0 && (
+                        <Badge
+                          variant="secondary"
+                          className="bg-gray-100 text-gray-700"
+                        >
+                          {Object.keys(filters).length} filter(s)
+                        </Badge>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -241,8 +326,8 @@ function ShoppingListing() {
                       size="sm"
                       onClick={() => setViewMode("grid")}
                       className={`h-8 w-8 p-0 ${
-                        viewMode === "grid" 
-                          ? "bg-black text-white hover:bg-gray-800" 
+                        viewMode === "grid"
+                          ? "bg-black text-white hover:bg-gray-800"
                           : "hover:bg-gray-100"
                       }`}
                     >
@@ -253,8 +338,8 @@ function ShoppingListing() {
                       size="sm"
                       onClick={() => setViewMode("list")}
                       className={`h-8 w-8 p-0 ${
-                        viewMode === "list" 
-                          ? "bg-black text-white hover:bg-gray-800" 
+                        viewMode === "list"
+                          ? "bg-black text-white hover:bg-gray-800"
                           : "hover:bg-gray-100"
                       }`}
                     >
@@ -274,7 +359,10 @@ function ShoppingListing() {
                         <span>Sort by</span>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-[200px] bg-white border border-gray-200">
+                    <DropdownMenuContent
+                      align="end"
+                      className="w-[200px] bg-white border border-gray-200"
+                    >
                       <DropdownMenuRadioGroup
                         value={sort}
                         onValueChange={handleSort}
@@ -326,14 +414,16 @@ function ShoppingListing() {
                       No products found
                     </div>
                     <p className="text-gray-500 mb-4">
-                      {Object.keys(filters).length > 0
+                      {Object.keys(filters).length > 0 || subcategoryParam
                         ? "Try adjusting your filters to see more products"
-                        : "No products available at the moment"}
+                        : `No ${
+                            getCurrentGender() === "men" ? "men's" : "women's"
+                          } products available at the moment`}
                     </p>
-                    {Object.keys(filters).length > 0 && (
-                      <Button 
+                    {(Object.keys(filters).length > 0 || subcategoryParam) && (
+                      <Button
                         onClick={clearFilters}
-                        className="bg-black text-white hover:bg-gray-800"
+                        className="bg-black text-white hover:bg-gray-800 mr-2"
                       >
                         Clear All Filters
                       </Button>

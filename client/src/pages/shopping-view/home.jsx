@@ -34,8 +34,18 @@ import ShoppingSubheader from "@/components/shopping-view/sub-header";
 
 function ShoppingHome() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [activeCategory, setActiveCategory] = useState("MEN");
-  const [genderView, setGenderView] = useState("MEN");
+  
+  // Initialize gender view from localStorage or default to "MEN"
+  const getInitialGenderView = () => {
+    const savedGender = localStorage.getItem("selectedGender");
+    if (savedGender === "man") return "MEN";
+    if (savedGender === "woman") return "WOMEN";
+    return "MEN"; // default
+  };
+  
+  const [activeCategory, setActiveCategory] = useState(getInitialGenderView());
+  const [genderView, setGenderView] = useState(getInitialGenderView());
+  
   const { productList, productDetails } = useSelector(
     (state) => state.shopProducts
   );
@@ -46,9 +56,24 @@ function ShoppingHome() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Enhanced product filtering based on localStorage gender
   const featuredProducts = useMemo(() => {
     if (!productList) return [];
-    return [...productList].filter((product) => product.isFeatured).slice(0, 8);
+    const savedGender = localStorage.getItem("selectedGender");
+    
+    let filteredProducts = [...productList].filter((product) => product.isFeatured);
+    
+    // Filter by saved gender if available
+    if (savedGender) {
+      filteredProducts = filteredProducts.filter(
+        (product) => 
+          product.category === savedGender || 
+          product.gender === savedGender ||
+          !product.category // Include products without category
+      );
+    }
+    
+    return filteredProducts.slice(0, 8);
   }, [productList]);
 
   const menProducts = useMemo(() => {
@@ -71,19 +96,50 @@ function ShoppingHome() {
 
   const bestSellingProducts = useMemo(() => {
     if (!productList) return [];
-    return [...productList]
-      .sort((a, b) => (b.salesCount || 0) - (a.salesCount || 0))
-      .slice(0, 8);
+    const savedGender = localStorage.getItem("selectedGender");
+    
+    let filteredProducts = [...productList].sort((a, b) => (b.salesCount || 0) - (a.salesCount || 0));
+    
+    // Filter by saved gender if available
+    if (savedGender) {
+      filteredProducts = filteredProducts.filter(
+        (product) => 
+          product.category === savedGender || 
+          product.gender === savedGender ||
+          !product.category // Include products without category
+      );
+    }
+    
+    return filteredProducts.slice(0, 8);
   }, [productList]);
 
   const newArrivals = useMemo(() => {
     if (!productList) return [];
-    return [...productList]
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, 8);
+    const savedGender = localStorage.getItem("selectedGender");
+    
+    let filteredProducts = [...productList].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    // Filter by saved gender if available
+    if (savedGender) {
+      filteredProducts = filteredProducts.filter(
+        (product) => 
+          product.category === savedGender || 
+          product.gender === savedGender ||
+          !product.category // Include products without category
+      );
+    }
+    
+    return filteredProducts.slice(0, 8);
   }, [productList]);
 
+  // Get products based on current gender view
   const currentGenderProducts = useMemo(() => {
+    const savedGender = localStorage.getItem("selectedGender");
+    
+    if (savedGender === "man") return menProducts;
+    if (savedGender === "woman") return womenProducts;
+    
+    // Fallback to state-based filtering
     return genderView === "MEN" ? menProducts : womenProducts;
   }, [genderView, menProducts, womenProducts]);
 
@@ -91,7 +147,7 @@ function ShoppingHome() {
     "MEN",
     "WOMEN",
     "WINTERWEAR",
-    "PLUS SIZE",
+    "PLUS-SIZE",
     "SHIRTS",
     "T-SHIRTS",
     "JEANS",
@@ -101,7 +157,19 @@ function ShoppingHome() {
     "ACCESSORIES",
   ];
 
-  // Enhanced carousel functions
+  // Enhanced gender view handler that syncs with localStorage
+  const handleGenderViewChange = (newGenderView) => {
+    const storageGender = newGenderView === "MEN" ? "man" : "woman";
+    
+    // Save to localStorage
+    localStorage.setItem("selectedGender", storageGender);
+    
+    // Update state
+    setGenderView(newGenderView);
+    setActiveCategory(newGenderView);
+  };
+
+  // Rest of the component remains the same...
   const goToNextSlide = useCallback(() => {
     setCurrentSlide((prevSlide) =>
       prevSlide === featureImageList.length - 1 ? 0 : prevSlide + 1
@@ -134,6 +202,8 @@ function ShoppingHome() {
 
   useEffect(() => {
     if (activeCategory === "MEN" || activeCategory === "WOMEN") {
+      const storageGender = activeCategory === "MEN" ? "man" : "woman";
+      localStorage.setItem("selectedGender", storageGender);
       setGenderView(activeCategory);
     }
   }, [activeCategory]);
@@ -357,28 +427,29 @@ function ShoppingHome() {
                 </div>
               </div>
 
-              <div className="text-center mb-16">
-                <div className="inline-flex items-center justify-center mb-4">
-                  {genderView === "MEN" ? (
-                    <Shirt className="w-8 h-8 text-gray-600 mr-3" />
-                  ) : (
-                    <Heart className="w-8 h-8 text-gray-600 mr-3" />
-                  )}
-                  <Badge className="px-4 py-2 text-sm bg-red-600 text-white border-none">
-                    {genderView === "MEN"
-                      ? "Men's Collection"
-                      : "Women's Collection"}
-                  </Badge>
-                </div>
-                <h2 className="text-4xl font-bold text-black mb-4">
-                  {genderView === "MEN" ? "Style for Men" : "Fashion for Women"}
-                </h2>
-                <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-                  {genderView === "MEN"
-                    ? "Discover premium menswear that combines comfort, quality, and contemporary style"
-                    : "Express your unique style with our carefully curated women's collection"}
-                </p>
-              </div>
+        {/* Rest of the Gender Collection Section remains the same... */}
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center justify-center mb-4">
+            {genderView === "MEN" ? (
+              <Shirt className="w-8 h-8 text-gray-600 mr-3" />
+            ) : (
+              <Heart className="w-8 h-8 text-gray-600 mr-3" />
+            )}
+            <Badge className="px-4 py-2 text-sm bg-red-600 text-white border-none">
+              {genderView === "MEN"
+                ? "Men's Collection"
+                : "Women's Collection"}
+            </Badge>
+          </div>
+          <h2 className="text-4xl font-bold text-black mb-4">
+            {genderView === "MEN" ? "Style for Men" : "Fashion for Women"}
+          </h2>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+            {genderView === "MEN"
+              ? "Discover premium menswear that combines comfort, quality, and contemporary style"
+              : "Express your unique style with our carefully curated women's collection"}
+          </p>
+        </div>
 
               {/* Category Quick Links */}
               <div className="flex flex-wrap justify-center gap-4 mb-12">

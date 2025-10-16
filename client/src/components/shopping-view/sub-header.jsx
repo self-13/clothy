@@ -1,7 +1,8 @@
 import { Shirt, Heart, Menu } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
 import { Button } from "../ui/button";
+import { useNavigate } from "react-router-dom";
 
 function ShoppingSubheader({
   genderView,
@@ -11,6 +12,79 @@ function ShoppingSubheader({
   categories = [],
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
+
+  // Initialize gender from localStorage on component mount
+  useEffect(() => {
+    const savedGender = localStorage.getItem("selectedGender");
+    console.log(
+      "🔄 Subheader - Loading gender from localStorage:",
+      savedGender
+    );
+
+    if (savedGender) {
+      // Convert localStorage value ("man"/"woman") to display format ("MEN"/"WOMEN")
+      const displayGender = savedGender === "man" ? "MEN" : "WOMEN";
+      setGenderView(displayGender);
+      setActiveCategory(displayGender);
+    }
+  }, [setGenderView, setActiveCategory]);
+
+  // Function to handle gender selection
+  const handleGenderSelect = (gender) => {
+    console.log("🎯 Gender selected:", gender);
+
+    // Convert to lowercase for localStorage
+    const storageGender = gender === "MEN" ? "man" : "woman";
+
+    // Save to localStorage with consistent key
+    localStorage.setItem("selectedGender", storageGender);
+    console.log("💾 Saved to localStorage:", storageGender);
+
+    // Update state
+    setGenderView(gender);
+    setActiveCategory(gender);
+
+    // Navigate to listing page with the selected gender and reload
+    // navigate(`/shop/listing?category=${storageGender}`);
+
+    // Reload the page after a short delay to ensure navigation happens
+    setTimeout(() => {
+      console.log("🔄 Reloading page...");
+      window.location.reload();
+    }, 100);
+  };
+
+  // Function to handle category selection (non-gender categories)
+  const handleCategorySelect = (category) => {
+    setActiveCategory(category);
+
+    // Get current gender from localStorage
+    const currentGender = localStorage.getItem("selectedGender") || "man";
+    console.log(
+      "📁 Category selected:",
+      category,
+      "with gender:",
+      currentGender
+    );
+
+    // Navigate to listing page with gender as category and clicked category as subcategory
+    navigate(
+      `/shop/listing?category=${currentGender}&subcategory=${category.toLowerCase()}`
+    );
+  };
+
+  // Convert localStorage gender to display format
+  const getDisplayGender = () => {
+    const savedGender = localStorage.getItem("selectedGender");
+    return savedGender === "man"
+      ? "MEN"
+      : savedGender === "woman"
+      ? "WOMEN"
+      : "MEN";
+  };
+
+  const currentDisplayGender = getDisplayGender();
 
   return (
     <div className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
@@ -21,12 +95,9 @@ function ShoppingSubheader({
           <div className="flex items-center space-x-6">
             <div className="bg-gray-100 rounded-full p-1 flex border border-gray-200">
               <button
-                onClick={() => {
-                  setGenderView("MEN");
-                  setActiveCategory("MEN");
-                }}
+                onClick={() => handleGenderSelect("MEN")}
                 className={`px-6 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center space-x-2 ${
-                  genderView === "MEN"
+                  currentDisplayGender === "MEN"
                     ? "bg-black text-white shadow-md border border-black"
                     : "text-gray-600 hover:text-black"
                 }`}
@@ -35,12 +106,9 @@ function ShoppingSubheader({
                 <span>MEN</span>
               </button>
               <button
-                onClick={() => {
-                  setGenderView("WOMEN");
-                  setActiveCategory("WOMEN");
-                }}
+                onClick={() => handleGenderSelect("WOMEN")}
                 className={`px-6 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center space-x-2 ${
-                  genderView === "WOMEN"
+                  currentDisplayGender === "WOMEN"
                     ? "bg-black text-white shadow-md border border-black"
                     : "text-gray-600 hover:text-black"
                 }`}
@@ -59,7 +127,7 @@ function ShoppingSubheader({
             {categories.slice(2).map((category) => (
               <button
                 key={category}
-                onClick={() => setActiveCategory(category)}
+                onClick={() => handleCategorySelect(category)}
                 className={`whitespace-nowrap text-sm font-medium transition-all duration-200 px-3 py-2 rounded-lg ${
                   activeCategory === category
                     ? "text-white font-bold bg-black border border-black"
@@ -77,12 +145,9 @@ function ShoppingSubheader({
           {/* Gender Toggle - Simplified for mobile */}
           <div className="bg-gray-100 rounded-full p-1 flex border border-gray-200">
             <button
-              onClick={() => {
-                setGenderView("MEN");
-                setActiveCategory("MEN");
-              }}
+              onClick={() => handleGenderSelect("MEN")}
               className={`px-4 py-2 rounded-full text-xs font-semibold transition-all duration-300 flex items-center space-x-1 ${
-                genderView === "MEN"
+                currentDisplayGender === "MEN"
                   ? "bg-black text-white shadow-md border border-black"
                   : "text-gray-600 hover:text-black"
               }`}
@@ -91,12 +156,9 @@ function ShoppingSubheader({
               <span>MEN</span>
             </button>
             <button
-              onClick={() => {
-                setGenderView("WOMEN");
-                setActiveCategory("WOMEN");
-              }}
+              onClick={() => handleGenderSelect("WOMEN")}
               className={`px-4 py-2 rounded-full text-xs font-semibold transition-all duration-300 flex items-center space-x-1 ${
-                genderView === "WOMEN"
+                currentDisplayGender === "WOMEN"
                   ? "bg-black text-white shadow-md border border-black"
                   : "text-gray-600 hover:text-black"
               }`}
@@ -128,7 +190,7 @@ function ShoppingSubheader({
                     <button
                       key={category}
                       onClick={() => {
-                        setActiveCategory(category);
+                        handleCategorySelect(category);
                         setMobileMenuOpen(false);
                       }}
                       className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -145,28 +207,6 @@ function ShoppingSubheader({
             </SheetContent>
           </Sheet>
         </div>
-
-        {/* Mobile Horizontal Scroll for Categories - Alternative option */}
-        {/* Uncomment if you prefer horizontal scroll instead of sheet */}
-        {/*
-        <div className="md:hidden pb-3 -mt-2">
-          <div className="flex space-x-3 overflow-x-auto scrollbar-hide px-1 py-2">
-            {categories.slice(2).map((category) => (
-              <button
-                key={category}
-                onClick={() => setActiveCategory(category)}
-                className={`whitespace-nowrap text-xs font-medium transition-all duration-200 px-3 py-2 rounded-lg flex-shrink-0 ${
-                  activeCategory === category
-                    ? "text-white font-bold bg-black border border-black"
-                    : "text-gray-600 hover:text-black hover:bg-gray-50"
-                }`}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-        </div>
-        */}
       </div>
     </div>
   );

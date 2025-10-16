@@ -19,7 +19,7 @@ const getFilteredProducts = async (req, res) => {
       maxRating,
       inStock,
       page = 1,
-      limit = 12,
+      limit = 100,
     } = req.query;
 
     let filters = { isActive: true }; // Only show active products

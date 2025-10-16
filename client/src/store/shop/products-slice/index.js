@@ -28,7 +28,7 @@ export const fetchAllFilteredProducts = createAsyncThunk(
       });
 
       if (!queryParams.has("page")) queryParams.set("page", "1");
-      if (!queryParams.has("limit")) queryParams.set("limit", "20");
+      if (!queryParams.has("limit")) queryParams.set("limit", "100");
 
       const response = await axios.get(
         `${BASE_URL}/api/shop/products/get?${queryParams}`
