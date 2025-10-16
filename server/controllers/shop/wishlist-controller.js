@@ -69,7 +69,8 @@ const fetchWishlistItems = async (req, res) => {
 
     const wishlist = await Wishlist.findOne({ userId }).populate({
       path: "items.productId",
-      select: "image title price salePrice category brand averageReview", // Same fields as cart
+      select:
+        "images title price salePrice category brand averageReview totalStock sizes colors isFeatured tags description subcategory salesCount",
     });
 
     if (!wishlist) {
@@ -88,17 +89,42 @@ const fetchWishlistItems = async (req, res) => {
       await wishlist.save();
     }
 
-    const populatedWishlistItems = validItems.map((item) => ({
-      productId: item.productId._id,
-      image: item.productId.image,
-      title: item.productId.title,
-      price: item.productId.price,
-      salePrice: item.productId.salePrice,
-      category: item.productId.category,
-      brand: item.productId.brand,
-      averageReview: item.productId.averageReview,
-      addedAt: item.addedAt,
-    }));
+    // Format the response to match your product tile requirements
+    const populatedWishlistItems = validItems.map((item) => {
+      const product = item.productId;
+      return {
+        _id: product._id,
+        productId: product._id,
+        images: product.images || [],
+        image: product.images?.[0] || null, // Main image for backward compatibility
+        title: product.title,
+        price: product.price,
+        salePrice: product.salePrice,
+        category: product.category,
+        subcategory: product.subcategory,
+        brand: product.brand,
+        averageReview: product.averageReview,
+        totalStock: product.totalStock,
+        sizes: product.sizes || [],
+        colors: product.colors || [],
+        isFeatured: product.isFeatured,
+        tags: product.tags || [],
+        description: product.description,
+        salesCount: product.salesCount,
+        addedAt: item.addedAt,
+        // Add calculated fields for product tile
+        hasSale: product.salePrice > 0 && product.salePrice < product.price,
+        discountPercentage:
+          product.salePrice > 0 && product.salePrice < product.price
+            ? Math.round(
+                ((product.price - product.salePrice) / product.price) * 100
+              )
+            : 0,
+        isOutOfStock: (product.totalStock || 0) === 0,
+        lowStock:
+          (product.totalStock || 0) > 0 && (product.totalStock || 0) < 10,
+      };
+    });
 
     res.status(200).json({
       success: true,
@@ -108,10 +134,11 @@ const fetchWishlistItems = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log(error);
+    console.log("❌ Error fetching wishlist:", error);
     res.status(500).json({
       success: false,
       message: "Error fetching wishlist",
+      error: error.message,
     });
   }
 };
@@ -154,20 +181,52 @@ const removeFromWishlist = async (req, res) => {
     // Populate the remaining items for response
     await wishlist.populate({
       path: "items.productId",
-      select: "image title price salePrice category brand averageReview",
+      select:
+        "images title price salePrice category brand averageReview totalStock sizes colors isFeatured tags description subcategory salesCount",
     });
 
-    const populatedWishlistItems = wishlist.items.map((item) => ({
-      productId: item.productId ? item.productId._id : null,
-      image: item.productId ? item.productId.image : null,
-      title: item.productId ? item.productId.title : "Product not found",
-      price: item.productId ? item.productId.price : null,
-      salePrice: item.productId ? item.productId.salePrice : null,
-      category: item.productId ? item.productId.category : null,
-      brand: item.productId ? item.productId.brand : null,
-      averageReview: item.productId ? item.productId.averageReview : null,
-      addedAt: item.addedAt,
-    }));
+    const populatedWishlistItems = wishlist.items.map((item) => {
+      const product = item.productId;
+      if (!product) {
+        return {
+          productId: null,
+          title: "Product not found",
+          addedAt: item.addedAt,
+        };
+      }
+
+      return {
+        _id: product._id,
+        productId: product._id,
+        images: product.images || [],
+        image: product.images?.[0] || null,
+        title: product.title,
+        price: product.price,
+        salePrice: product.salePrice,
+        category: product.category,
+        subcategory: product.subcategory,
+        brand: product.brand,
+        averageReview: product.averageReview,
+        totalStock: product.totalStock,
+        sizes: product.sizes || [],
+        colors: product.colors || [],
+        isFeatured: product.isFeatured,
+        tags: product.tags || [],
+        description: product.description,
+        salesCount: product.salesCount,
+        addedAt: item.addedAt,
+        hasSale: product.salePrice > 0 && product.salePrice < product.price,
+        discountPercentage:
+          product.salePrice > 0 && product.salePrice < product.price
+            ? Math.round(
+                ((product.price - product.salePrice) / product.price) * 100
+              )
+            : 0,
+        isOutOfStock: (product.totalStock || 0) === 0,
+        lowStock:
+          (product.totalStock || 0) > 0 && (product.totalStock || 0) < 10,
+      };
+    });
 
     res.status(200).json({
       success: true,

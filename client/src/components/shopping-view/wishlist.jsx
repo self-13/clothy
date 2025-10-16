@@ -44,10 +44,12 @@ function ShoppingWishlist() {
 
   if (!wishlistItems?.items || wishlistItems.items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12">
-        <HeartOff className="h-16 w-16 text-muted-foreground mb-4" />
-        <h3 className="text-lg font-medium mb-2">Your wishlist is empty</h3>
-        <p className="text-muted-foreground text-center">
+      <div className="flex flex-col items-center justify-center py-8 sm:py-12 px-4">
+        <HeartOff className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 mb-3 sm:mb-4" />
+        <h3 className="text-lg sm:text-xl font-medium text-gray-900 mb-2 text-center">
+          Your wishlist is empty
+        </h3>
+        <p className="text-gray-600 text-center text-sm sm:text-base max-w-md">
           Save your favorite items here to easily find them later.
         </p>
       </div>
@@ -55,9 +57,9 @@ function ShoppingWishlist() {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
       {wishlistItems.items.map((item) => (
-        <div key={item.productId} className="relative">
+        <div key={item.productId} className="relative group">
           {/* FIX: Create a proper product object that ShoppingProductTile expects */}
           <ShoppingProductTile
             product={{
@@ -76,10 +78,10 @@ function ShoppingWishlist() {
           <Button
             variant="destructive"
             size="sm"
-            className="absolute top-2 right-2 opacity-90 hover:opacity-100"
+            className="absolute top-2 right-2 opacity-0 group-hover:opacity-90 hover:opacity-100 transition-opacity duration-200 text-xs sm:text-sm h-8 sm:h-9"
             onClick={() => handleRemoveFromWishlist(item.productId)}
           >
-            <HeartOff className="h-4 w-4 mr-1" />
+            <HeartOff className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
             Remove
           </Button>
         </div>

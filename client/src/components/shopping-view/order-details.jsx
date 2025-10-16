@@ -4,6 +4,7 @@ import { DialogContent } from "../ui/dialog";
 import { Label } from "../ui/label";
 import { Separator } from "../ui/separator";
 import { Button } from "../ui/button";
+import { X, RotateCcw, Clock, CheckCircle, XCircle } from "lucide-react";
 
 function ShoppingOrderDetailsView({
   orderDetails,
@@ -28,224 +29,339 @@ function ShoppingOrderDetailsView({
   const getStatusColor = (status) => {
     switch (status) {
       case "confirmed":
-        return "bg-green-500";
+        return "bg-green-500 text-white";
       case "processing":
-        return "bg-yellow-500";
+        return "bg-yellow-500 text-white";
       case "shipped":
-        return "bg-blue-500";
+        return "bg-blue-500 text-white";
       case "out_for_delivery":
-        return "bg-purple-500";
+        return "bg-purple-500 text-white";
       case "delivered":
-        return "bg-green-600";
+        return "bg-green-600 text-white";
       case "cancelled":
-        return "bg-red-600";
+        return "bg-red-600 text-white";
       case "returned":
-        return "bg-gray-600";
+        return "bg-gray-600 text-white";
       default:
-        return "bg-gray-500";
+        return "bg-gray-500 text-white";
     }
   };
 
   const getCancellationStatus = (order) => {
-    // Commented out until your API supports cancellation status
-    /*
     if (!order?.cancellation?.requested) return null;
 
-    switch (order.cancellation.status) {
+    const status = order.cancellation.status;
+    const requestedAt = new Date(
+      order.cancellation.requestedAt
+    ).toLocaleDateString();
+
+    switch (status) {
       case "pending":
-        return { text: "Cancellation Requested", color: "bg-yellow-500" };
+        return {
+          text: `Cancellation Requested (${requestedAt})`,
+          color: "bg-yellow-500 text-white",
+          icon: <Clock className="w-3 h-3 mr-1" />,
+        };
       case "approved":
-        return { text: "Cancellation Approved", color: "bg-green-500" };
+        return {
+          text: `Cancellation Approved (${requestedAt})`,
+          color: "bg-green-500 text-white",
+          icon: <CheckCircle className="w-3 h-3 mr-1" />,
+        };
       case "rejected":
-        return { text: "Cancellation Rejected", color: "bg-red-500" };
+        return {
+          text: `Cancellation Rejected (${requestedAt})`,
+          color: "bg-red-500 text-white",
+          icon: <XCircle className="w-3 h-3 mr-1" />,
+        };
       default:
         return null;
     }
-    */
-    return null;
   };
 
   const getReturnStatus = (order) => {
-    // Commented out until your API supports return status
-    /*
     if (!order?.return?.requested) return null;
 
-    switch (order.return.status) {
+    const status = order.return.status;
+    const requestedAt = new Date(order.return.requestedAt).toLocaleDateString();
+
+    switch (status) {
       case "pending":
-        return { text: "Return Requested", color: "bg-yellow-500" };
+        return {
+          text: `Return Requested (${requestedAt})`,
+          color: "bg-yellow-500 text-white",
+          icon: <Clock className="w-3 h-3 mr-1" />,
+        };
       case "approved":
-        return { text: "Return Approved", color: "bg-green-500" };
+        return {
+          text: `Return Approved (${requestedAt})`,
+          color: "bg-green-500 text-white",
+          icon: <CheckCircle className="w-3 h-3 mr-1" />,
+        };
       case "rejected":
-        return { text: "Return Rejected", color: "bg-red-500" };
+        return {
+          text: `Return Rejected (${requestedAt})`,
+          color: "bg-red-500 text-white",
+          icon: <XCircle className="w-3 h-3 mr-1" />,
+        };
       default:
         return null;
     }
-    */
-    return null;
   };
 
   const cancellationStatus = getCancellationStatus(orderDetails);
   const returnStatus = getReturnStatus(orderDetails);
-  const showCancelButton = canCancelOrder(orderDetails);
-  const showReturnButton = canReturnOrder(orderDetails);
+  const showCancelButton = canCancelOrder(orderDetails) && !cancellationStatus;
+  const showReturnButton = canReturnOrder(orderDetails) && !returnStatus;
+
+  // Calculate items total
+  const itemsTotal =
+    orderDetails.items?.reduce((total, item) => {
+      return total + (item.salePrice || item.price) * item.quantity;
+    }, 0) || 0;
 
   return (
-    <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
+    <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
       <div className="grid gap-6">
-        {/* Order Info */}
-        <div className="grid gap-2">
-          <div className="flex items-center justify-between">
-            <p className="font-medium">Order ID</p>
-            <Label>{orderDetails._id}</Label>
-          </div>
-          <div className="flex items-center justify-between">
-            <p className="font-medium">Order Date</p>
-            <Label>
-              {new Date(orderDetails.orderDate).toLocaleDateString()}
-            </Label>
-          </div>
-          <div className="flex items-center justify-between">
-            <p className="font-medium">Order Price</p>
-            <Label>₹{orderDetails.totalAmount}</Label>
-          </div>
-          <div className="flex items-center justify-between">
-            <p className="font-medium">Payment Method</p>
-            <Label className="uppercase">{orderDetails.paymentMethod}</Label>
-          </div>
-          <div className="flex items-center justify-between">
-            <p className="font-medium">Payment Status</p>
-            <Label className="capitalize">{orderDetails.paymentStatus}</Label>
-          </div>
-          <div className="flex items-center justify-between">
-            <p className="font-medium">Order Status</p>
-            <Badge
-              className={`py-1 px-3 capitalize ${getStatusColor(
-                orderDetails.orderStatus
-              )}`}
-            >
-              {orderDetails.orderStatus?.replace("_", " ")}
-            </Badge>
-          </div>
+        {/* Header with Order ID */}
+        <div className="text-center border-b pb-4">
+          <h2 className="text-xl font-bold text-gray-900">Order Details</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Order #{orderDetails._id.slice(-8).toUpperCase()}
+          </p>
+        </div>
 
-          {/* Cancellation Status */}
+        {/* Status Badges */}
+        <div className="flex flex-wrap gap-2 justify-center">
+          <Badge
+            className={`py-2 px-4 text-sm font-medium ${getStatusColor(
+              orderDetails.orderStatus
+            )}`}
+          >
+            {orderDetails.orderStatus?.replace(/_/g, " ").toUpperCase()}
+          </Badge>
+
           {cancellationStatus && (
-            <div className="flex items-center justify-between">
-              <p className="font-medium">Cancellation Status</p>
-              <Badge className={`py-1 px-3 ${cancellationStatus.color}`}>
-                {cancellationStatus.text}
-              </Badge>
-            </div>
+            <Badge
+              className={`py-2 px-4 text-sm font-medium flex items-center ${cancellationStatus.color}`}
+            >
+              {cancellationStatus.icon}
+              {cancellationStatus.text}
+            </Badge>
           )}
 
-          {/* Return Status */}
           {returnStatus && (
-            <div className="flex items-center justify-between">
-              <p className="font-medium">Return Status</p>
-              <Badge className={`py-1 px-3 ${returnStatus.color}`}>
-                {returnStatus.text}
-              </Badge>
-            </div>
+            <Badge
+              className={`py-2 px-4 text-sm font-medium flex items-center ${returnStatus.color}`}
+            >
+              {returnStatus.icon}
+              {returnStatus.text}
+            </Badge>
           )}
         </div>
 
-        <Separator />
+        {/* Order Information */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+          <div className="space-y-2">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Order Date</p>
+              <p className="text-sm text-gray-900">
+                {new Date(orderDetails.orderDate).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600">
+                Payment Method
+              </p>
+              <p className="text-sm text-gray-900 capitalize">
+                {orderDetails.paymentMethod}
+              </p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div>
+              <p className="text-sm font-medium text-gray-600">
+                Payment Status
+              </p>
+              <p className="text-sm text-gray-900 capitalize">
+                {orderDetails.paymentStatus}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600">Last Updated</p>
+              <p className="text-sm text-gray-900">
+                {new Date(orderDetails.orderUpdateDate).toLocaleDateString(
+                  "en-US",
+                  {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
 
         {/* Action Buttons */}
-        {/* {(showCancelButton || showReturnButton) && (
-          <>
-            <div className="flex gap-2">
-              {showCancelButton && (
-                <Button
-                  onClick={() => onCancellationRequest(orderDetails)}
-                  variant="destructive"
-                  className="flex-1"
-                >
-                  Request Cancellation
-                </Button>
-              )}
-              {showReturnButton && (
-                <Button
-                  onClick={() => onReturnRequest(orderDetails)}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  Request Return
-                </Button>
-              )}
-            </div>
-            <Separator />
-          </>
-        )} */}
-
-        {/* Order Items - FIXED: Changed cartItems to items */}
-        <div className="grid gap-4">
-          <div className="font-medium">Products</div>
-          <ul className="grid gap-4">
-            {orderDetails.items?.map((item, index) => (
-              <li
-                key={index}
-                className="flex items-center justify-between gap-4 border-b pb-3"
+        {(showCancelButton || showReturnButton) && (
+          <div className="flex gap-3">
+            {showCancelButton && (
+              <Button
+                onClick={() => onCancellationRequest(orderDetails)}
+                variant="destructive"
+                className="flex-1 flex items-center gap-2"
               >
-                <div className="flex items-center gap-4">
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    className="w-16 h-16 object-cover rounded"
-                  />
-                  <div>
-                    <p className="font-medium">{item.title}</p>
-                    {item.selectedSize && (
-                      <p className="text-sm text-muted-foreground">
-                        Size: {item.selectedSize}
-                      </p>
-                    )}
-                    {item.selectedColor && (
-                      <p className="text-sm text-muted-foreground">
-                        Color: {item.selectedColor}
-                      </p>
-                    )}
-                    <p className="text-sm text-muted-foreground">
-                      Qty: {item.quantity}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Price: ₹{item.price}
-                    </p>
+                <X className="w-4 h-4" />
+                Request Cancellation
+              </Button>
+            )}
+            {showReturnButton && (
+              <Button
+                onClick={() => onReturnRequest(orderDetails)}
+                variant="outline"
+                className="flex-1 flex items-center gap-2 border-red-200 text-red-600 hover:bg-red-50"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Request Return
+              </Button>
+            )}
+          </div>
+        )}
+
+        <Separator />
+
+        {/* Order Items */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-900">Order Items</h3>
+          <div className="space-y-4">
+            {orderDetails.items?.map((item, index) => (
+              <div
+                key={index}
+                className="flex gap-4 p-4 border border-gray-200 rounded-lg"
+              >
+                <img
+                  src={item.image}
+                  alt={item.title}
+                  className="w-20 h-20 object-cover rounded-lg flex-shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-medium text-gray-900 text-sm sm:text-base">
+                    {item.title}
+                  </h4>
+                  <p className="text-sm text-gray-600 mb-2">by {item.brand}</p>
+
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span className="text-gray-600">Size:</span>
+                      <span className="ml-2 font-medium">
+                        {item.selectedSize}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Color:</span>
+                      <span className="ml-2 font-medium capitalize">
+                        {item.selectedColor}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Quantity:</span>
+                      <span className="ml-2 font-medium">{item.quantity}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Price:</span>
+                      <span className="ml-2 font-medium">
+                        ₹{item.salePrice || item.price}
+                      </span>
+                    </div>
                   </div>
+
+                  {/* Product Details from productDetails */}
+                  {item.productDetails && (
+                    <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                      <p className="text-xs text-gray-600 mb-2">
+                        Product Information:
+                      </p>
+                      <div className="grid grid-cols-2 gap-1 text-xs">
+                        <div>
+                          <span className="text-gray-600">Category:</span>
+                          <span className="ml-1 font-medium capitalize">
+                            {item.productDetails.category}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Subcategory:</span>
+                          <span className="ml-1 font-medium capitalize">
+                            {item.productDetails.subcategory}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">
+                            Available Colors:
+                          </span>
+                          <span className="ml-1 font-medium">
+                            {item.productDetails.colors?.join(", ")}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">
+                            Available Sizes:
+                          </span>
+                          <span className="ml-1 font-medium">
+                            {item.productDetails.sizes
+                              ?.map((s) => `${s.size}(${s.stock})`)
+                              .join(", ")}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="text-right font-medium">
-                  ₹{item.price * item.quantity}
+                <div className="text-right">
+                  <p className="text-lg font-bold text-gray-900">
+                    ₹{(item.salePrice || item.price) * item.quantity}
+                  </p>
+                  {item.salePrice && item.salePrice < item.price && (
+                    <p className="text-sm text-gray-500 line-through">
+                      ₹{item.price * item.quantity}
+                    </p>
+                  )}
                 </div>
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
 
         <Separator />
 
         {/* Price Breakdown */}
-        <div className="grid gap-2">
-          <div className="font-medium">Price Details</div>
-          <div className="grid gap-1 text-sm">
+        <div className="space-y-3">
+          <h3 className="text-lg font-semibold text-gray-900">Price Details</h3>
+          <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span>Items Total:</span>
-              <span>
-                ₹
-                {orderDetails.totalAmount -
-                  (orderDetails.shippingFee || 0) -
-                  (orderDetails.cashHandlingFee || 0) +
-                  (orderDetails.discount || 0)}
-              </span>
+              <span className="text-gray-600">Items Total:</span>
+              <span className="font-medium">₹{itemsTotal}</span>
             </div>
             {orderDetails.shippingFee > 0 && (
               <div className="flex justify-between">
-                <span>Shipping Fee:</span>
-                <span>₹{orderDetails.shippingFee}</span>
+                <span className="text-gray-600">Shipping Fee:</span>
+                <span className="font-medium">₹{orderDetails.shippingFee}</span>
               </div>
             )}
             {orderDetails.cashHandlingFee > 0 && (
               <div className="flex justify-between">
-                <span>Cash Handling Fee:</span>
-                <span>₹{orderDetails.cashHandlingFee}</span>
+                <span className="text-gray-600">Cash Handling Fee:</span>
+                <span className="font-medium">
+                  ₹{orderDetails.cashHandlingFee}
+                </span>
               </div>
             )}
             {orderDetails.discount > 0 && (
@@ -255,7 +371,7 @@ function ShoppingOrderDetailsView({
               </div>
             )}
             <Separator />
-            <div className="flex justify-between font-medium">
+            <div className="flex justify-between text-lg font-bold">
               <span>Total Amount:</span>
               <span>₹{orderDetails.totalAmount}</span>
             </div>
@@ -264,23 +380,81 @@ function ShoppingOrderDetailsView({
 
         <Separator />
 
-        {/* Shipping Info */}
-        <div className="grid gap-2">
-          <div className="font-medium">Shipping Info</div>
-          <div className="grid gap-0.5 text-muted-foreground">
-            <span>{user?.userName || user?.name || "Customer"}</span>
-            <span>{orderDetails.addressInfo?.address}</span>
-            <span>{orderDetails.addressInfo?.city}</span>
-            <span>Pincode: {orderDetails.addressInfo?.pincode}</span>
-            <span>Phone: {orderDetails.addressInfo?.phone}</span>
-            {orderDetails.addressInfo?.type && (
-              <span>Address Type: {orderDetails.addressInfo?.type}</span>
-            )}
-            {orderDetails.addressInfo?.notes && (
-              <span>Notes: {orderDetails.addressInfo?.notes}</span>
-            )}
+        {/* Shipping Address */}
+        <div className="space-y-3">
+          <h3 className="text-lg font-semibold text-gray-900">
+            Shipping Address
+          </h3>
+          <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+            <div className="space-y-2 text-sm">
+              <p className="font-medium text-gray-900">
+                {user?.userName || user?.name || "Customer"}
+              </p>
+              <p className="text-gray-600">
+                {orderDetails.addressInfo?.address}
+              </p>
+              <p className="text-gray-600">{orderDetails.addressInfo?.city}</p>
+              <p className="text-gray-600">
+                Pincode: {orderDetails.addressInfo?.pincode}
+              </p>
+              <p className="text-gray-600">
+                Phone: {orderDetails.addressInfo?.phone}
+              </p>
+              {orderDetails.addressInfo?.type && (
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-600">Address Type:</span>
+                  <Badge variant="outline" className="capitalize">
+                    {orderDetails.addressInfo.type}
+                  </Badge>
+                </div>
+              )}
+              {orderDetails.addressInfo?.notes && (
+                <div className="mt-2 p-2 bg-white rounded border">
+                  <p className="text-xs text-gray-600 mb-1">Delivery Notes:</p>
+                  <p className="text-sm">{orderDetails.addressInfo.notes}</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
+
+        {/* Cancellation Details */}
+        {orderDetails.cancellation?.requested && (
+          <>
+            <Separator />
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Cancellation Details
+              </h3>
+              <div className="p-4 border border-yellow-200 rounded-lg bg-yellow-50">
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Requested On:</span>
+                    <span className="font-medium">
+                      {new Date(
+                        orderDetails.cancellation.requestedAt
+                      ).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Reason:</span>
+                    <p className="font-medium mt-1">
+                      {orderDetails.cancellation.reason}
+                    </p>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Status:</span>
+                    <Badge
+                      className={cancellationStatus?.color || "bg-gray-500"}
+                    >
+                      {orderDetails.cancellation.status}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </DialogContent>
   );
