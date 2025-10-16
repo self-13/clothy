@@ -100,30 +100,33 @@ export const addProductFormElements = [
     required: true,
   },
   {
-    type: "select",
+    componentType: "select",
     name: "category",
     label: "Category",
     placeholder: "Select category",
     required: true,
     options: [
       { value: "man", label: "Man" },
-      { value: "woman", label: "Woman" },
-      { value: "unisex", label: "Unisex" },
-    ],
+      { value: "woman", label: "Woman" }
+    ]
   },
   {
-    type: "select",
+    componentType: "select",
     name: "subcategory",
     label: "Subcategory",
     placeholder: "Select subcategory",
     required: true,
     options: [
-      { value: "t-shirt", label: "T-Shirt" },
-      { value: "lower", label: "Lower" },
-      { value: "oversized", label: "Oversized" },
-      { value: "shoes", label: "Shoes" },
-      { value: "others", label: "Others" },
-    ],
+      { value: "winterwear", label: "winterwear" },
+      { value: "plus-size", label: "plus-size" },
+      { value: "shirts", label: "shirts" },
+      { value: "t-shirts", label: "t-shirts" },
+      { value: "jeans", label: "jeans" },
+      { value: "dresses", label: "dresses" },
+      { value: "shorts", label: "shorts" },
+      { value: "activewear", label: "activewear" },
+      { value: "accessories", label: "accessories" }
+    ]
   },
   {
     type: "text",

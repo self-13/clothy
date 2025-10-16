@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import CommonForm from "../common/form";
 import { DialogContent } from "../ui/dialog";
 import { Label } from "../ui/label";
@@ -12,52 +12,58 @@ import {
 } from "@/store/admin/order-slice";
 import { useToast } from "../ui/use-toast";
 import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Textarea } from "../ui/textarea";
-import { Truck, Package, CheckCircle, Clock, MapPin, X } from "lucide-react";
+import { CheckCircle, Clock, MapPin, X, Package } from "lucide-react";
 
 const initialFormData = {
   status: "",
-  trackingNumber: "",
-  carrier: "",
 };
 
 function AdminOrderDetailsView({ orderDetails, onClose }) {
   const [formData, setFormData] = useState(initialFormData);
-  const [showTrackingForm, setShowTrackingForm] = useState(false);
   const { isLoading } = useSelector((state) => state.adminOrder);
   const dispatch = useDispatch();
   const { toast } = useToast();
 
+  // Set current status in form when orderDetails changes
+  useEffect(() => {
+    if (orderDetails?.orderStatus) {
+      setFormData({
+        status: orderDetails.orderStatus,
+      });
+    }
+  }, [orderDetails]);
+
   const getBadgeColor = (status) => {
     switch (status) {
       case "confirmed":
-        return "bg-blue-500";
+        return "bg-blue-500 text-white";
       case "processing":
-        return "bg-yellow-500";
+        return "bg-yellow-500 text-white";
       case "shipped":
-        return "bg-purple-500";
+        return "bg-purple-500 text-white";
       case "out_for_delivery":
-        return "bg-orange-500";
+        return "bg-orange-500 text-white";
       case "delivered":
-        return "bg-green-500";
+        return "bg-green-500 text-white";
       case "cancelled":
-        return "bg-red-500";
+        return "bg-red-500 text-white";
       case "returned":
-        return "bg-pink-500";
+        return "bg-pink-500 text-white";
       default:
-        return "bg-gray-500";
+        return "bg-gray-500 text-white";
     }
   };
 
   const getPaymentBadgeColor = (method) => {
-    return method === "cod" ? "bg-orange-500" : "bg-teal-500";
+    return method === "cod"
+      ? "bg-orange-500 text-white"
+      : "bg-teal-500 text-white";
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
       case "shipped":
-        return <Truck className="h-4 w-4" />;
+        return <Package className="h-4 w-4" />;
       case "delivered":
         return <CheckCircle className="h-4 w-4" />;
       default:
@@ -67,7 +73,7 @@ function AdminOrderDetailsView({ orderDetails, onClose }) {
 
   function handleUpdateStatus(event) {
     event.preventDefault();
-    const { status, trackingNumber, carrier } = formData;
+    const { status } = formData;
 
     if (!status) {
       toast({
@@ -79,13 +85,9 @@ function AdminOrderDetailsView({ orderDetails, onClose }) {
 
     const updateData = { orderStatus: status };
 
-    // Add tracking info if provided
-    if (trackingNumber && carrier) {
-      updateData.tracking = {
-        trackingNumber,
-        carrier,
-        trackingUrl: `https://tracking.example.com/${trackingNumber}`,
-      };
+    // If status is delivered, set delivery date
+    if (status === "delivered") {
+      updateData.deliveryDate = new Date().toISOString();
     }
 
     dispatch(
@@ -98,15 +100,13 @@ function AdminOrderDetailsView({ orderDetails, onClose }) {
         if (data?.payload?.success) {
           dispatch(getOrderDetailsForAdmin(orderDetails?._id));
           dispatch(getAllOrdersForAdmin());
-          setFormData(initialFormData);
-          setShowTrackingForm(false);
           toast({
-            title: data?.payload?.message,
+            title: "Status updated successfully!",
           });
         } else {
           toast({
             title: "Error updating status",
-            description: data?.payload?.message,
+            description: data?.payload?.message || "Please try again",
             variant: "destructive",
           });
         }
@@ -134,10 +134,14 @@ function AdminOrderDetailsView({ orderDetails, onClose }) {
       {
         status: "processing",
         title: "Processing",
-        date:
-          orderDetails?.orderStatus === "processing"
-            ? orderDetails?.orderUpdateDate
-            : null,
+        date: [
+          "processing",
+          "shipped",
+          "out_for_delivery",
+          "delivered",
+        ].includes(orderDetails?.orderStatus)
+          ? orderDetails?.orderUpdateDate
+          : null,
         completed: [
           "processing",
           "shipped",
@@ -149,22 +153,24 @@ function AdminOrderDetailsView({ orderDetails, onClose }) {
       {
         status: "shipped",
         title: "Shipped",
-        date:
-          orderDetails?.orderStatus === "shipped"
-            ? orderDetails?.orderUpdateDate
-            : null,
+        date: ["shipped", "out_for_delivery", "delivered"].includes(
+          orderDetails?.orderStatus
+        )
+          ? orderDetails?.orderUpdateDate
+          : null,
         completed: ["shipped", "out_for_delivery", "delivered"].includes(
           orderDetails?.orderStatus
         ),
-        icon: <Truck className="h-4 w-4" />,
+        icon: <Package className="h-4 w-4" />,
       },
       {
         status: "out_for_delivery",
         title: "Out for Delivery",
-        date:
-          orderDetails?.orderStatus === "out_for_delivery"
-            ? orderDetails?.orderUpdateDate
-            : null,
+        date: ["out_for_delivery", "delivered"].includes(
+          orderDetails?.orderStatus
+        )
+          ? orderDetails?.orderUpdateDate
+          : null,
         completed: ["out_for_delivery", "delivered"].includes(
           orderDetails?.orderStatus
         ),
@@ -217,7 +223,9 @@ function AdminOrderDetailsView({ orderDetails, onClose }) {
                 <span className="font-medium text-sm text-muted-foreground">
                   Order ID
                 </span>
-                <Label className="font-mono text-sm">{orderDetails?._id}</Label>
+                <Label className="font-mono text-sm">
+                  {orderDetails?._id?.slice(-8)}
+                </Label>
               </div>
               <div className="flex flex-col">
                 <span className="font-medium text-sm text-muted-foreground">
@@ -278,25 +286,6 @@ function AdminOrderDetailsView({ orderDetails, onClose }) {
                         </span>
                       )}
                     </div>
-                    {step.status === "shipped" && orderDetails?.tracking && (
-                      <div className="mt-2 p-2 bg-blue-50 rounded text-sm">
-                        <div className="font-medium">Tracking Information:</div>
-                        <div>Carrier: {orderDetails.tracking.carrier}</div>
-                        <div>
-                          Tracking #: {orderDetails.tracking.trackingNumber}
-                        </div>
-                        {orderDetails.tracking.trackingUrl && (
-                          <a
-                            href={orderDetails.tracking.trackingUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline"
-                          >
-                            Track Package
-                          </a>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </div>
               ))}
@@ -343,7 +332,7 @@ function AdminOrderDetailsView({ orderDetails, onClose }) {
                       <p className="text-sm">Qty: {item.quantity}</p>
                       <p className="text-sm font-semibold">
                         ₹{(item.price * item.quantity).toFixed(2)}
-                        {item.salePrice && (
+                        {item.salePrice && item.salePrice < item.price && (
                           <span className="text-muted-foreground line-through ml-2">
                             ₹{(item.salePrice * item.quantity).toFixed(2)}
                           </span>
@@ -354,7 +343,7 @@ function AdminOrderDetailsView({ orderDetails, onClose }) {
                     {/* Price */}
                     <div className="text-right">
                       <p className="font-semibold">₹{item.price}</p>
-                      {item.salePrice && (
+                      {item.salePrice && item.salePrice < item.price && (
                         <p className="text-sm text-muted-foreground line-through">
                           ₹{item.salePrice}
                         </p>
@@ -381,7 +370,7 @@ function AdminOrderDetailsView({ orderDetails, onClose }) {
                     Customer Name
                   </span>
                   <p className="text-sm font-medium">
-                    {orderDetails?.addressInfo?.name}
+                    {orderDetails?.addressInfo?.name || "Not provided"}
                   </p>
                 </div>
                 <div>
@@ -403,12 +392,6 @@ function AdminOrderDetailsView({ orderDetails, onClose }) {
                     City
                   </span>
                   <p className="text-sm">{orderDetails?.addressInfo?.city}</p>
-                </div>
-                <div>
-                  <span className="font-medium text-sm text-muted-foreground">
-                    State
-                  </span>
-                  <p className="text-sm">{orderDetails?.addressInfo?.state}</p>
                 </div>
                 <div>
                   <span className="font-medium text-sm text-muted-foreground">
@@ -485,19 +468,7 @@ function AdminOrderDetailsView({ orderDetails, onClose }) {
 
           {/* Update Status Form */}
           <div>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-semibold text-lg">Update Order Status</h3>
-              {!showTrackingForm && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowTrackingForm(!showTrackingForm)}
-                >
-                  {showTrackingForm ? "Hide Tracking" : "Add Tracking"}
-                </Button>
-              )}
-            </div>
-
+            <h3 className="font-semibold text-lg mb-4">Update Order Status</h3>
             <CommonForm
               formControls={[
                 {
@@ -513,31 +484,6 @@ function AdminOrderDetailsView({ orderDetails, onClose }) {
                     { id: "cancelled", label: "Cancelled" },
                   ],
                 },
-                ...(showTrackingForm
-                  ? [
-                      {
-                        label: "Carrier",
-                        name: "carrier",
-                        componentType: "select",
-                        options: [
-                          { id: "fedex", label: "FedEx" },
-                          { id: "ups", label: "UPS" },
-                          { id: "dhl", label: "DHL" },
-                          { id: "usps", label: "USPS" },
-                          { id: "indiapost", label: "India Post" },
-                          { id: "delhivery", label: "Delhivery" },
-                          { id: "bluedart", label: "Blue Dart" },
-                        ],
-                      },
-                      {
-                        label: "Tracking Number",
-                        name: "trackingNumber",
-                        componentType: "input",
-                        type: "text",
-                        placeholder: "Enter tracking number",
-                      },
-                    ]
-                  : []),
               ]}
               formData={formData}
               setFormData={setFormData}
@@ -545,17 +491,6 @@ function AdminOrderDetailsView({ orderDetails, onClose }) {
               onSubmit={handleUpdateStatus}
               isBtnDisabled={!formData.status || isLoading}
             />
-
-            {showTrackingForm && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowTrackingForm(false)}
-                className="mt-2"
-              >
-                Hide Tracking Fields
-              </Button>
-            )}
           </div>
         </div>
       </div>

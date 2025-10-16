@@ -18,11 +18,12 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Input } from "../ui/input";
-import { Search, Filter, ArrowUpDown, Download, BarChart3 } from "lucide-react";
+import { Search, Filter, ArrowUpDown } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 
 function AdminOrdersView() {
   const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [activeTab, setActiveTab] = useState("all");
   const [filters, setFilters] = useState({
     paymentMethod: "all",
@@ -33,18 +34,19 @@ function AdminOrdersView() {
     endDate: "",
   });
 
-  const { orderList, orderDetails, isLoading, pendingRequests } = useSelector(
+  const { orderList, orderDetails, isLoading } = useSelector(
     (state) => state.adminOrder
   );
   const dispatch = useDispatch();
 
-  function handleFetchOrderDetails(getId) {
-    dispatch(getOrderDetailsForAdmin(getId));
+  function handleFetchOrderDetails(orderId) {
+    setSelectedOrderId(orderId);
+    dispatch(getOrderDetailsForAdmin(orderId));
   }
 
   function handleCloseDialog() {
     setOpenDetailsDialog(false);
-    // Reset order details after a short delay to allow dialog animation to complete
+    setSelectedOrderId(null);
     setTimeout(() => {
       dispatch(resetOrderDetails());
     }, 300);
@@ -54,12 +56,12 @@ function AdminOrdersView() {
     dispatch(getAllOrdersForAdmin(filters));
   }, [dispatch, filters]);
 
-  // Only open dialog when orderDetails changes AND we have actual data
+  // Only open dialog when orderDetails changes AND we have the selected order
   useEffect(() => {
-    if (orderDetails !== null) {
+    if (orderDetails !== null && selectedOrderId === orderDetails._id) {
       setOpenDetailsDialog(true);
     }
-  }, [orderDetails]);
+  }, [orderDetails, selectedOrderId]);
 
   // Filter orders based on active tab and filters
   const filteredAndSortedOrders = orderList
@@ -125,26 +127,28 @@ function AdminOrdersView() {
   const getBadgeColor = (status) => {
     switch (status) {
       case "confirmed":
-        return "bg-blue-500";
+        return "bg-blue-500 text-white";
       case "processing":
-        return "bg-yellow-500";
+        return "bg-yellow-500 text-white";
       case "shipped":
-        return "bg-purple-500";
+        return "bg-purple-500 text-white";
       case "out_for_delivery":
-        return "bg-orange-500";
+        return "bg-orange-500 text-white";
       case "delivered":
-        return "bg-green-500";
+        return "bg-green-500 text-white";
       case "cancelled":
-        return "bg-red-500";
+        return "bg-red-500 text-white";
       case "returned":
-        return "bg-pink-500";
+        return "bg-pink-500 text-white";
       default:
-        return "bg-gray-500";
+        return "bg-gray-500 text-white";
     }
   };
 
   const getPaymentBadgeColor = (method) => {
-    return method === "cod" ? "bg-orange-500" : "bg-teal-500";
+    return method === "cod"
+      ? "bg-orange-500 text-white"
+      : "bg-teal-500 text-white";
   };
 
   const getStatusText = (status) => {
@@ -312,7 +316,7 @@ function AdminOrdersView() {
                   </SelectContent>
                 </Select>
 
-                {/* Date Range */}
+                {/* Date Range
                 <div className="flex gap-2">
                   <Input
                     type="date"
@@ -330,7 +334,7 @@ function AdminOrdersView() {
                       setFilters({ ...filters, endDate: e.target.value })
                     }
                   />
-                </div>
+                </div> */}
 
                 {/* Sort By */}
                 <Select
@@ -423,7 +427,7 @@ function AdminOrdersView() {
                       <CardContent className="space-y-3 text-sm">
                         <div className="flex justify-between">
                           <span className="font-medium">Customer:</span>
-                          <span>{orderItem.addressInfo?.name}</span>
+                          <span>{orderItem.addressInfo?.name || "Guest"}</span>
                         </div>
 
                         <div className="flex justify-between">
@@ -466,16 +470,6 @@ function AdminOrdersView() {
                           </span>
                         </div>
 
-                        {orderItem?.paymentMethod === "online" &&
-                          orderItem?.paymentId && (
-                            <div className="flex justify-between text-xs text-muted-foreground">
-                              <span>Payment ID:</span>
-                              <span className="font-mono">
-                                {orderItem.paymentId.slice(-8)}
-                              </span>
-                            </div>
-                          )}
-
                         <div className="flex justify-between">
                           <span className="font-medium">City:</span>
                           <span>{orderItem.addressInfo?.city}</span>
@@ -501,69 +495,17 @@ function AdminOrdersView() {
                           )}
                         </div>
 
-                        {/* Mini preview of order items */}
-                        <div className="space-y-1 pt-2">
-                          {orderItem?.items?.slice(0, 2).map((item) => (
-                            <div
-                              key={item._id}
-                              className="flex items-center gap-2"
-                            >
-                              <img
-                                src={item.image}
-                                alt={item.title}
-                                className="w-10 h-10 object-cover rounded"
-                              />
-                              <div className="flex-1">
-                                <div className="font-medium text-sm">
-                                  {item.title}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  Size: {item.selectedSize} | Color:{" "}
-                                  {item.selectedColor}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  ₹{parseFloat(item.price)} × {item.quantity}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                          {orderItem.items.length > 2 && (
-                            <div className="text-xs text-muted-foreground italic">
-                              +{orderItem.items.length - 2} more item(s)
-                            </div>
-                          )}
-                        </div>
-
                         <div className="pt-2 flex justify-end">
-                          <Dialog
-                            open={
-                              openDetailsDialog &&
-                              orderDetails?._id === orderItem?._id
-                            }
-                            onOpenChange={(isOpen) => {
-                              if (!isOpen) {
-                                handleCloseDialog();
-                              }
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleFetchOrderDetails(orderItem?._id);
                             }}
                           >
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleFetchOrderDetails(orderItem?._id);
-                              }}
-                            >
-                              View Details
-                            </Button>
-                            {orderDetails &&
-                              orderDetails._id === orderItem._id && (
-                                <AdminOrderDetailsView
-                                  orderDetails={orderDetails}
-                                  onClose={handleCloseDialog}
-                                />
-                              )}
-                          </Dialog>
+                            View Details
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -587,6 +529,23 @@ function AdminOrdersView() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Order Details Dialog */}
+      <Dialog
+        open={openDetailsDialog}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            handleCloseDialog();
+          }
+        }}
+      >
+        {orderDetails && (
+          <AdminOrderDetailsView
+            orderDetails={orderDetails}
+            onClose={handleCloseDialog}
+          />
+        )}
+      </Dialog>
     </div>
   );
 }
