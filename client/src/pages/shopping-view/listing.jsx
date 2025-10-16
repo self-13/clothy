@@ -306,14 +306,14 @@ function ShoppingListing() {
                         //   {subcategoryParam}
                         // </Badge>
                       )} */}
-                      {Object.keys(filters).length > 0 && (
+                      {/* {Object.keys(filters).length > 0 && (
                         <Badge
                           variant="secondary"
                           className="bg-gray-100 text-gray-700"
                         >
                           {Object.keys(filters).length} filter(s)
                         </Badge>
-                      )}
+                      )} */}
                     </div>
                   )}
                 </div>
