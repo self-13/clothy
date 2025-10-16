@@ -2,7 +2,7 @@ import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { brandOptionsMap, categoryOptionsMap } from "@/config";
 import { Badge } from "../ui/badge";
-import { Star, ShoppingCart, Heart, Share2, Zap } from "lucide-react";
+import { Star, Heart, Zap } from "lucide-react";
 import { useState } from "react";
 
 function ShoppingProductTile({
@@ -26,15 +26,26 @@ function ShoppingProductTile({
 
   const productImage = product?.images?.[0] || product?.image;
 
+  // Handle card click to open details
+  const handleCardClick = () => {
+    handleGetProductDetails(product?._id);
+  };
+
+  // Handle wishlist click (stop propagation to prevent card click)
+  const handleWishlistClick = (e) => {
+    e.stopPropagation();
+    setIsWishlisted(!isWishlisted);
+  };
+
   if (viewMode === "list") {
     return (
-      <Card className="w-full hover:shadow-md transition-all duration-200 border border-gray-200 rounded-lg overflow-hidden">
+      <Card
+        className="w-full hover:shadow-md transition-all duration-200 border border-gray-200 rounded-lg overflow-hidden cursor-pointer"
+        onClick={handleCardClick}
+      >
         <div className="flex">
           {/* Product Image */}
-          <div 
-            className="w-48 h-48 flex-shrink-0 relative cursor-pointer"
-            onClick={() => handleGetProductDetails(product?._id)}
-          >
+          <div className="w-48 h-48 flex-shrink-0 relative">
             <img
               src={productImage}
               alt={product?.title}
@@ -43,7 +54,7 @@ function ShoppingProductTile({
                 e.target.src = "/placeholder-image.jpg";
               }}
             />
-            
+
             {/* Badges */}
             <div className="absolute top-2 left-2 flex flex-col gap-1">
               {isOutOfStock ? (
@@ -67,10 +78,7 @@ function ShoppingProductTile({
             <div className="flex flex-col h-full">
               {/* Title and Brand */}
               <div className="mb-2">
-                <h3 
-                  className="text-lg font-normal text-gray-900 mb-1 cursor-pointer hover:text-blue-600 line-clamp-2"
-                  onClick={() => handleGetProductDetails(product?._id)}
-                >
+                <h3 className="text-lg font-normal text-gray-900 mb-1 hover:text-blue-600 line-clamp-2">
                   {product?.title}
                 </h3>
                 <p className="text-sm text-gray-500">
@@ -82,10 +90,12 @@ function ShoppingProductTile({
               {product?.averageReview && (
                 <div className="flex items-center gap-2 mb-3">
                   <div className="flex items-center bg-green-700 text-white px-2 py-1 rounded text-xs">
-                    <span className="font-medium">{product.averageReview.toFixed(1)}</span>
+                    <span className="font-medium">
+                      {product.averageReview.toFixed(1)}
+                    </span>
                     <Star className="w-3 h-3 fill-current ml-1" />
                   </div>
-                  <span className="text-blue-600 text-sm cursor-pointer hover:underline">
+                  <span className="text-blue-600 text-sm hover:underline">
                     {product?.reviewCount || 0} ratings
                   </span>
                 </div>
@@ -123,26 +133,10 @@ function ShoppingProductTile({
               {/* Action Buttons */}
               <div className="flex items-center gap-3 mt-auto">
                 <Button
-                  onClick={() => handleAddtoCart(product)}
-                  disabled={isOutOfStock}
-                  className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 border-yellow-400 text-sm font-medium px-6"
+                  onClick={handleCardClick}
+                  className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600 text-sm font-medium px-6"
                 >
-                  Add to Cart
-                </Button>
-                <Button
-                  onClick={() => handleGetProductDetails(product?._id)}
-                  variant="outline"
-                  className="border-orange-500 text-orange-500 hover:bg-orange-50 text-sm px-6"
-                >
-                  Buy Now
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsWishlisted(!isWishlisted)}
-                  className={`h-8 w-8 ${isWishlisted ? 'text-red-500' : 'text-gray-500'}`}
-                >
-                  <Heart className={`h-4 w-4 ${isWishlisted ? 'fill-current' : ''}`} />
+                  View Details
                 </Button>
               </div>
             </div>
@@ -152,19 +146,17 @@ function ShoppingProductTile({
     );
   }
 
-  // Grid View (default) - Amazon/Flipkart style
+  // Grid View (default)
   return (
-    <Card 
-      className="w-full max-w-xs hover:shadow-lg transition-all duration-200 border border-gray-200 rounded-lg overflow-hidden group bg-white"
+    <Card
+      className="w-full max-w-xs hover:shadow-lg transition-all duration-200 border border-gray-200 rounded-lg overflow-hidden group bg-white cursor-pointer"
+      onClick={handleCardClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Product Image Container */}
       <div className="relative aspect-square bg-white p-4">
-        <div 
-          className="w-full h-full flex items-center justify-center cursor-pointer"
-          onClick={() => handleGetProductDetails(product?._id)}
-        >
+        <div className="w-full h-full flex items-center justify-center">
           <img
             src={productImage}
             alt={product?.title}
@@ -199,32 +191,15 @@ function ShoppingProductTile({
           )}
         </div>
 
-        {/* Wishlist Button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsWishlisted(!isWishlisted)}
-          className={`absolute top-3 right-3 h-8 w-8 bg-white border border-gray-300 rounded-full shadow-sm ${
-            isWishlisted ? 'text-red-500' : 'text-gray-500'
-          }`}
-        >
-          <Heart className={`h-4 w-4 ${isWishlisted ? 'fill-current' : ''}`} />
-        </Button>
-
-        {/* Quick Actions on Hover */}
+        {/* View Details Button on Hover */}
         {isHovered && (
           <div className="absolute bottom-3 left-3 right-3">
             <Button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleAddtoCart(product);
-              }}
-              disabled={isOutOfStock}
-              className="w-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 text-sm font-medium shadow-md"
+              onClick={handleCardClick}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-md"
               size="sm"
             >
-              <ShoppingCart className="w-4 h-4 mr-2" />
-              Add to Cart
+              View Details
             </Button>
           </div>
         )}
@@ -240,10 +215,7 @@ function ShoppingProductTile({
         )}
 
         {/* Title */}
-        <h3 
-          className="text-sm font-normal text-gray-900 line-clamp-2 cursor-pointer hover:text-blue-600 leading-tight"
-          onClick={() => handleGetProductDetails(product?._id)}
-        >
+        <h3 className="text-sm font-normal text-gray-900 line-clamp-2 hover:text-blue-600 leading-tight">
           {product?.title}
         </h3>
 
@@ -251,10 +223,12 @@ function ShoppingProductTile({
         {product?.averageReview && (
           <div className="flex items-center gap-2">
             <div className="flex items-center bg-green-700 text-white px-1.5 py-0.5 rounded text-xs">
-              <span className="font-medium">{product.averageReview.toFixed(1)}</span>
+              <span className="font-medium">
+                {product.averageReview.toFixed(1)}
+              </span>
               <Star className="w-3 h-3 fill-current ml-0.5" />
             </div>
-            <span className="text-blue-600 text-xs cursor-pointer hover:underline">
+            <span className="text-blue-600 text-xs hover:underline">
               ({product?.reviewCount || 0})
             </span>
           </div>

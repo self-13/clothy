@@ -15,21 +15,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { 
-  ShoppingCart, 
-  Star, 
-  Truck, 
-  Shield, 
-  RotateCcw, 
+import {
+  ShoppingCart,
+  Star,
+  Truck,
+  Shield,
+  RotateCcw,
   X,
   Check,
   ChevronRight,
   Heart,
   Share2,
   Menu,
-  ArrowLeft
+  ArrowLeft,
+  HeartOff,
 } from "lucide-react";
 import { Badge } from "../ui/badge";
+import { Avatar, AvatarFallback } from "../ui/avatar";
+import StarRatingComponent from "../common/star-rating";
+import { addReview, getReviews } from "@/store/shop/review-slice";
+import {
+  addToWishlist,
+  removeFromWishlist,
+  checkProductInWishlist,
+} from "@/store/shop/wishlist-slice";
 
 function ProductDetailsDialog({ open, setOpen, productDetails }) {
   const [selectedSize, setSelectedSize] = useState("");
@@ -37,11 +46,17 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  const [reviewMsg, setReviewMsg] = useState("");
+  const [rating, setRating] = useState(0);
+  const [isInWishlist, setIsInWishlist] = useState(false);
+  const [activeTab, setActiveTab] = useState("details"); // "details" or "reviews"
 
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const { cartItems } = useSelector((state) => state.shopCart);
   const { isLoading, error } = useSelector((state) => state.shopProducts);
+  const { reviews } = useSelector((state) => state.shopReview);
+  const { wishlistItems } = useSelector((state) => state.wishlist);
 
   const { toast } = useToast();
 
@@ -50,11 +65,15 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 1024);
     };
-    
+
     checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
+  function handleRatingChange(getRating) {
+    setRating(getRating);
+  }
 
   function handleAddToCart() {
     if (!selectedSize) {
@@ -103,6 +122,51 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
     });
   }
 
+  function handleToggleWishlist() {
+    if (!user) {
+      toast({
+        title: "Please login to add to wishlist",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isInWishlist) {
+      dispatch(
+        removeFromWishlist({
+          userId: user?.id,
+          productId: productDetails?._id,
+        })
+      ).then((data) => {
+        if (data?.payload?.success) {
+          setIsInWishlist(false);
+          toast({
+            title: "Removed from wishlist",
+          });
+        }
+      });
+    } else {
+      dispatch(
+        addToWishlist({
+          userId: user?.id,
+          productId: productDetails?._id,
+        })
+      ).then((data) => {
+        if (data?.payload?.success) {
+          setIsInWishlist(true);
+          toast({
+            title: "Added to wishlist",
+          });
+        } else if (data?.payload?.message) {
+          toast({
+            title: data.payload.message,
+            variant: "destructive",
+          });
+        }
+      });
+    }
+  }
+
   function handleDialogClose() {
     setOpen(false);
     setTimeout(() => {
@@ -111,8 +175,72 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
       setSelectedColor("");
       setQuantity(1);
       setActiveImage(0);
+      setRating(0);
+      setReviewMsg("");
+      setIsInWishlist(false);
+      setActiveTab("details");
     }, 300);
   }
+
+  function handleAddReview() {
+    if (!user) {
+      toast({
+        title: "Please login to add a review",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (rating === 0) {
+      toast({
+        title: "Please select a rating",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    dispatch(
+      addReview({
+        productId: productDetails?._id,
+        userId: user?.id,
+        userName: user?.userName,
+        reviewMessage: reviewMsg,
+        reviewValue: rating,
+      })
+    ).then((data) => {
+      if (data.payload.success) {
+        setRating(0);
+        setReviewMsg("");
+        dispatch(getReviews(productDetails?._id));
+        toast({
+          title: "Review added successfully!",
+        });
+      }
+    });
+  }
+
+  useEffect(() => {
+    if (productDetails !== null && user) {
+      dispatch(getReviews(productDetails?._id));
+
+      // Check if product is in wishlist
+      dispatch(
+        checkProductInWishlist({
+          userId: user.id,
+          productId: productDetails?._id,
+        })
+      ).then((data) => {
+        setIsInWishlist(data.payload?.data?.isInWishlist || false);
+      });
+    }
+  }, [productDetails, dispatch, user]);
+
+  // Calculate average review
+  const averageReview =
+    reviews && reviews.length > 0
+      ? reviews.reduce((sum, reviewItem) => sum + reviewItem.reviewValue, 0) /
+        reviews.length
+      : productDetails?.averageReview || 0;
 
   // If no product details, show loading or error
   if (!productDetails) {
@@ -178,7 +306,9 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <h2 className="text-lg font-medium text-gray-900">Product Details</h2>
+            <h2 className="text-lg font-medium text-gray-900">
+              Product Details
+            </h2>
             <Button
               variant="ghost"
               size="icon"
@@ -206,14 +336,22 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
             {/* Left Side - Product Images */}
             <div className="lg:col-span-7 p-4 sm:p-6 border-r border-gray-200">
-              <div className={`flex ${isMobile ? 'flex-col' : 'flex-row'} gap-4`}>
+              <div
+                className={`flex ${isMobile ? "flex-col" : "flex-row"} gap-4`}
+              >
                 {/* Thumbnail Images */}
-                <div className={`flex ${isMobile ? 'flex-row order-2' : 'flex-col order-1'} gap-2 overflow-x-auto ${isMobile ? 'pb-2' : ''}`}>
+                <div
+                  className={`flex ${
+                    isMobile ? "flex-row order-2" : "flex-col order-1"
+                  } gap-2 overflow-x-auto ${isMobile ? "pb-2" : ""}`}
+                >
                   {productImages.map((image, index) => (
                     <button
                       key={index}
                       onClick={() => setActiveImage(index)}
-                      className={`flex-shrink-0 ${isMobile ? 'w-16 h-16' : 'w-14 h-14'} border rounded overflow-hidden ${
+                      className={`flex-shrink-0 ${
+                        isMobile ? "w-16 h-16" : "w-14 h-14"
+                      } border rounded overflow-hidden ${
                         activeImage === index
                           ? "border-orange-500 border-2"
                           : "border-gray-300"
@@ -232,7 +370,11 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                 </div>
 
                 {/* Main Image */}
-                <div className={`flex-1 ${isMobile ? 'order-1' : 'order-2'}`}>
+                <div
+                  className={`flex-1 ${
+                    isMobile ? "order-1" : "order-2"
+                  } relative`}
+                >
                   <div className="aspect-square bg-white border border-gray-200 rounded-lg overflow-hidden">
                     {productImages.length > 0 ? (
                       <img
@@ -249,6 +391,23 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                       </div>
                     )}
                   </div>
+
+                  {/* Wishlist Button */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={`absolute top-3 right-3 h-10 w-10 bg-white border border-gray-300 rounded-full shadow-sm ${
+                      isInWishlist ? "text-red-500" : "text-gray-500"
+                    }`}
+                    onClick={handleToggleWishlist}
+                    disabled={!user}
+                  >
+                    {isInWishlist ? (
+                      <Heart className="h-5 w-5 fill-current" />
+                    ) : (
+                      <Heart className="h-5 w-5" />
+                    )}
+                  </Button>
                 </div>
               </div>
             </div>
@@ -261,9 +420,13 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                   <div className="text-sm text-gray-500">
                     <span>Home</span>
                     <ChevronRight className="w-3 h-3 inline mx-1" />
-                    <span className="capitalize">{productDetails?.category}</span>
+                    <span className="capitalize">
+                      {productDetails?.category}
+                    </span>
                     <ChevronRight className="w-3 h-3 inline mx-1" />
-                    <span className="capitalize">{productDetails?.subcategory}</span>
+                    <span className="capitalize">
+                      {productDetails?.subcategory}
+                    </span>
                   </div>
                 )}
 
@@ -279,7 +442,7 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                       <Star
                         key={star}
                         className={`w-4 h-4 ${
-                          star <= Math.floor(productDetails?.averageReview || 0)
+                          star <= Math.floor(averageReview || 0)
                             ? "fill-yellow-400 text-yellow-400"
                             : "fill-gray-300 text-gray-300"
                         }`}
@@ -287,7 +450,7 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                     ))}
                   </div>
                   <span className="text-blue-600 text-sm hover:underline cursor-pointer">
-                    {productDetails?.averageReview?.toFixed(1) || "0.0"} ratings
+                    {averageReview?.toFixed(1) || "0.0"} ratings
                   </span>
                   <Separator orientation="vertical" className="h-4" />
                   <span className="text-blue-600 text-sm hover:underline cursor-pointer">
@@ -318,14 +481,13 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                   )}
                 </div>
 
-                
-
                 {/* Size Selection */}
                 {availableSizes.length > 0 && (
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
                       <Label className="text-sm font-bold text-gray-900">
-                        Size: <span className="font-normal">{selectedSize}</span>
+                        Size:{" "}
+                        <span className="font-normal">{selectedSize}</span>
                       </Label>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -350,7 +512,10 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                 {availableColors.length > 0 && (
                   <div className="space-y-3">
                     <Label className="text-sm font-bold text-gray-900">
-                      Color: <span className="font-normal capitalize">{selectedColor}</span>
+                      Color:{" "}
+                      <span className="font-normal capitalize">
+                        {selectedColor}
+                      </span>
                     </Label>
                     <div className="flex flex-wrap gap-2">
                       {availableColors.map((color) => (
@@ -372,7 +537,9 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
 
                 {/* Quantity */}
                 <div className="space-y-3">
-                  <Label className="text-sm font-bold text-gray-900">Quantity:</Label>
+                  <Label className="text-sm font-bold text-gray-900">
+                    Quantity:
+                  </Label>
                   <div className="flex items-center gap-3">
                     <Button
                       variant="outline"
@@ -409,7 +576,8 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
 
                 {/* Action Buttons */}
                 <div className="space-y-3 pt-4">
-                  {availableSizes.length === 0 || productDetails?.totalStock === 0 ? (
+                  {availableSizes.length === 0 ||
+                  productDetails?.totalStock === 0 ? (
                     <Button
                       className="w-full bg-gray-400 hover:bg-gray-400 cursor-not-allowed"
                       size="lg"
@@ -436,7 +604,7 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                   <div className="flex items-center gap-2 text-sm">
                     <Truck className="w-4 h-4 text-gray-600 flex-shrink-0" />
                     <span>
-                      <strong>Free delivery</strong>{" "}on online payments.
+                      <strong>Free delivery</strong> on online payments.
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
@@ -445,52 +613,196 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                       <strong>Return Policy</strong> 7 days returnable
                     </span>
                   </div>
-                  
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Product Details Section */}
+          {/* Tabs for Details and Reviews */}
           <div className="col-span-full border-t border-gray-200">
-            <div className="p-4 sm:p-6">
-              <h2 className="text-lg sm:text-xl font-bold mb-4">Product details</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                <div className="space-y-3">
-                  <div className="flex justify-between py-2 border-b">
-                    <span className="text-gray-600 text-sm sm:text-base">Brand</span>
-                    <span className="font-medium text-sm sm:text-base">{productDetails?.brand}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b">
-                    <span className="text-gray-600 text-sm sm:text-base">Category</span>
-                    <span className="font-medium text-sm sm:text-base capitalize">{productDetails?.category}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b">
-                    <span className="text-gray-600 text-sm sm:text-base">Subcategory</span>
-                    <span className="font-medium text-sm sm:text-base capitalize">{productDetails?.subcategory}</span>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex justify-between py-2 border-b">
-                    <span className="text-gray-600 text-sm sm:text-base">In Stock</span>
-                    <span className="font-medium text-sm sm:text-base">{productDetails?.totalStock || 0} units</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b">
-                    <span className="text-gray-600 text-sm sm:text-base">Sold</span>
-                    <span className="font-medium text-sm sm:text-base">{productDetails?.salesCount || 0} units</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b">
-                    <span className="text-gray-600 text-sm sm:text-base">Rating</span>
-                    <span className="font-medium text-sm sm:text-base">{productDetails?.averageReview?.toFixed(1) || "0.0"}/5</span>
-                  </div>
-                </div>
+            <div className="border-b border-gray-200">
+              <div className="flex">
+                <button
+                  onClick={() => setActiveTab("details")}
+                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === "details"
+                      ? "border-orange-500 text-orange-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  Product Details
+                </button>
+                <button
+                  onClick={() => setActiveTab("reviews")}
+                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === "reviews"
+                      ? "border-orange-500 text-orange-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  Reviews ({reviews?.length || 0})
+                </button>
               </div>
-              
-              {/* Description */}
-              {productDetails?.description && (
-                <div className="mt-6">
-                  <h3 className="font-bold mb-2 text-sm sm:text-base">Description</h3>
-                  <p className="text-gray-700 leading-relaxed text-sm sm:text-base">{productDetails.description}</p>
+            </div>
+
+            <div className="p-4 sm:p-6">
+              {activeTab === "details" ? (
+                <>
+                  <h2 className="text-lg sm:text-xl font-bold mb-4">
+                    Product details
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                    <div className="space-y-3">
+                      <div className="flex justify-between py-2 border-b">
+                        <span className="text-gray-600 text-sm sm:text-base">
+                          Brand
+                        </span>
+                        <span className="font-medium text-sm sm:text-base">
+                          {productDetails?.brand}
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b">
+                        <span className="text-gray-600 text-sm sm:text-base">
+                          Category
+                        </span>
+                        <span className="font-medium text-sm sm:text-base capitalize">
+                          {productDetails?.category}
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b">
+                        <span className="text-gray-600 text-sm sm:text-base">
+                          Subcategory
+                        </span>
+                        <span className="font-medium text-sm sm:text-base capitalize">
+                          {productDetails?.subcategory}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex justify-between py-2 border-b">
+                        <span className="text-gray-600 text-sm sm:text-base">
+                          In Stock
+                        </span>
+                        <span className="font-medium text-sm sm:text-base">
+                          {productDetails?.totalStock || 0} units
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b">
+                        <span className="text-gray-600 text-sm sm:text-base">
+                          Sold
+                        </span>
+                        <span className="font-medium text-sm sm:text-base">
+                          {productDetails?.salesCount || 0} units
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b">
+                        <span className="text-gray-600 text-sm sm:text-base">
+                          Rating
+                        </span>
+                        <span className="font-medium text-sm sm:text-base">
+                          {averageReview?.toFixed(1) || "0.0"}/5
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  {productDetails?.description && (
+                    <div className="mt-6">
+                      <h3 className="font-bold mb-2 text-sm sm:text-base">
+                        Description
+                      </h3>
+                      <p className="text-gray-700 leading-relaxed text-sm sm:text-base">
+                        {productDetails.description}
+                      </p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="space-y-6">
+                  {/* Add Review Section */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h3 className="font-bold mb-3 text-sm sm:text-base">
+                      Write a Review
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-600">
+                          Your Rating:
+                        </span>
+                        <StarRatingComponent
+                          rating={rating}
+                          handleRatingChange={handleRatingChange}
+                        />
+                      </div>
+                      <Input
+                        name="reviewMsg"
+                        value={reviewMsg}
+                        onChange={(e) => setReviewMsg(e.target.value)}
+                        placeholder="Share your experience with this product..."
+                        className="text-sm"
+                      />
+                      <Button
+                        onClick={handleAddReview}
+                        disabled={reviewMsg.trim() === "" || rating === 0}
+                        className="bg-orange-500 hover:bg-orange-600 text-white"
+                      >
+                        Submit Review
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Reviews List */}
+                  <div>
+                    <h3 className="font-bold mb-4 text-sm sm:text-base">
+                      Customer Reviews ({reviews?.length || 0})
+                    </h3>
+                    <div className="space-y-4">
+                      {reviews && reviews.length > 0 ? (
+                        reviews.map((reviewItem, index) => (
+                          <div
+                            key={index}
+                            className="border-b pb-4 last:border-b-0"
+                          >
+                            <div className="flex items-start gap-3">
+                              <Avatar className="w-8 h-8 border">
+                                <AvatarFallback className="text-xs">
+                                  {reviewItem?.userName?.[0]?.toUpperCase() ||
+                                    "U"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h4 className="font-medium text-sm">
+                                    {reviewItem?.userName}
+                                  </h4>
+                                  <div className="flex items-center">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                      <Star
+                                        key={star}
+                                        className={`w-3 h-3 ${
+                                          star <= reviewItem.reviewValue
+                                            ? "fill-yellow-400 text-yellow-400"
+                                            : "fill-gray-300 text-gray-300"
+                                        }`}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                                <p className="text-gray-700 text-sm">
+                                  {reviewItem.reviewMessage}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-gray-500 text-sm">
+                          No reviews yet. Be the first to review!
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -498,26 +810,22 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
         </div>
 
         {/* Mobile Bottom Action Bar */}
-        {isMobile && (availableSizes.length > 0 && productDetails?.totalStock > 0) && (
-          <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 shadow-lg">
-            <div className="flex gap-3">
-              <Button
-                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white border-orange-500"
-                onClick={handleAddToCart}
-                disabled={!selectedSize}
-                size="lg"
-              >
-                Add to Cart
-              </Button>
-              <Button
-                className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-gray-900 border-yellow-400"
-                size="lg"
-              >
-                Buy Now
-              </Button>
+        {isMobile &&
+          availableSizes.length > 0 &&
+          productDetails?.totalStock > 0 && (
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 shadow-lg">
+              <div className="flex gap-3">
+                <Button
+                  className="flex-1 bg-orange-500 hover:bg-orange-600 text-white border-orange-500"
+                  onClick={handleAddToCart}
+                  disabled={!selectedSize}
+                  size="lg"
+                >
+                  Add to Cart
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
       </DialogContent>
     </Dialog>
   );
