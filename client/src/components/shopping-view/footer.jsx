@@ -7,7 +7,8 @@ import {
   Shield,
   Briefcase,
   CreditCard,
-  Instagram
+  Instagram,
+  Facebook
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -37,7 +38,16 @@ function ShoppingFooter() {
                   className="group inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-300 shadow-md hover:shadow-lg"
                 >
                   <Instagram className="w-5 h-5 transition-transform group-hover:scale-110" />
-                  <span className="text-sm font-medium">Follow us on Instagram</span>
+                  <span className="text-sm font-medium">Instagram</span>
+                </a>
+                <a 
+                  href="https://www.facebook.com/share/1JkaKeiP9f/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="group inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-400 text-white hover:from-blue-700 hover:to-blue-500 transition-all duration-300 shadow-md hover:shadow-lg"
+                >
+                  <Facebook className="w-5 h-5 transition-transform group-hover:scale-110" />
+                  <span className="text-sm font-medium">Facebook</span>
                 </a>
               </div>
             </div>
