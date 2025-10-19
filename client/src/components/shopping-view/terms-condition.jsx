@@ -13,7 +13,7 @@ function TermsAndConditions() {
             </h1>
           </div>
           <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-            Please read these terms carefully before using SNITCH services
+            Please read these terms carefully before using Luxeridge services
           </p>
         </div>
       </div>
@@ -33,9 +33,9 @@ function TermsAndConditions() {
           <div className="space-y-8 text-gray-700 leading-relaxed">
             {/* Introduction */}
             <div>
-              <h2 className="text-2xl font-bold text-black mb-4">INTRODUCTION AND OVERVIEW OF SNITCH</h2>
+              <h2 className="text-2xl font-bold text-black mb-4">INTRODUCTION AND OVERVIEW OF LUXERIDGE</h2>
               <p className="mb-4">
-                This policy applies to all the SNITCH platforms (the "Site" or "Web Site" or "Mobile Application" or "App" or "Us" or "We" or "Social Media Platforms"), which is operated and owned by Snitch Apparels Pvt. Ltd., marketed and/or managed by Snitch Apparels Pvt. Ltd.
+                This policy applies to all the luxeridge platforms (the "Site" or "Web Site" or "Mobile Application" or "App" or "Us" or "We" or "Social Media Platforms"), which is operated and owned by Luxeridge Apparels Pvt. Ltd., marketed and/or managed by luxeridge Apparels Pvt. Ltd.
               </p>
               <p className="mb-4">
                 It is LUXERIDGE policy to comply with general laws for protecting user information and bank details shared for the purpose of availing LUXERIDGE services. This regulates the processing of information relating to you and grants you various rights in respect of your personal data.
@@ -44,7 +44,7 @@ function TermsAndConditions() {
                 Any Images, Data or Files Uploaded on the website must not be used without the consent of the authorized personnel of the brand.
               </p>
               <p>
-                The Web Site contains links to other websites over which we have no control. SNITCH is not responsible for the privacy policies or practices of other web sites to which you choose to link from snitch.com. We encourage you to review the privacy policies of those other web sites so you can understand how they collect, use and share your information.
+                The Web Site contains links to other websites over which we have no control. Luxeridge is not responsible for the privacy policies or practices of other web sites to which you choose to link from theluxeridge.com. We encourage you to review the privacy policies of those other web sites so you can understand how they collect, use and share your information.
               </p>
             </div>
 
@@ -52,7 +52,7 @@ function TermsAndConditions() {
             <div>
               <h2 className="text-2xl font-bold text-black mb-4">PRIVACY POLICY</h2>
               <p className="mb-4">
-                This Privacy Policy is intended for all Users of luxeridge.com. LUXERIDGE is dedicated to respecting and protecting the privacy of our Users. All information User provides, such as phone number, home address, current location, e-mail addresses or any additional personal information found on the site, will be used solely to support User relationship with LUXERIDGE.
+                This Privacy Policy is intended for all Users of theluxeridge.com. LUXERIDGE is dedicated to respecting and protecting the privacy of our Users. All information User provides, such as phone number, home address, current location, e-mail addresses or any additional personal information found on the site, will be used solely to support User relationship with LUXERIDGE.
               </p>
               <p className="mb-4">
                 LUXERIDGE strives to develop innovative methods to serve Users even better. LUXERIDGE is designed to operate efficiently while keeping the user's privacy in mind.
@@ -116,8 +116,8 @@ function TermsAndConditions() {
               <h2 className="text-2xl font-bold text-black mb-4">CONTACT</h2>
               <p className="text-gray-700 mb-2">For questions or concerns relating to privacy, feel free to contact us at:</p>
               <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <p className="text-gray-700 mb-2"><strong>Address:</strong> 1/1, St. Johns Church Road, Bhartinagar, Bangalore - 560005</p>
-                <p className="text-gray-700"><strong>Whatsapp:</strong> +91 6364430801</p>
+                <p className="text-gray-700 mb-2"><strong>Email:</strong> <a href="adnanaalam169@gmail.com" className="text-black hover:underline font-medium">adnanaalam169@gmail.com</a></p>
+                <p className="text-gray-700"><strong>Whatsapp:</strong> +91 84178 00573</p>
               </div>
             </div>
 
