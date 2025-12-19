@@ -34,7 +34,7 @@ import ShoppingSubheader from "@/components/shopping-view/sub-header";
 
 function ShoppingHome() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  
+
   // Initialize gender view from localStorage or default to "MEN"
   const getInitialGenderView = () => {
     const savedGender = localStorage.getItem("selectedGender");
@@ -42,10 +42,10 @@ function ShoppingHome() {
     if (savedGender === "woman") return "WOMEN";
     return "MEN"; // default
   };
-  
+
   const [activeCategory, setActiveCategory] = useState(getInitialGenderView());
   const [genderView, setGenderView] = useState(getInitialGenderView());
-  
+
   const { productList, productDetails } = useSelector(
     (state) => state.shopProducts
   );
@@ -60,19 +60,19 @@ function ShoppingHome() {
   const featuredProducts = useMemo(() => {
     if (!productList) return [];
     const savedGender = localStorage.getItem("selectedGender");
-    
+
     let filteredProducts = [...productList].filter((product) => product.isFeatured);
-    
+
     // Filter by saved gender if available
     if (savedGender) {
       filteredProducts = filteredProducts.filter(
-        (product) => 
-          product.category === savedGender || 
+        (product) =>
+          product.category === savedGender ||
           product.gender === savedGender ||
           !product.category // Include products without category
       );
     }
-    
+
     return filteredProducts.slice(0, 8);
   }, [productList]);
 
@@ -97,48 +97,48 @@ function ShoppingHome() {
   const bestSellingProducts = useMemo(() => {
     if (!productList) return [];
     const savedGender = localStorage.getItem("selectedGender");
-    
+
     let filteredProducts = [...productList].sort((a, b) => (b.salesCount || 0) - (a.salesCount || 0));
-    
+
     // Filter by saved gender if available
     if (savedGender) {
       filteredProducts = filteredProducts.filter(
-        (product) => 
-          product.category === savedGender || 
+        (product) =>
+          product.category === savedGender ||
           product.gender === savedGender ||
           !product.category // Include products without category
       );
     }
-    
+
     return filteredProducts.slice(0, 8);
   }, [productList]);
 
   const newArrivals = useMemo(() => {
     if (!productList) return [];
     const savedGender = localStorage.getItem("selectedGender");
-    
+
     let filteredProducts = [...productList].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    
+
     // Filter by saved gender if available
     if (savedGender) {
       filteredProducts = filteredProducts.filter(
-        (product) => 
-          product.category === savedGender || 
+        (product) =>
+          product.category === savedGender ||
           product.gender === savedGender ||
           !product.category // Include products without category
       );
     }
-    
+
     return filteredProducts.slice(0, 8);
   }, [productList]);
 
   // Get products based on current gender view
   const currentGenderProducts = useMemo(() => {
     const savedGender = localStorage.getItem("selectedGender");
-    
+
     if (savedGender === "man") return menProducts;
     if (savedGender === "woman") return womenProducts;
-    
+
     // Fallback to state-based filtering
     return genderView === "MEN" ? menProducts : womenProducts;
   }, [genderView, menProducts, womenProducts]);
@@ -160,10 +160,10 @@ function ShoppingHome() {
   // Enhanced gender view handler that syncs with localStorage
   const handleGenderViewChange = (newGenderView) => {
     const storageGender = newGenderView === "MEN" ? "man" : "woman";
-    
+
     // Save to localStorage
     localStorage.setItem("selectedGender", storageGender);
-    
+
     // Update state
     setGenderView(newGenderView);
     setActiveCategory(newGenderView);
@@ -361,11 +361,10 @@ function ShoppingHome() {
                     <button
                       key={index}
                       onClick={() => goToSlide(index)}
-                      className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                        index === currentSlide
-                          ? "bg-red-600 scale-125"
-                          : "bg-white/50 hover:bg-white/80"
-                      }`}
+                      className={`w-3 h-3 rounded-full transition-all duration-300 ${index === currentSlide
+                        ? "bg-red-600 scale-125"
+                        : "bg-white/50 hover:bg-white/80"
+                        }`}
                       aria-label={`Go to slide ${index + 1}`}
                     />
                   ))}
@@ -393,18 +392,17 @@ function ShoppingHome() {
 
         {/* Gender Collection Section */}
         {(menProducts.length > 0 || womenProducts.length > 0) && (
-          <section className="py-20 bg-white">
+          <section className="py-12 md:py-20 bg-white">
             <div className="container mx-auto px-4">
               {/* Toggle Button for Men/Women */}
               <div className="flex justify-center mb-12">
                 <div className="bg-gray-100 rounded-full p-1 flex border border-gray-200">
                   <button
                     onClick={() => setGenderView("MEN")}
-                    className={`px-8 py-3 rounded-full text-sm font-medium transition-all duration-300 ${
-                      genderView === "MEN"
-                        ? "bg-black text-white shadow-md"
-                        : "text-gray-600 hover:text-black"
-                    }`}
+                    className={`px-8 py-3 rounded-full text-sm font-medium transition-all duration-300 ${genderView === "MEN"
+                      ? "bg-black text-white shadow-md"
+                      : "text-gray-600 hover:text-black"
+                      }`}
                   >
                     <div className="flex items-center space-x-2">
                       <Shirt className="w-4 h-4" />
@@ -413,11 +411,10 @@ function ShoppingHome() {
                   </button>
                   <button
                     onClick={() => setGenderView("WOMEN")}
-                    className={`px-8 py-3 rounded-full text-sm font-medium transition-all duration-300 ${
-                      genderView === "WOMEN"
-                        ? "bg-black text-white shadow-md"
-                        : "text-gray-600 hover:text-black"
-                    }`}
+                    className={`px-8 py-3 rounded-full text-sm font-medium transition-all duration-300 ${genderView === "WOMEN"
+                      ? "bg-black text-white shadow-md"
+                      : "text-gray-600 hover:text-black"
+                      }`}
                   >
                     <div className="flex items-center space-x-2">
                       <Heart className="w-4 h-4" />
@@ -427,49 +424,49 @@ function ShoppingHome() {
                 </div>
               </div>
 
-        {/* Rest of the Gender Collection Section remains the same... */}
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center justify-center mb-4">
-            {genderView === "MEN" ? (
-              <Shirt className="w-8 h-8 text-gray-600 mr-3" />
-            ) : (
-              <Heart className="w-8 h-8 text-gray-600 mr-3" />
-            )}
-            <Badge className="px-4 py-2 text-sm bg-red-600 text-white border-none">
-              {genderView === "MEN"
-                ? "Men's Collection"
-                : "Women's Collection"}
-            </Badge>
-          </div>
-          <h2 className="text-4xl font-bold text-black mb-4">
-            {genderView === "MEN" ? "Style for Men" : "Fashion for Women"}
-          </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            {genderView === "MEN"
-              ? "Discover premium menswear that combines comfort, quality, and contemporary style"
-              : "Express your unique style with our carefully curated women's collection"}
-          </p>
-        </div>
+              {/* Rest of the Gender Collection Section remains the same... */}
+              <div className="text-center mb-16">
+                <div className="inline-flex items-center justify-center mb-4">
+                  {genderView === "MEN" ? (
+                    <Shirt className="w-8 h-8 text-gray-600 mr-3" />
+                  ) : (
+                    <Heart className="w-8 h-8 text-gray-600 mr-3" />
+                  )}
+                  <Badge className="px-4 py-2 text-sm bg-red-600 text-white border-none">
+                    {genderView === "MEN"
+                      ? "Men's Collection"
+                      : "Women's Collection"}
+                  </Badge>
+                </div>
+                <h2 className="text-2xl md:text-4xl font-bold text-black mb-4">
+                  {genderView === "MEN" ? "Style for Men" : "Fashion for Women"}
+                </h2>
+                <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+                  {genderView === "MEN"
+                    ? "Discover premium menswear that combines comfort, quality, and contemporary style"
+                    : "Express your unique style with our carefully curated women's collection"}
+                </p>
+              </div>
 
               {/* Category Quick Links */}
               <div className="flex flex-wrap justify-center gap-4 mb-12">
                 {(genderView === "MEN"
                   ? [
-                      "T-Shirts",
-                      "Shirts",
-                      "Jeans",
-                      "Jackets",
-                      "Activewear",
-                      "Accessories",
-                    ]
+                    "T-Shirts",
+                    "Shirts",
+                    "Jeans",
+                    "Jackets",
+                    "Activewear",
+                    "Accessories",
+                  ]
                   : [
-                      "Dresses",
-                      "Tops",
-                      "Jeans",
-                      "Skirts",
-                      "Activewear",
-                      "Accessories",
-                    ]
+                    "Dresses",
+                    "Tops",
+                    "Jeans",
+                    "Skirts",
+                    "Activewear",
+                    "Accessories",
+                  ]
                 ).map((category) => (
                   <Button
                     key={category}
@@ -518,7 +515,7 @@ function ShoppingHome() {
 
         {/* Featured Products */}
         {featuredProducts.length > 0 && (
-          <section className="py-20 bg-gray-50">
+          <section className="py-12 md:py-20 bg-gray-50">
             <div className="container mx-auto px-4">
               <div className="text-center mb-16">
                 <div className="inline-flex items-center justify-center mb-4">
@@ -527,10 +524,10 @@ function ShoppingHome() {
                     Exclusive Collection
                   </Badge>
                 </div>
-                <h2 className="text-4xl font-bold text-black mb-4">
+                <h2 className="text-2xl md:text-4xl font-bold text-black mb-4">
                   Featured Products
                 </h2>
-                <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+                <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
                   Curated excellence - handpicked items that define style and
                   quality
                 </p>
@@ -563,7 +560,7 @@ function ShoppingHome() {
 
         {/* Best Sellers */}
         {bestSellingProducts.length > 0 && (
-          <section className="py-20 bg-white">
+          <section className="py-12 md:py-20 bg-white">
             <div className="container mx-auto px-4">
               <div className="text-center mb-16">
                 <div className="inline-flex items-center justify-center mb-4">
@@ -572,10 +569,10 @@ function ShoppingHome() {
                     Hot Right Now
                   </Badge>
                 </div>
-                <h2 className="text-4xl font-bold text-black mb-4">
+                <h2 className="text-2xl md:text-4xl font-bold text-black mb-4">
                   Best Sellers
                 </h2>
-                <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+                <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
                   Join the trendsetters - products loved by thousands of
                   customers
                 </p>
@@ -587,13 +584,12 @@ function ShoppingHome() {
                     {index < 3 && (
                       <div className="absolute -top-3 -left-3 z-20">
                         <div
-                          className={`px-3 py-1 text-xs font-bold text-white rounded-full ${
-                            index === 0
-                              ? "bg-red-600"
-                              : index === 1
+                          className={`px-3 py-1 text-xs font-bold text-white rounded-full ${index === 0
+                            ? "bg-red-600"
+                            : index === 1
                               ? "bg-black"
                               : "bg-gray-700"
-                          }`}
+                            }`}
                         >
                           #{index + 1}
                         </div>
@@ -625,7 +621,7 @@ function ShoppingHome() {
 
         {/* New Arrivals */}
         {newArrivals.length > 0 && (
-          <section className="py-20 bg-gray-50">
+          <section className="py-12 md:py-20 bg-gray-50">
             <div className="container mx-auto px-4">
               <div className="text-center mb-16">
                 <div className="inline-flex items-center justify-center mb-4">
@@ -634,10 +630,10 @@ function ShoppingHome() {
                     Just Launched
                   </Badge>
                 </div>
-                <h2 className="text-4xl font-bold text-black mb-4">
+                <h2 className="text-2xl md:text-4xl font-bold text-black mb-4">
                   New Arrivals
                 </h2>
-                <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+                <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
                   Fresh off the shelf - be the first to experience our latest
                   additions
                 </p>
@@ -677,10 +673,10 @@ function ShoppingHome() {
         )}
 
         {/* Call to Action */}
-        <section className="py-20 bg-black">
+        <section className="py-16 md:py-20 bg-black">
           <div className="container mx-auto px-4 text-center">
-            <Sparkles className="w-16 h-16 mx-auto mb-6 text-white" />
-            <h2 className="text-5xl font-bold text-white mb-6">
+            <Sparkles className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-6 text-white" />
+            <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
               Ready to Find Your Style?
             </h2>
             <p className="text-xl text-gray-200 mb-8 max-w-2xl mx-auto leading-relaxed">
