@@ -84,14 +84,21 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
       return;
     }
 
+    if (productDetails?.colors && productDetails.colors.length > 0 && !selectedColor) {
+      toast({
+        title: "Please select a color",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const sizeStock = productDetails?.sizes?.find(
       (s) => s.size === selectedSize
     );
     if (!sizeStock || sizeStock.stock < quantity) {
       toast({
-        title: `Only ${
-          sizeStock?.stock || 0
-        } items available for size ${selectedSize}`,
+        title: `Only ${sizeStock?.stock || 0
+          } items available for size ${selectedSize}`,
         variant: "destructive",
       });
       return;
@@ -239,7 +246,7 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
   const averageReview =
     reviews && reviews.length > 0
       ? reviews.reduce((sum, reviewItem) => sum + reviewItem.reviewValue, 0) /
-        reviews.length
+      reviews.length
       : productDetails?.averageReview || 0;
 
   // If no product details, show loading or error
@@ -283,10 +290,10 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
     productDetails?.salePrice < productDetails?.price;
   const discountPercentage = hasSale
     ? Math.round(
-        ((productDetails.price - productDetails.salePrice) /
-          productDetails.price) *
-          100
-      )
+      ((productDetails.price - productDetails.salePrice) /
+        productDetails.price) *
+      100
+    )
     : 0;
 
   // Product images
@@ -341,21 +348,18 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
               >
                 {/* Thumbnail Images */}
                 <div
-                  className={`flex ${
-                    isMobile ? "flex-row order-2" : "flex-col order-1"
-                  } gap-2 overflow-x-auto ${isMobile ? "pb-2" : ""}`}
+                  className={`flex ${isMobile ? "flex-row order-2" : "flex-col order-1"
+                    } gap-2 overflow-x-auto ${isMobile ? "pb-2" : ""}`}
                 >
                   {productImages.map((image, index) => (
                     <button
                       key={index}
                       onClick={() => setActiveImage(index)}
-                      className={`flex-shrink-0 ${
-                        isMobile ? "w-16 h-16" : "w-14 h-14"
-                      } border rounded overflow-hidden ${
-                        activeImage === index
+                      className={`flex-shrink-0 ${isMobile ? "w-16 h-16" : "w-14 h-14"
+                        } border rounded overflow-hidden ${activeImage === index
                           ? "border-orange-500 border-2"
                           : "border-gray-300"
-                      }`}
+                        }`}
                     >
                       <img
                         src={image}
@@ -371,9 +375,8 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
 
                 {/* Main Image */}
                 <div
-                  className={`flex-1 ${
-                    isMobile ? "order-1" : "order-2"
-                  } relative`}
+                  className={`flex-1 ${isMobile ? "order-1" : "order-2"
+                    } relative`}
                 >
                   <div className="aspect-square bg-white border border-gray-200 rounded-lg overflow-hidden">
                     {productImages.length > 0 ? (
@@ -396,9 +399,8 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className={`absolute top-3 right-3 h-10 w-10 bg-white border border-gray-300 rounded-full shadow-sm ${
-                      isInWishlist ? "text-red-500" : "text-gray-500"
-                    }`}
+                    className={`absolute top-3 right-3 h-10 w-10 bg-white border border-gray-300 rounded-full shadow-sm ${isInWishlist ? "text-red-500" : "text-gray-500"
+                      }`}
                     onClick={handleToggleWishlist}
                     disabled={!user}
                   >
@@ -441,11 +443,10 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                     {[1, 2, 3, 4, 5].map((star) => (
                       <Star
                         key={star}
-                        className={`w-4 h-4 ${
-                          star <= Math.floor(averageReview || 0)
+                        className={`w-4 h-4 ${star <= Math.floor(averageReview || 0)
                             ? "fill-yellow-400 text-yellow-400"
                             : "fill-gray-300 text-gray-300"
-                        }`}
+                          }`}
                       />
                     ))}
                   </div>
@@ -495,11 +496,10 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                         <button
                           key={size.size}
                           onClick={() => setSelectedSize(size.size)}
-                          className={`px-3 py-2 border rounded-lg text-sm font-medium transition-all ${
-                            selectedSize === size.size
+                          className={`px-3 py-2 border rounded-lg text-sm font-medium transition-all ${selectedSize === size.size
                               ? "border-orange-500 bg-orange-50 text-orange-700"
                               : "border-gray-300 hover:border-gray-400"
-                          }`}
+                            }`}
                         >
                           {size.size}
                         </button>
@@ -522,11 +522,10 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                         <button
                           key={color}
                           onClick={() => setSelectedColor(color)}
-                          className={`px-3 py-2 border rounded-lg text-sm font-medium capitalize transition-all ${
-                            selectedColor === color
+                          className={`px-3 py-2 border rounded-lg text-sm font-medium capitalize transition-all ${selectedColor === color
                               ? "border-orange-500 bg-orange-50 text-orange-700"
                               : "border-gray-300 hover:border-gray-400"
-                          }`}
+                            }`}
                         >
                           {color}
                         </button>
@@ -577,7 +576,7 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                 {/* Action Buttons */}
                 <div className="space-y-3 pt-4">
                   {availableSizes.length === 0 ||
-                  productDetails?.totalStock === 0 ? (
+                    productDetails?.totalStock === 0 ? (
                     <Button
                       className="w-full bg-gray-400 hover:bg-gray-400 cursor-not-allowed"
                       size="lg"
@@ -590,7 +589,10 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                       <Button
                         className="w-full bg-orange-500 hover:bg-orange-600 text-white border-orange-500 text-base sm:text-lg"
                         onClick={handleAddToCart}
-                        disabled={!selectedSize}
+                        disabled={
+                          !selectedSize ||
+                          (availableColors.length > 0 && !selectedColor)
+                        }
                         size="lg"
                       >
                         Add to Cart
@@ -624,21 +626,19 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
               <div className="flex">
                 <button
                   onClick={() => setActiveTab("details")}
-                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-                    activeTab === "details"
+                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === "details"
                       ? "border-orange-500 text-orange-600"
                       : "border-transparent text-gray-500 hover:text-gray-700"
-                  }`}
+                    }`}
                 >
                   Product Details
                 </button>
                 <button
                   onClick={() => setActiveTab("reviews")}
-                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-                    activeTab === "reviews"
+                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === "reviews"
                       ? "border-orange-500 text-orange-600"
                       : "border-transparent text-gray-500 hover:text-gray-700"
-                  }`}
+                    }`}
                 >
                   Reviews ({reviews?.length || 0})
                 </button>
@@ -780,11 +780,10 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                                     {[1, 2, 3, 4, 5].map((star) => (
                                       <Star
                                         key={star}
-                                        className={`w-3 h-3 ${
-                                          star <= reviewItem.reviewValue
+                                        className={`w-3 h-3 ${star <= reviewItem.reviewValue
                                             ? "fill-yellow-400 text-yellow-400"
                                             : "fill-gray-300 text-gray-300"
-                                        }`}
+                                          }`}
                                       />
                                     ))}
                                   </div>
