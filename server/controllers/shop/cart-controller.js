@@ -6,8 +6,14 @@ const addToCart = async (req, res) => {
     const { userId, productId, quantity, selectedSize, selectedColor } =
       req.body;
 
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "Please login first!",
+      });
+    }
+
     if (
-      !userId ||
       !productId ||
       quantity <= 0 ||
       !selectedSize ||
@@ -101,16 +107,16 @@ const addToCart = async (req, res) => {
       ...item.toObject(),
       productDetails: item.productId
         ? {
-            _id: item.productId._id,
-            title: item.productId.title,
-            images: item.productId.images,
-            price: item.productId.price,
-            salePrice: item.productId.salePrice,
-            brand: item.productId.brand,
-            colors: item.productId.colors,
-            sizes: item.productId.sizes,
-            averageReview: item.productId.averageReview,
-          }
+          _id: item.productId._id,
+          title: item.productId.title,
+          images: item.productId.images,
+          price: item.productId.price,
+          salePrice: item.productId.salePrice,
+          brand: item.productId.brand,
+          colors: item.productId.colors,
+          sizes: item.productId.sizes,
+          averageReview: item.productId.averageReview,
+        }
         : null,
     }));
 
@@ -283,9 +289,8 @@ const updateCartItemQty = async (req, res) => {
     if (!sizeStock || sizeStock.stock < quantity) {
       return res.status(400).json({
         success: false,
-        message: `Not enough stock for size ${selectedSize}. Only ${
-          sizeStock?.stock || 0
-        } available.`,
+        message: `Not enough stock for size ${selectedSize}. Only ${sizeStock?.stock || 0
+          } available.`,
       });
     }
 
