@@ -5,10 +5,17 @@ const addToWishlist = async (req, res) => {
   try {
     const { userId, productId } = req.body;
 
-    if (!userId || !productId) {
+    if (!userId) {
       return res.status(400).json({
         success: false,
-        message: "User ID and Product ID are required!",
+        message: "Please login first!",
+      });
+    }
+
+    if (!productId) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid product details!",
       });
     }
 
@@ -117,8 +124,8 @@ const fetchWishlistItems = async (req, res) => {
         discountPercentage:
           product.salePrice > 0 && product.salePrice < product.price
             ? Math.round(
-                ((product.price - product.salePrice) / product.price) * 100
-              )
+              ((product.price - product.salePrice) / product.price) * 100
+            )
             : 0,
         isOutOfStock: (product.totalStock || 0) === 0,
         lowStock:
@@ -219,8 +226,8 @@ const removeFromWishlist = async (req, res) => {
         discountPercentage:
           product.salePrice > 0 && product.salePrice < product.price
             ? Math.round(
-                ((product.price - product.salePrice) / product.price) * 100
-              )
+              ((product.price - product.salePrice) / product.price) * 100
+            )
             : 0,
         isOutOfStock: (product.totalStock || 0) === 0,
         lowStock:
