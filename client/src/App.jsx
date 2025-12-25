@@ -24,7 +24,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { useEffect, lazy, Suspense } from "react";
 import { checkAuth, restoreSession } from "./store/auth-slice";
 import { Skeleton } from "@/components/ui/skeleton";
-import PaymentSuccessPage from "./pages/shopping-view/payment-success";
 
 function App() {
   const { user, isAuthenticated, isLoading } = useSelector(
