@@ -1,5 +1,14 @@
 import { Route, Routes } from "react-router-dom";
+import { useEffect, lazy, Suspense } from "react";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import AuthLayout from "./components/auth/layout";
+import AdminLayout from "./components/admin-view/layout";
+import ShoppingLayout from "./components/shopping-view/layout";
+import PrivacyPolicy from "./components/shopping-view/privacy-policy";
+import TermsAndConditions from "./components/shopping-view/terms-condition";
+import NotFound from "./pages/not-found";
+
 // Lazy load components
 const AuthLogin = lazy(() => import("./pages/auth/login"));
 const AuthRegister = lazy(() => import("./pages/auth/register"));
@@ -21,7 +30,6 @@ const AdminReturns = lazy(() => import("./pages/admin-view/returns"));
 import CheckAuth from "./components/common/check-auth";
 import UnauthPage from "./pages/unauth-page";
 import { useDispatch, useSelector } from "react-redux";
-import { useEffect, lazy, Suspense } from "react";
 import { checkAuth, restoreSession } from "./store/auth-slice";
 import { Skeleton } from "@/components/ui/skeleton";
 
