@@ -19,7 +19,7 @@ const getFilteredProducts = async (req, res) => {
       maxRating,
       inStock,
       page = 1,
-      limit = 100,
+      limit = 12,
     } = req.query;
 
     let filters = { isActive: true }; // Only show active products
@@ -276,19 +276,19 @@ const getProductFilters = async (req, res) => {
         priceRange:
           priceRange.length > 0
             ? {
-                minPrice: priceRange[0].minPrice || 0,
-                maxPrice: priceRange[0].maxPrice || 0,
-                minSalePrice: priceRange[0].minSalePrice || 0,
-                maxSalePrice: priceRange[0].maxSalePrice || 0,
-              }
+              minPrice: priceRange[0].minPrice || 0,
+              maxPrice: priceRange[0].maxPrice || 0,
+              minSalePrice: priceRange[0].minSalePrice || 0,
+              maxSalePrice: priceRange[0].maxSalePrice || 0,
+            }
             : { minPrice: 0, maxPrice: 0, minSalePrice: 0, maxSalePrice: 0 },
         ratingRange:
           ratingStats.length > 0
             ? {
-                minRating: ratingStats[0].minRating || 0,
-                maxRating: ratingStats[0].maxRating || 5,
-                avgRating: ratingStats[0].avgRating || 0,
-              }
+              minRating: ratingStats[0].minRating || 0,
+              maxRating: ratingStats[0].maxRating || 5,
+              avgRating: ratingStats[0].avgRating || 0,
+            }
             : { minRating: 0, maxRating: 5, avgRating: 0 },
       },
     });

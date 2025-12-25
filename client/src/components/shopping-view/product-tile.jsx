@@ -50,6 +50,8 @@ function ShoppingProductTile({
               src={productImage}
               alt={product?.title}
               className="w-full h-full object-cover"
+              loading="lazy"
+              decoding="async"
               onError={(e) => {
                 e.target.src = "/placeholder-image.jpg";
               }}
@@ -161,6 +163,8 @@ function ShoppingProductTile({
             src={productImage}
             alt={product?.title}
             className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
+            loading="lazy"
+            decoding="async"
             onError={(e) => {
               e.target.src = "/placeholder-image.jpg";
             }}

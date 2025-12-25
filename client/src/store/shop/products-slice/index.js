@@ -7,13 +7,22 @@ const initialState = {
   isLoading: false,
   productList: [],
   productDetails: null,
+  isLoading: false,
+  productList: [],
+  productDetails: null,
   error: null,
+  pagination: {
+    currentPage: 1,
+    totalPages: 1,
+    totalProducts: 0,
+    hasNext: false,
+  },
 };
 
 export const fetchAllFilteredProducts = createAsyncThunk(
   "/products/fetchAllProducts",
   async (
-    { filterParams = {}, sortParams = "most-selling" },
+    { filterParams = {}, sortParams = "most-selling", page = 1 },
     { rejectWithValue }
   ) => {
     try {
@@ -24,7 +33,9 @@ export const fetchAllFilteredProducts = createAsyncThunk(
 
       const queryParams = new URLSearchParams({
         ...filterParams,
+        ...filterParams,
         sortBy: sortParams,
+        page: page, // Add page parameter
       });
 
       if (!queryParams.has("page")) queryParams.set("page", "1");
@@ -95,10 +106,24 @@ const shoppingProductSlice = createSlice({
       })
       .addCase(fetchAllFilteredProducts.fulfilled, (state, action) => {
         state.isLoading = false;
-        // Handle both array and object responses
-        state.productList = Array.isArray(action.payload.data)
+
+        // Check if page > 1 to determine if we should append or replace
+        const isLoadMore = action.meta.arg.page > 1;
+        const newProducts = Array.isArray(action.payload.data)
           ? action.payload.data
           : action.payload.data?.products || [];
+
+        if (isLoadMore) {
+          state.productList = [...state.productList, ...newProducts];
+        } else {
+          state.productList = newProducts;
+        }
+
+        // Update pagination info
+        if (action.payload.pagination) {
+          state.pagination = action.payload.pagination;
+        }
+
         state.error = null;
       })
       .addCase(fetchAllFilteredProducts.rejected, (state, action) => {

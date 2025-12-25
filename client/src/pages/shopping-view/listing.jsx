@@ -22,6 +22,8 @@ import { ArrowUpDownIcon, FilterIcon, Grid3X3, List } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useSearchParams } from "react-router-dom";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useRef, useCallback } from "react";
 
 function createSearchParamsHelper(filterParams) {
   const queryParams = [];
@@ -49,6 +51,22 @@ function ShoppingListing() {
   const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
   const [viewMode, setViewMode] = useState("grid");
   const [showFilters, setShowFilters] = useState(false);
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const { pagination } = useSelector((state) => state.shopProducts);
+  const observer = useRef();
+
+  const lastProductElementRef = useCallback(node => {
+    if (isLoading) return;
+    if (observer.current) observer.current.disconnect();
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && pagination.hasNext) {
+        setCurrentPage(prevPage => prevPage + 1);
+      }
+    });
+    if (node) observer.current.observe(node);
+  }, [isLoading, pagination?.hasNext]);
 
   // Get URL parameters
   const categoryParam = searchParams.get("category");
@@ -214,21 +232,33 @@ function ShoppingListing() {
     }
   }, [filters, setSearchParams]);
 
-  // Main useEffect for fetching products
+  // Fetch products on filter/sort change (Reset to Page 1)
   useEffect(() => {
-    console.log("🔄 Fetching products with:", {
-      filters: buildFilterParams,
-      sort,
-      gender: getCurrentGender(),
-    });
+    // Only reset if we are not already on page 1 (to avoid double fetch if component mounts)
+    // Or simpler: Just fetch page 1 always when filters change.
+    setCurrentPage(1);
 
     dispatch(
       fetchAllFilteredProducts({
         filterParams: buildFilterParams,
         sortParams: sort,
+        page: 1,
       })
     );
   }, [dispatch, sort, buildFilterParams]);
+
+  // Fetch more products when page increases
+  useEffect(() => {
+    if (currentPage > 1) {
+      dispatch(
+        fetchAllFilteredProducts({
+          filterParams: buildFilterParams,
+          sortParams: sort,
+          page: currentPage,
+        })
+      );
+    }
+  }, [dispatch, currentPage]);
 
   useEffect(() => {
     if (productDetails !== null) {
@@ -325,11 +355,10 @@ function ShoppingListing() {
                       variant={viewMode === "grid" ? "default" : "ghost"}
                       size="sm"
                       onClick={() => setViewMode("grid")}
-                      className={`h-8 w-8 p-0 ${
-                        viewMode === "grid"
-                          ? "bg-black text-white hover:bg-gray-800"
-                          : "hover:bg-gray-100"
-                      }`}
+                      className={`h-8 w-8 p-0 ${viewMode === "grid"
+                        ? "bg-black text-white hover:bg-gray-800"
+                        : "hover:bg-gray-100"
+                        }`}
                     >
                       <Grid3X3 className="h-4 w-4" />
                     </Button>
@@ -337,11 +366,10 @@ function ShoppingListing() {
                       variant={viewMode === "list" ? "default" : "ghost"}
                       size="sm"
                       onClick={() => setViewMode("list")}
-                      className={`h-8 w-8 p-0 ${
-                        viewMode === "list"
-                          ? "bg-black text-white hover:bg-gray-800"
-                          : "hover:bg-gray-100"
-                      }`}
+                      className={`h-8 w-8 p-0 ${viewMode === "list"
+                        ? "bg-black text-white hover:bg-gray-800"
+                        : "hover:bg-gray-100"
+                        }`}
                     >
                       <List className="h-4 w-4" />
                     </Button>
@@ -384,30 +412,62 @@ function ShoppingListing() {
             </div>
 
             {/* Products Grid/List */}
-            {isLoading ? (
-              <div className="flex justify-center items-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
+            {isLoading && currentPage === 1 ? (
+              <div
+                className={
+                  viewMode === "grid"
+                    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                    : "space-y-4"
+                }
+              >
+                {Array.from({ length: 8 }).map((_, index) => (
+                  <div key={index} className="space-y-3">
+                    <Skeleton className="h-[300px] w-full rounded-xl" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-[250px]" />
+                      <Skeleton className="h-4 w-[200px]" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <>
                 {productList && productList.length > 0 ? (
-                  <div
-                    className={
-                      viewMode === "grid"
-                        ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                        : "space-y-4"
-                    }
-                  >
-                    {productList.map((productItem) => (
-                      <ShoppingProductTile
-                        key={productItem._id}
-                        handleGetProductDetails={handleGetProductDetails}
-                        product={productItem}
-                        handleAddtoCart={handleAddtoCart}
-                        viewMode={viewMode}
-                      />
-                    ))}
-                  </div>
+                  <>
+                    <div
+                      className={
+                        viewMode === "grid"
+                          ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                          : "space-y-4"
+                      }
+                    >
+                      {productList.map((productItem, index) => {
+                        if (productList.length === index + 1) {
+                          return <div ref={lastProductElementRef} key={productItem._id}>
+                            <ShoppingProductTile
+                              handleGetProductDetails={handleGetProductDetails}
+                              product={productItem}
+                              handleAddtoCart={handleAddtoCart}
+                              viewMode={viewMode}
+                            />
+                          </div>
+                        }
+                        return <ShoppingProductTile
+                          key={productItem._id}
+                          handleGetProductDetails={handleGetProductDetails}
+                          product={productItem}
+                          handleAddtoCart={handleAddtoCart}
+                          viewMode={viewMode}
+                        />
+                      })}
+                    </div>
+                    {/* Load More Spinner */}
+                    {isLoading && currentPage > 1 && (
+                      <div className="flex justify-center items-center py-4">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="text-center py-12">
                     <div className="text-gray-400 text-lg mb-2">
@@ -416,9 +476,8 @@ function ShoppingListing() {
                     <p className="text-gray-500 mb-4">
                       {Object.keys(filters).length > 0 || subcategoryParam
                         ? "Try adjusting your filters to see more products"
-                        : `No ${
-                            getCurrentGender() === "men" ? "men's" : "women's"
-                          } products available at the moment`}
+                        : `No ${getCurrentGender() === "men" ? "men's" : "women's"
+                        } products available at the moment`}
                     </p>
                     {(Object.keys(filters).length > 0 || subcategoryParam) && (
                       <Button
@@ -442,7 +501,7 @@ function ShoppingListing() {
         setOpen={handleCloseDialog}
         productDetails={productDetails}
       />
-    </div>
+    </div >
   );
 }
 
