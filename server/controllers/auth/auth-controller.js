@@ -117,9 +117,14 @@ const loginUser = async (req, res) => {
       { expiresIn: "60m" }
     );
 
+    // Check if running in production or secure environment (HTTPS)
+    const isProduction = process.env.NODE_ENV === "production";
+    const isSecure = req.secure || req.headers["x-forwarded-proto"] === "https";
+
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: isProduction || isSecure,
+      sameSite: (isProduction || isSecure) ? "None" : "Lax",
     }).json({
       success: true,
       message: "Logged in successfully",
@@ -138,10 +143,14 @@ const loginUser = async (req, res) => {
 
 // ---------------- LOGOUT ----------------
 const logoutUser = (req, res) => {
+  const isProduction = process.env.NODE_ENV === "production";
+  const isSecure = req.secure || req.headers["x-forwarded-proto"] === "https";
+
   res
     .clearCookie("token", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: isProduction || isSecure,
+      sameSite: (isProduction || isSecure) ? "None" : "Lax",
     })
     .json({ success: true, message: "Logged out successfully" });
 };
