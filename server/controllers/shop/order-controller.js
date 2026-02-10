@@ -16,14 +16,18 @@ const User = require("../../models/User");
 const createOrder = async (req, res) => {
   try {
     const { totalAmount, paymentMethod, ...orderData } = req.body;
+    const userId = req.user.id;
 
     // Validate required fields
-    if (!orderData.userId || !orderData.cartItems || !orderData.addressInfo) {
+    if (!orderData.cartItems || !orderData.addressInfo) {
       return res.status(400).json({
         success: false,
         message: "Missing required order data",
       });
     }
+
+    // Assign userId to orderData
+    orderData.userId = userId;
 
     // Calculate cash handling fee if COD is selected
     let finalAmount = parseFloat(totalAmount);
@@ -243,7 +247,7 @@ const capturePayment = async (req, res) => {
 
     // Create the order in DB only after successful payment verification
     const newOrder = new Order({
-      userId: orderData.userId,
+      userId: req.user.id, // Enforce userId from token
       cartId: orderData.cartId,
       items: orderData.cartItems.map((item) => ({
         productId: item.productId,
@@ -358,7 +362,7 @@ const capturePayment = async (req, res) => {
 // ✅ Enhanced: Get all orders by user with product details
 const getAllOrdersByUser = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = req.user.id;
     const { page = 1, limit = 10, status } = req.query;
 
     let filters = { userId };
@@ -452,13 +456,13 @@ const getOrderDetails = async (req, res) => {
           ...item.toObject(),
           productDetails: product
             ? {
-                images: product.images,
-                colors: product.colors,
-                sizes: product.sizes,
-                isActive: product.isActive,
-                category: product.category,
-                subcategory: product.subcategory,
-              }
+              images: product.images,
+              colors: product.colors,
+              sizes: product.sizes,
+              isActive: product.isActive,
+              category: product.category,
+              subcategory: product.subcategory,
+            }
             : null,
         };
       })

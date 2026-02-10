@@ -18,14 +18,13 @@ function ShoppingWishlist() {
 
   useEffect(() => {
     if (user) {
-      dispatch(fetchWishlistItems(user.id));
+      dispatch(fetchWishlistItems());
     }
   }, [dispatch, user]);
 
   const handleRemoveFromWishlist = (productId) => {
     dispatch(
       removeFromWishlist({
-        userId: user.id,
         productId,
       })
     ).then((data) => {

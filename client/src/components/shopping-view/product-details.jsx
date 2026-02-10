@@ -106,7 +106,6 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
 
     dispatch(
       addToCart({
-        userId: user?.id,
         productId: productDetails?._id,
         quantity: quantity,
         selectedSize: selectedSize,
@@ -114,7 +113,7 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
       })
     ).then((data) => {
       if (data?.payload?.success) {
-        dispatch(fetchCartItems(user?.id));
+        dispatch(fetchCartItems());
         toast({
           title: "Added to Cart",
           description: `${productDetails?.title} has been added to your cart.`,
@@ -141,7 +140,6 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
     if (isInWishlist) {
       dispatch(
         removeFromWishlist({
-          userId: user?.id,
           productId: productDetails?._id,
         })
       ).then((data) => {
@@ -155,7 +153,6 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
     } else {
       dispatch(
         addToWishlist({
-          userId: user?.id,
           productId: productDetails?._id,
         })
       ).then((data) => {
@@ -209,8 +206,6 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
     dispatch(
       addReview({
         productId: productDetails?._id,
-        userId: user?.id,
-        userName: user?.userName,
         reviewMessage: reviewMsg,
         reviewValue: rating,
       })
@@ -233,7 +228,6 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
       // Check if product is in wishlist
       dispatch(
         checkProductInWishlist({
-          userId: user.id,
           productId: productDetails?._id,
         })
       ).then((data) => {
@@ -444,8 +438,8 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                       <Star
                         key={star}
                         className={`w-4 h-4 ${star <= Math.floor(averageReview || 0)
-                            ? "fill-yellow-400 text-yellow-400"
-                            : "fill-gray-300 text-gray-300"
+                          ? "fill-yellow-400 text-yellow-400"
+                          : "fill-gray-300 text-gray-300"
                           }`}
                       />
                     ))}
@@ -497,8 +491,8 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                           key={size.size}
                           onClick={() => setSelectedSize(size.size)}
                           className={`px-3 py-2 border rounded-lg text-sm font-medium transition-all ${selectedSize === size.size
-                              ? "border-orange-500 bg-orange-50 text-orange-700"
-                              : "border-gray-300 hover:border-gray-400"
+                            ? "border-orange-500 bg-orange-50 text-orange-700"
+                            : "border-gray-300 hover:border-gray-400"
                             }`}
                         >
                           {size.size}
@@ -523,8 +517,8 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                           key={color}
                           onClick={() => setSelectedColor(color)}
                           className={`px-3 py-2 border rounded-lg text-sm font-medium capitalize transition-all ${selectedColor === color
-                              ? "border-orange-500 bg-orange-50 text-orange-700"
-                              : "border-gray-300 hover:border-gray-400"
+                            ? "border-orange-500 bg-orange-50 text-orange-700"
+                            : "border-gray-300 hover:border-gray-400"
                             }`}
                         >
                           {color}
@@ -627,8 +621,8 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                 <button
                   onClick={() => setActiveTab("details")}
                   className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === "details"
-                      ? "border-orange-500 text-orange-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700"
+                    ? "border-orange-500 text-orange-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
                     }`}
                 >
                   Product Details
@@ -636,8 +630,8 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                 <button
                   onClick={() => setActiveTab("reviews")}
                   className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === "reviews"
-                      ? "border-orange-500 text-orange-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700"
+                    ? "border-orange-500 text-orange-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
                     }`}
                 >
                   Reviews ({reviews?.length || 0})
@@ -781,8 +775,8 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                                       <Star
                                         key={star}
                                         className={`w-3 h-3 ${star <= reviewItem.reviewValue
-                                            ? "fill-yellow-400 text-yellow-400"
-                                            : "fill-gray-300 text-gray-300"
+                                          ? "fill-yellow-400 text-yellow-400"
+                                          : "fill-gray-300 text-gray-300"
                                           }`}
                                       />
                                     ))}

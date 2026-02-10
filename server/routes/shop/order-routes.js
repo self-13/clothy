@@ -1,4 +1,5 @@
 const express = require("express");
+const { authMiddleware } = require("../../controllers/auth/auth-controller");
 
 const {
   createOrder,
@@ -13,16 +14,16 @@ const {
 const router = express.Router();
 
 // Order creation and payment routes
-router.post("/create", createOrder);
-router.post("/capture", capturePayment);
+router.post("/create", authMiddleware, createOrder);
+router.post("/capture", authMiddleware, capturePayment);
 
 // Order management routes
-router.get("/list/:userId", getAllOrdersByUser);
-router.get("/details/:id", getOrderDetails);
-router.get("/track/:orderId", trackOrder);
+router.get("/list", authMiddleware, getAllOrdersByUser);
+router.get("/details/:id", authMiddleware, getOrderDetails);
+router.get("/track/:orderId", authMiddleware, trackOrder);
 
 // Cancellation and return routes
-router.post("/:orderId/cancel", requestCancellation);
-router.post("/:orderId/return", requestReturn);
+router.post("/:orderId/cancel", authMiddleware, requestCancellation);
+router.post("/:orderId/return", authMiddleware, requestReturn);
 
 module.exports = router;

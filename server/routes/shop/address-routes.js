@@ -1,4 +1,5 @@
 const express = require("express");
+const { authMiddleware } = require("../../controllers/auth/auth-controller");
 
 const {
   addAddress,
@@ -9,9 +10,9 @@ const {
 
 const router = express.Router();
 
-router.post("/add", addAddress);
-router.get("/get/:userId", fetchAllAddress);
-router.delete("/delete/:userId/:addressId", deleteAddress);
-router.put("/update/:userId/:addressId", editAddress);
+router.post("/add", authMiddleware, addAddress);
+router.get("/get", authMiddleware, fetchAllAddress);
+router.delete("/delete/:addressId", authMiddleware, deleteAddress);
+router.put("/update/:addressId", authMiddleware, editAddress);
 
 module.exports = router;
