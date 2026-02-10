@@ -1,7 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import axios from "axios";
-
-const BASE_URL = import.meta.env.VITE_BASE_URL;
+import api from "../../../api";
+// const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const initialState = {
   isLoading: false,
@@ -18,10 +17,7 @@ export const createNewOrder = createAsyncThunk(
     try {
       console.log("🔄 Creating new order:", orderData);
 
-      const response = await axios.post(
-        `${BASE_URL}/api/shop/order/create`,
-        orderData
-      );
+      const response = await api.post("/shop/order/create", orderData);
 
       console.log("✅ Order created successfully:", response.data);
       return response.data;
@@ -39,10 +35,7 @@ export const capturePayment = createAsyncThunk(
     try {
       console.log("🔄 Capturing payment:", paymentData);
 
-      const response = await axios.post(
-        `${BASE_URL}/api/shop/order/capture`,
-        paymentData
-      );
+      const response = await api.post("/shop/order/capture", paymentData);
 
       console.log("✅ Payment captured successfully:", response.data);
       return response.data;
@@ -56,13 +49,11 @@ export const capturePayment = createAsyncThunk(
 // Get All Orders by User
 export const getAllOrdersByUserId = createAsyncThunk(
   "order/getAllOrdersByUserId",
-  async (userId, { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      console.log("🔄 Fetching orders for user:", userId);
+      console.log("🔄 Fetching orders for user");
 
-      const response = await axios.get(
-        `${BASE_URL}/api/shop/order/list/${userId}`
-      );
+      const response = await api.get("/shop/order/list");
 
       console.log(
         "✅ Orders fetched successfully:",
@@ -83,9 +74,7 @@ export const getOrderDetails = createAsyncThunk(
     try {
       console.log("🔄 Fetching order details:", id);
 
-      const response = await axios.get(
-        `${BASE_URL}/api/shop/order/details/${id}`
-      );
+      const response = await api.get(`/shop/order/details/${id}`);
 
       console.log("✅ Order details fetched successfully");
       // Extract order from nested structure if needed
@@ -105,10 +94,9 @@ export const requestOrderCancellation = createAsyncThunk(
     try {
       console.log("🔄 Requesting cancellation for order:", orderId);
 
-      const response = await axios.post(
-        `${BASE_URL}/api/shop/order/${orderId}/cancel`,
-        { reason }
-      );
+      const response = await api.post(`/shop/order/${orderId}/cancel`, {
+        reason,
+      });
 
       console.log("✅ Cancellation requested successfully:", response.data);
       return response.data;
@@ -126,10 +114,9 @@ export const requestOrderReturn = createAsyncThunk(
     try {
       console.log("🔄 Requesting return for order:", orderId);
 
-      const response = await axios.post(
-        `${BASE_URL}/api/shop/order/${orderId}/return`,
-        { reason }
-      );
+      const response = await api.post(`/shop/order/${orderId}/return`, {
+        reason,
+      });
 
       console.log("✅ Return requested successfully:", response.data);
       return response.data;
@@ -147,9 +134,7 @@ export const trackOrder = createAsyncThunk(
     try {
       console.log("🔄 Tracking order:", orderId);
 
-      const response = await axios.get(
-        `${BASE_URL}/api/shop/order/track/${orderId}`
-      );
+      const response = await api.get(`/shop/order/track/${orderId}`);
 
       console.log("✅ Order tracking fetched:", response.data);
       return response.data;

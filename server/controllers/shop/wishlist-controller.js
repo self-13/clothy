@@ -4,7 +4,8 @@ const User = require("../../models/User");
 
 const addToWishlist = async (req, res) => {
   try {
-    const { userId, productId } = req.body;
+    const { productId } = req.body;
+    const userId = req.user.id;
 
     if (!userId) {
       return res.status(400).json({
@@ -75,7 +76,7 @@ const addToWishlist = async (req, res) => {
 
 const fetchWishlistItems = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = req.user.id;
 
     if (!userId) {
       return res.status(400).json({
@@ -162,7 +163,8 @@ const fetchWishlistItems = async (req, res) => {
 
 const removeFromWishlist = async (req, res) => {
   try {
-    const { userId, productId } = req.params;
+    const { productId } = req.params;
+    const userId = req.user.id;
 
     if (!userId || !productId) {
       return res.status(400).json({
@@ -263,7 +265,8 @@ const removeFromWishlist = async (req, res) => {
 
 const checkProductInWishlist = async (req, res) => {
   try {
-    const { userId, productId } = req.params;
+    const { productId } = req.params;
+    const userId = req.user.id;
 
     if (!userId || !productId) {
       return res.status(400).json({

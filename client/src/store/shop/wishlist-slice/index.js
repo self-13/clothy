@@ -1,7 +1,7 @@
-import axios from "axios";
+import api from "../../../api";
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-const BASE_URL = import.meta.env.VITE_BASE_URL;
+// const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const initialState = {
   wishlistItems: [],
@@ -10,9 +10,8 @@ const initialState = {
 
 export const addToWishlist = createAsyncThunk(
   "wishlist/addToWishlist",
-  async ({ userId, productId }) => {
-    const response = await axios.post(`${BASE_URL}/api/shop/wishlist/add`, {
-      userId,
+  async ({ productId }) => {
+    const response = await api.post("/shop/wishlist/add", {
       productId,
     });
     return response.data;
@@ -21,30 +20,24 @@ export const addToWishlist = createAsyncThunk(
 
 export const fetchWishlistItems = createAsyncThunk(
   "wishlist/fetchWishlistItems",
-  async (userId) => {
-    const response = await axios.get(
-      `${BASE_URL}/api/shop/wishlist/get/${userId}`
-    );
+  async () => {
+    const response = await api.get("/shop/wishlist/get");
     return response.data;
   }
 );
 
 export const removeFromWishlist = createAsyncThunk(
   "wishlist/removeFromWishlist",
-  async ({ userId, productId }) => {
-    const response = await axios.delete(
-      `${BASE_URL}/api/shop/wishlist/remove/${userId}/${productId}`
-    );
+  async ({ productId }) => {
+    const response = await api.delete(`/shop/wishlist/remove/${productId}`);
     return response.data;
   }
 );
 
 export const checkProductInWishlist = createAsyncThunk(
   "wishlist/checkProductInWishlist",
-  async ({ userId, productId }) => {
-    const response = await axios.get(
-      `${BASE_URL}/api/shop/wishlist/check/${userId}/${productId}`
-    );
+  async ({ productId }) => {
+    const response = await api.get(`/shop/wishlist/check/${productId}`);
     return response.data;
   }
 );

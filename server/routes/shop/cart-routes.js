@@ -1,4 +1,5 @@
 const express = require("express");
+const { authMiddleware } = require("../../controllers/auth/auth-controller");
 
 const {
   addToCart,
@@ -11,13 +12,14 @@ const {
 const router = express.Router();
 
 // Cart item management routes
-router.post("/add", addToCart);
-router.get("/get/:userId", fetchCartItems);
-router.put("/update", updateCartItemQty);
+router.post("/add", authMiddleware, addToCart);
+router.get("/get", authMiddleware, fetchCartItems);
+router.put("/update", authMiddleware, updateCartItemQty);
 router.delete(
-  "/delete/:userId/:productId/:selectedSize/:selectedColor",
+  "/delete/:productId/:selectedSize/:selectedColor",
+  authMiddleware,
   deleteCartItem
 );
-router.delete("/clear/:userId", clearCart);
+router.delete("/clear", authMiddleware, clearCart);
 
 module.exports = router;

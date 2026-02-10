@@ -5,14 +5,14 @@ import UserCartItemsContent from "@/components/shopping-view/cart-items-content"
 import { Button } from "@/components/ui/button";
 import { createNewOrder, capturePayment } from "@/store/shop/order-slice";
 import { useToast } from "@/components/ui/use-toast";
-import { 
-  CreditCard, 
-  Wallet, 
-  AlertCircle, 
-  Truck, 
-  Shield, 
-  Package, 
-  MapPin, 
+import {
+  CreditCard,
+  Wallet,
+  AlertCircle,
+  Truck,
+  Shield,
+  Package,
+  MapPin,
   ChevronRight,
   ChevronLeft,
   Check,
@@ -137,7 +137,6 @@ function ShoppingCheckout() {
 
     try {
       const orderData = {
-        userId: user?.id,
         cartId: cartItems?._id,
         cartItems: cartItems.items.map((item) => ({
           productId: item?.productId,
@@ -170,7 +169,7 @@ function ShoppingCheckout() {
 
       if (res?.payload?.success) {
         if (paymentMethod === "cod") {
-          dispatch(clearCart(user?.id));
+          dispatch(clearCart());
           toast({
             title: "Order placed successfully!",
             description: "Your COD order has been confirmed.",
@@ -204,7 +203,7 @@ function ShoppingCheckout() {
               );
 
               if (verifyRes?.payload?.success) {
-                dispatch(clearCart(user?.id));
+                dispatch(clearCart());
                 window.location.href = "/shop/payment-success";
               } else {
                 resetPaymentState();
@@ -300,22 +299,20 @@ function ShoppingCheckout() {
             <div className="flex items-center space-x-8">
               {steps.map((step, index) => (
                 <div key={step.number} className="flex items-center">
-                  <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-                    step.completed || currentStep === step.number
+                  <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${step.completed || currentStep === step.number
                       ? "bg-black border-black text-white"
                       : "bg-white border-gray-300 text-gray-400"
-                  }`}>
+                    }`}>
                     {step.completed ? (
                       <Check className="w-5 h-5" />
                     ) : (
                       <span className="font-semibold">{step.number}</span>
                     )}
                   </div>
-                  <span className={`ml-3 font-medium ${
-                    step.completed || currentStep === step.number
+                  <span className={`ml-3 font-medium ${step.completed || currentStep === step.number
                       ? "text-black"
                       : "text-gray-400"
-                  }`}>
+                    }`}>
                     {step.title}
                   </span>
                   {index < steps.length - 1 && (
@@ -355,7 +352,7 @@ function ShoppingCheckout() {
                   <div className="text-center py-12 border border-gray-200 rounded-lg">
                     <Package className="w-16 h-16 mx-auto mb-4 text-gray-400" />
                     <p className="text-gray-600 text-lg mb-2">Your cart is empty</p>
-                    <Button 
+                    <Button
                       onClick={() => window.location.href = "/shop/listing"}
                       className="bg-black text-white hover:bg-gray-800"
                     >
@@ -424,7 +421,7 @@ function ShoppingCheckout() {
                   <ChevronLeft className="w-4 h-4 mr-2" />
                   Back to Order
                 </Button>
-                
+
                 <Button
                   onClick={handleNextStep}
                   className="bg-black text-white hover:bg-gray-800 px-8"
@@ -450,23 +447,21 @@ function ShoppingCheckout() {
                   <Shield className="w-6 h-6 text-black" />
                   <h2 className="text-xl font-bold text-black">Payment Method</h2>
                 </div>
-                
+
                 <div className="space-y-4">
                   {/* Online Payment */}
                   <div
-                    className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      paymentMethod === "online"
+                    className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${paymentMethod === "online"
                         ? "border-black bg-gray-50"
                         : "border-gray-200 hover:border-gray-400"
-                    }`}
+                      }`}
                     onClick={() => setPaymentMethod("online")}
                   >
                     <div
-                      className={`h-5 w-5 rounded-full border-2 mr-4 flex items-center justify-center ${
-                        paymentMethod === "online"
+                      className={`h-5 w-5 rounded-full border-2 mr-4 flex items-center justify-center ${paymentMethod === "online"
                           ? "border-black bg-black"
                           : "border-gray-400"
-                      }`}
+                        }`}
                     >
                       {paymentMethod === "online" && (
                         <div className="h-2 w-2 rounded-full bg-white"></div>
@@ -481,19 +476,17 @@ function ShoppingCheckout() {
 
                   {/* COD Option */}
                   <div
-                    className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      paymentMethod === "cod"
+                    className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${paymentMethod === "cod"
                         ? "border-black bg-gray-50"
                         : "border-gray-200 hover:border-gray-400"
-                    }`}
+                      }`}
                     onClick={() => setPaymentMethod("cod")}
                   >
                     <div
-                      className={`h-5 w-5 rounded-full border-2 mr-4 flex items-center justify-center ${
-                        paymentMethod === "cod"
+                      className={`h-5 w-5 rounded-full border-2 mr-4 flex items-center justify-center ${paymentMethod === "cod"
                           ? "border-black bg-black"
                           : "border-gray-400"
-                      }`}
+                        }`}
                     >
                       {paymentMethod === "cod" && (
                         <div className="h-2 w-2 rounded-full bg-white"></div>
@@ -543,7 +536,7 @@ function ShoppingCheckout() {
                 <h2 className="text-xl font-bold mb-6 text-black border-b border-gray-200 pb-4">
                   Order Summary
                 </h2>
-                
+
                 <div className="space-y-4">
                   <div className="flex justify-between text-base">
                     <span className="text-gray-600">Subtotal</span>

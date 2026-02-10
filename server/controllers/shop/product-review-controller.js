@@ -5,8 +5,9 @@ const mongoose = require("mongoose");
 
 const addProductReview = async (req, res) => {
   try {
-    const { productId, userId, userName, reviewMessage, reviewValue } =
-      req.body;
+    const { productId, reviewMessage, reviewValue } = req.body;
+    const userId = req.user.id;
+    const userName = req.user.userName;
 
     console.log("📝 Review request:", {
       productId,
@@ -95,7 +96,7 @@ const addProductReview = async (req, res) => {
     const averageReview =
       totalReviewsLength > 0
         ? reviews.reduce((sum, reviewItem) => sum + reviewItem.reviewValue, 0) /
-          totalReviewsLength
+        totalReviewsLength
         : 0;
 
     await Product.findByIdAndUpdate(productId, {

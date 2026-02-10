@@ -3,15 +3,8 @@ const Product = require("../../models/Product");
 
 const addToCart = async (req, res) => {
   try {
-    const { userId, productId, quantity, selectedSize, selectedColor } =
-      req.body;
-
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: "Please login first!",
-      });
-    }
+    const { productId, quantity, selectedSize, selectedColor } = req.body;
+    const userId = req.user.id; // Get userId from auth middleware
 
     if (
       !productId ||
@@ -138,7 +131,7 @@ const addToCart = async (req, res) => {
 
 const fetchCartItems = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = req.user.id;
 
     if (!userId) {
       return res.status(400).json({
@@ -237,8 +230,8 @@ const fetchCartItems = async (req, res) => {
 
 const updateCartItemQty = async (req, res) => {
   try {
-    const { userId, productId, quantity, selectedSize, selectedColor } =
-      req.body;
+    const { productId, quantity, selectedSize, selectedColor } = req.body;
+    const userId = req.user.id;
 
     if (
       !userId ||
@@ -368,7 +361,8 @@ const updateCartItemQty = async (req, res) => {
 
 const deleteCartItem = async (req, res) => {
   try {
-    const { userId, productId, selectedSize, selectedColor } = req.params;
+    const { productId, selectedSize, selectedColor } = req.params;
+    const userId = req.user.id;
 
     if (!userId || !productId || !selectedSize || !selectedColor) {
       return res.status(400).json({
@@ -471,7 +465,7 @@ const deleteCartItem = async (req, res) => {
 // New: Clear entire cart
 const clearCart = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = req.user.id;
 
     if (!userId) {
       return res.status(400).json({

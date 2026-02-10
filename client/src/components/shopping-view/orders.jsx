@@ -30,7 +30,7 @@ function ShoppingOrders() {
 
   useEffect(() => {
     if (user?.id) {
-      dispatch(getAllOrdersByUserId(user.id));
+      dispatch(getAllOrdersByUserId());
     }
   }, [dispatch, user?.id]);
 
@@ -259,7 +259,7 @@ function ShoppingOrders() {
                           {getStatusText(order.orderStatus)}
                         </Badge>
                       </div>
-                      
+
                       {/* Cancellation/Return Badges */}
                       <div className="flex flex-wrap gap-1">
                         {cancellationBadge && (
