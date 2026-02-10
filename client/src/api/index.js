@@ -8,4 +8,18 @@ const api = axios.create({
     },
 });
 
+// Global error handler
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response && error.response.status === 401) {
+            // Auto logout on 401 Unauthorized
+            localStorage.removeItem("user");
+            // Optional: Redirect to login or dispatch logout action if possible
+            // location.href = "/auth/login"; // Careful with this in SPA
+        }
+        return Promise.reject(error);
+    }
+);
+
 export default api;

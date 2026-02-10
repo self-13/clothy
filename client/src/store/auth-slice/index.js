@@ -187,11 +187,15 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.user = action.payload.success ? action.payload.user : null;
         state.isAuthenticated = action.payload.success;
+        if (!action.payload.success) {
+          localStorage.removeItem("user");
+        }
       })
       .addCase(checkAuth.rejected, (state, action) => {
         state.isLoading = false;
         state.user = null;
         state.isAuthenticated = false;
+        localStorage.removeItem("user");
       })
       .addCase(logoutUser.fulfilled, (state, action) => {
         state.isLoading = false;
