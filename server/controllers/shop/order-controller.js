@@ -39,7 +39,7 @@ const createOrder = async (req, res) => {
       shippingFee = 40;
       finalAmount = finalAmount + cashHandlingFee + shippingFee;
     } else {
-      shippingFee = 40;
+      shippingFee = 0;
       finalAmount = finalAmount + shippingFee;
     }
 
