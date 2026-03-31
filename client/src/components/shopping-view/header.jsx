@@ -6,6 +6,7 @@ import {
   UserCog,
   Search,
   X,
+  User
 } from "lucide-react";
 import {
   Link,
@@ -57,23 +58,23 @@ function MenuItems({ onItemClick }) {
         )
       : navigate(getCurrentMenuItem.path);
 
-    // Call the onItemClick callback to close the menu
     if (onItemClick) {
       onItemClick();
     }
   }
 
   return (
-    <nav className="flex flex-col mb-3 lg:mb-0 lg:items-center gap-6 lg:flex-row">
+    <nav className="flex flex-col mb-3 lg:mb-0 lg:items-center gap-10 lg:flex-row">
       {shoppingViewHeaderMenuItems
         .filter((menuItem) => menuItem.id !== "search")
         .map((menuItem) => (
           <Label
             onClick={() => handleNavigate(menuItem)}
-            className="text-sm font-medium cursor-pointer text-gray-700 hover:text-gray-900 transition-colors"
+            className="text-[10px] font-black uppercase tracking-[0.25em] cursor-pointer text-zinc-400 hover:text-black transition-all duration-300 relative group"
             key={menuItem.id}
           >
             {menuItem.label}
+            <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-black transition-all duration-300 group-hover:w-full" />
           </Label>
         ))}
     </nav>
@@ -84,34 +85,36 @@ function UserMenu({ user, handleLogout, navigate }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Avatar className="bg-gray-600 cursor-pointer border-2 border-gray-400 shadow-md">
-          <AvatarFallback className="bg-transparent text-white font-bold">
-            {user?.userName?.[0]?.toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
+        <div className="flex items-center gap-3 cursor-pointer group">
+           <div className="hidden md:block text-right">
+              <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 leading-none">Account</p>
+              <p className="text-sm font-bold text-black uppercase tracking-tight">{user?.userName}</p>
+           </div>
+           <Avatar className="h-10 w-10 rounded-none border-2 border-black p-0.5 bg-white group-hover:bg-black group-hover:text-white transition-all duration-300">
+             <AvatarFallback className="bg-transparent text-inherit font-black text-xs">
+               {user?.userName?.[0]?.toUpperCase()}
+             </AvatarFallback>
+           </Avatar>
+        </div>
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        side="right"
-        className="w-56 bg-white border-2 border-gray-300 shadow-lg"
+        align="end"
+        className="w-56 bg-white border-2 border-black rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-2"
       >
-        <DropdownMenuLabel className="text-gray-800 font-bold">
-          Welcome, {user?.userName}! 👋
+        <DropdownMenuLabel className="text-black font-black uppercase tracking-tighter text-lg px-2 py-3 border-b border-zinc-100">
+          PRO_FILE
         </DropdownMenuLabel>
-        <DropdownMenuSeparator className="bg-gray-300" />
         <DropdownMenuItem
           onClick={() => navigate("/shop/account")}
-          className="text-gray-700 hover:bg-gray-100 cursor-pointer font-medium"
+          className="rounded-none focus:bg-zinc-100 cursor-pointer font-bold uppercase text-[10px] tracking-widest py-3 px-2 flex items-center gap-2"
         >
-          <UserCog className="mr-2 h-4 w-4 text-gray-600" />
-          Account
+          <UserCog className="h-4 w-4" /> Management
         </DropdownMenuItem>
-        <DropdownMenuSeparator className="bg-gray-300" />
         <DropdownMenuItem
           onClick={handleLogout}
-          className="text-gray-700 hover:bg-gray-100 cursor-pointer font-medium"
+          className="rounded-none focus:bg-red-50 focus:text-red-600 cursor-pointer font-bold uppercase text-[10px] tracking-widest py-3 px-2 flex items-center gap-2"
         >
-          <LogOut className="mr-2 h-4 w-4 text-gray-600" />
-          Logout
+          <LogOut className="h-4 w-4" /> Terminate Session
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -133,25 +136,13 @@ function ShoppingHeader() {
   }
 
   function handleSearch(e) {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/shop/listing?search=${encodeURIComponent(searchQuery)}`);
       setSearchOpen(false);
       setSearchQuery("");
     }
   }
-
-  // Function to close mobile menu
-  const closeMobileMenu = () => {
-    setMobileMenuOpen(false);
-    // Find and click the sheet close button
-    const closeButton = document.querySelector(
-      '[data-state="open"] [aria-label="Toggle header menu"]'
-    );
-    if (closeButton) {
-      closeButton.click();
-    }
-  };
 
   useEffect(() => {
     if (user?.id) {
@@ -160,8 +151,8 @@ function ShoppingHeader() {
   }, [dispatch, user?.id]);
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b-2 border-gray-300 bg-gradient-to-r from-gray-50 via-white to-gray-50 text-gray-800 shadow-lg">
-      <div className="flex h-16 items-center justify-between px-4 md:px-6 gap-3">
+    <header className="sticky top-0 z-40 w-full border-b border-zinc-100 bg-white/80 backdrop-blur-xl">
+      <div className="container mx-auto px-4 md:px-8 h-20 flex items-center justify-between gap-8">
         {/* Logo */}
         <Link
           to="/shop/home"
@@ -170,148 +161,45 @@ function ShoppingHeader() {
           <img src="/logo.png" alt="logo" className="size-24" />
         </Link>
 
-        {/* Desktop menu */}
-        <div className="hidden lg:block">
+        {/* Desktop Menu - Centered */}
+        <div className="hidden lg:block flex-1 max-w-2xl px-12">
           <MenuItems />
         </div>
 
         {/* Right Section */}
-        <div className="flex items-center gap-4">
-          {/* Search Icon */}
-          {/* <Button
-            onClick={() => setSearchOpen(true)}
-            variant="ghost"
-            size="icon"
-            className="text-gray-600 hover:bg-gray-200 rounded-full border border-gray-300 shadow-md"
+        <div className="flex items-center gap-4 md:gap-8">
+          {/* Search Button */}
+          <button 
+            onClick={() => setSearchOpen(!searchOpen)}
+            className="text-black hover:scale-110 transition-transform duration-300"
           >
-            <Search className="w-5 h-5" />
-          </Button> */}
+             <Search className="w-5 h-5 stroke-[2.5]" />
+          </button>
 
-          {/* Cart with Black & White Style */}
+          {/* Cart */}
           <Sheet
             open={openCartSheet}
             onOpenChange={() => setOpenCartSheet(false)}
           >
-            <Button
+            <button
               onClick={() => setOpenCartSheet(true)}
-              variant="ghost"
-              size="icon"
-              className="relative text-gray-600 hover:bg-gray-200 rounded-full border border-gray-300 shadow-md"
+              className="relative text-black hover:scale-110 transition-transform duration-300"
             >
-              <ShoppingCart className="w-5 h-5" />
-              <span className="absolute -top-2 -right-2 font-bold text-xs bg-gray-700 text-white rounded-full w-5 h-5 flex items-center justify-center shadow-md">
-                {cartItems?.items?.length || 0}
-              </span>
-              <span className="sr-only">User cart</span>
-            </Button>
+              <ShoppingCart className="w-5 h-5 stroke-[2.5]" />
+              {cartItems?.items?.length > 0 && (
+                <span className="absolute -top-2 -right-2 font-black text-[8px] bg-black text-white rounded-none w-4 h-4 flex items-center justify-center">
+                   {cartItems.items.length}
+                </span>
+              )}
+            </button>
             <UserCartWrapper
               setOpenCartSheet={setOpenCartSheet}
               cartItems={cartItems?.items?.length > 0 ? cartItems.items : []}
             />
           </Sheet>
 
-          {/* Mobile menu trigger */}
-          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="lg:hidden text-gray-600 hover:bg-gray-200 rounded-full border border-gray-300 shadow-md"
-              >
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle header menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent
-              side="left"
-              className="w-full max-w-xs bg-white text-gray-800 border-r-2 border-gray-300"
-            >
-              <div className="flex flex-col h-full">
-                {/* Mobile Search */}
-                <div className="p-4 border-b border-gray-200">
-                  <form
-                    onSubmit={handleSearch}
-                    className="flex items-center gap-2"
-                  >
-                    {/* <Input
-                      type="text"
-                      placeholder="Search..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="flex-1 bg-white border-2 border-gray-300 text-gray-800 placeholder-gray-400"
-                    /> */}
-                    {/* <Button
-                      type="submit"
-                      size="icon"
-                      className="bg-gray-700 text-white hover:scale-110 transition-transform"
-                    >
-                      <Search className="h-4 w-4" />
-                    </Button> */}
-                  </form>
-                </div>
-
-                <div className="flex-1">
-                  <MenuItems onItemClick={closeMobileMenu} />
-                </div>
-
-                <div className="mt-6 p-4 border-t border-gray-200">
-                  {user ? (
-                    <div className="space-y-4">
-                      {/* User Info */}
-                      <div className="flex items-center gap-3 p-3 bg-gray-100 rounded-lg">
-                        <Avatar className="bg-gray-600 cursor-pointer border-2 border-gray-400 shadow-md">
-                          <AvatarFallback className="bg-transparent text-white font-bold">
-                            {user?.userName?.[0]?.toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="text-sm font-bold text-gray-700">
-                          Hello {user?.userName}! 🎉
-                        </div>
-                      </div>
-
-                      {/* Separate Account Button */}
-                      <Button
-                        onClick={() => {
-                          navigate("/shop/account");
-                          closeMobileMenu();
-                        }}
-                        className="w-full bg-gray-700 text-white font-bold hover:scale-105 transition-transform shadow-md flex items-center gap-2"
-                      >
-                        <UserCog className="h-4 w-4" />
-                        Account
-                      </Button>
-
-                      {/* Separate Logout Button */}
-                      <Button
-                        onClick={() => {
-                          handleLogout();
-                          closeMobileMenu();
-                        }}
-                        variant="destructive"
-                        className="w-full font-bold hover:scale-105 transition-transform shadow-md flex items-center gap-2"
-                      >
-                        <LogOut className="h-4 w-4" />
-                        Logout
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button
-                      onClick={() => {
-                        navigate("/auth/login");
-                        closeMobileMenu();
-                      }}
-                      className="w-full bg-gray-800 text-white font-bold hover:scale-105 transition-transform shadow-md"
-                    >
-                      Login
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
-
-          {/* Desktop user menu */}
-          <div className="hidden lg:block">
+          {/* User / Login */}
+          <div className="hidden md:block">
             {user ? (
               <UserMenu
                 user={user}
@@ -321,48 +209,79 @@ function ShoppingHeader() {
             ) : (
               <Button
                 onClick={() => navigate("/auth/login")}
-                className="bg-gray-800 text-white font-bold hover:scale-105 transition-transform shadow-md"
+                className="bg-black text-white rounded-none font-black uppercase tracking-widest text-[10px] h-10 px-8 hover:bg-zinc-800 transition-all"
               >
-                Login
+                Sign In
               </Button>
             )}
           </div>
+
+          {/* Mobile menu trigger */}
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <button className="lg:hidden text-black">
+                <Menu className="h-6 w-6 stroke-[2.5]" />
+              </button>
+            </SheetTrigger>
+            <SheetContent
+              side="left"
+              className="w-full max-w-xs bg-white border-r-2 border-black p-0"
+            >
+               <div className="flex flex-col h-full bg-white">
+                  <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-black text-white">
+                     <span className="font-black uppercase tracking-tighter text-2xl">Navigation</span>
+                     <X onClick={() => setMobileMenuOpen(false)} className="w-6 h-6 cursor-pointer" />
+                  </div>
+                  <div className="p-8 space-y-8 flex-1">
+                     <MenuItems onItemClick={() => setMobileMenuOpen(false)} />
+                  </div>
+                  {user && (
+                    <div className="p-8 bg-zinc-50 space-y-4">
+                       <div className="flex items-center gap-4 mb-4">
+                          <Avatar className="h-12 w-12 rounded-none border-2 border-black p-0.5 bg-white">
+                            <AvatarFallback className="bg-transparent text-black font-black">
+                              {user?.userName?.[0]?.toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col">
+                             <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Authenticated as</span>
+                             <span className="text-lg font-bold text-black uppercase tracking-tight">{user?.userName}</span>
+                          </div>
+                       </div>
+                       <Button 
+                          onClick={() => { navigate("/shop/account"); setMobileMenuOpen(false); }}
+                          className="w-full h-12 bg-black text-white rounded-none font-black uppercase tracking-widest text-[10px]"
+                       >
+                          Manage Account
+                       </Button>
+                    </div>
+                  )}
+               </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
 
-      {/* Search Overlay */}
-      {searchOpen && (
-        <div className="fixed inset-0 bg-white bg-opacity-95 z-50 flex items-start justify-center pt-20">
-          <div className="w-full max-w-2xl px-6">
-            <form onSubmit={handleSearch} className="relative">
-              {/* <Input
-                type="text"
-                placeholder="🔍 Search for awesome products..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-14 bg-white border-2 border-gray-300 text-gray-800 placeholder-gray-400 pl-6 pr-16 text-lg rounded-full shadow-lg"
-                autoFocus
-              /> */}
-              {/* <Button
-                type="submit"
-                size="icon"
-                className="absolute right-2 top-2 h-10 w-10 bg-gray-700 hover:scale-110 transition-transform rounded-full shadow-md"
-              >
-                <Search className="h-5 w-5 text-white" />
-              </Button> */}
+      {/* Modern Search Overlay */}
+      <div className={`absolute left-0 right-0 bg-white border-b border-black overflow-hidden transition-all duration-500 ease-in-out ${searchOpen ? "h-24 opacity-100" : "h-0 opacity-0"}`}>
+         <div className="container mx-auto px-8 h-full flex items-center">
+            <Search className="w-6 h-6 text-zinc-300 mr-4" />
+            <form onSubmit={handleSearch} className="flex-1 flex gap-4">
+               <input 
+                  className="flex-1 bg-transparent border-none outline-none text-2xl font-black uppercase tracking-tighter placeholder:text-zinc-100"
+                  placeholder="What are you looking for?"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  autoFocus={searchOpen}
+               />
+               <button type="submit" className="text-xs font-black uppercase tracking-[0.2em] border-b-2 border-black pb-1 hover:text-zinc-500 transition-colors">Confirm</button>
             </form>
-            <Button
-              variant="ghost"
-              onClick={() => setSearchOpen(false)}
-              className="absolute top-6 right-6 text-gray-600 hover:bg-gray-200 rounded-full h-10 w-10 border border-gray-300"
-            >
-              <X className="h-6 w-6" />
-            </Button>
-          </div>
-        </div>
-      )}
+            <X onClick={() => setSearchOpen(false)} className="w-6 h-6 ml-8 cursor-pointer text-zinc-300 hover:text-black transition-colors" />
+         </div>
+      </div>
     </header>
   );
 }
 
 export default ShoppingHeader;
+

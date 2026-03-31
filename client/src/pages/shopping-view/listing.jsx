@@ -1,5 +1,4 @@
 import ProductFilter from "@/components/shopping-view/filter";
-import ProductDetailsDialog from "@/components/shopping-view/product-details";
 import ShoppingProductTile from "@/components/shopping-view/product-tile";
 import ShoppingSubheader from "@/components/shopping-view/sub-header";
 import { Button } from "@/components/ui/button";
@@ -21,7 +20,7 @@ import {
 import { ArrowUpDownIcon, FilterIcon, Grid3X3, List } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRef, useCallback } from "react";
 
@@ -48,7 +47,7 @@ function ShoppingListing() {
   const [filters, setFilters] = useState({});
   const [sort, setSort] = useState("most-selling");
   const [searchParams, setSearchParams] = useSearchParams();
-  const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
+  const navigate = useNavigate();
   const [viewMode, setViewMode] = useState("grid");
   const [showFilters, setShowFilters] = useState(false);
 
@@ -151,7 +150,7 @@ function ShoppingListing() {
   }
 
   function handleGetProductDetails(getCurrentProductId) {
-    dispatch(fetchProductDetails(getCurrentProductId));
+    navigate(`/shop/product/${getCurrentProductId}`);
   }
 
   function handleAddtoCart(getCurrentProductId, selectedSize = null) {
@@ -209,12 +208,6 @@ function ShoppingListing() {
     });
   }
 
-  function handleCloseDialog() {
-    setOpenDetailsDialog(false);
-    setTimeout(() => {
-      dispatch(resetProductDetails());
-    }, 300);
-  }
 
   useEffect(() => {
     setSort("most-selling");
@@ -259,11 +252,6 @@ function ShoppingListing() {
     }
   }, [dispatch, currentPage]);
 
-  useEffect(() => {
-    if (productDetails !== null) {
-      setOpenDetailsDialog(true);
-    }
-  }, [productDetails]);
 
   // Clear filters function
   const clearFilters = () => {
@@ -494,12 +482,6 @@ function ShoppingListing() {
         </div>
       </div>
 
-      {/* Product Details Dialog */}
-      <ProductDetailsDialog
-        open={openDetailsDialog && productDetails !== null}
-        setOpen={handleCloseDialog}
-        productDetails={productDetails}
-      />
     </div >
   );
 }

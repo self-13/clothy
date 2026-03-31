@@ -26,7 +26,6 @@ import ShoppingProductTile from "@/components/shopping-view/product-tile";
 import { useNavigate } from "react-router-dom";
 import { addToCart, fetchCartItems } from "@/store/shop/cart-slice";
 import { useToast } from "@/components/ui/use-toast";
-import ProductDetailsDialog from "@/components/shopping-view/product-details";
 import { getFeatureImages } from "@/store/common-slice";
 import { Badge } from "@/components/ui/badge";
 import Footer from "@/components/shopping-view/footer";
@@ -50,7 +49,6 @@ function ShoppingHome() {
     (state) => state.shopProducts
   );
   const { featureImageList } = useSelector((state) => state.commonFeature);
-  const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
   const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -250,19 +248,6 @@ function ShoppingHome() {
       }
     });
   }
-
-  function handleCloseDialog() {
-    setOpenDetailsDialog(false);
-    setTimeout(() => {
-      dispatch(resetProductDetails());
-    }, 300);
-  }
-
-  useEffect(() => {
-    if (productDetails !== null) {
-      setOpenDetailsDialog(true);
-    }
-  }, [productDetails]);
 
   // Auto-slide functionality
   useEffect(() => {
@@ -703,13 +688,6 @@ function ShoppingHome() {
             </div>
           </div>
         </section>
-
-        {/* Product Details Dialog */}
-        <ProductDetailsDialog
-          open={openDetailsDialog && productDetails !== null}
-          setOpen={handleCloseDialog}
-          productDetails={productDetails}
-        />
       </div>
 
       {/* Footer */}

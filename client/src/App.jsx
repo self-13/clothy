@@ -26,6 +26,9 @@ const AuthForgotPassword = lazy(() => import("./pages/auth/forgot-password"));
 const AuthResetPassword = lazy(() => import("./pages/auth/reset-password"));
 const AdminCancellations = lazy(() => import("./pages/admin-view/cancellations"));
 const AdminReturns = lazy(() => import("./pages/admin-view/returns"));
+const AdminCoupons = lazy(() => import("./pages/admin-view/coupons"));
+const AdminUsers = lazy(() => import("./pages/admin-view/users"));
+const ShoppingProductDetails = lazy(() => import("./pages/shopping-view/product-details"));
 import CheckAuth from "./components/common/check-auth";
 import UnauthPage from "./pages/unauth-page";
 import { useDispatch, useSelector } from "react-redux";
@@ -84,9 +87,11 @@ function App() {
             <Route path="products" element={<AdminProducts />} />
             <Route path="orders" element={<AdminOrders />} />
             <Route path="features" element={<AdminFeatures />} />
+            <Route path="coupons" element={<AdminCoupons />} />
             {/* Add the new cancellation and return routes */}
             <Route path="cancellations" element={<AdminCancellations />} />
             <Route path="returns" element={<AdminReturns />} />
+            <Route path="users" element={<AdminUsers />} />
           </Route>
           <Route
             path="/shop"
@@ -102,6 +107,7 @@ function App() {
             <Route path="account" element={<ShoppingAccount />} />
             <Route path="payment-success" element={<PaymentSuccessPage />} />
             <Route path="search" element={<SearchProducts />} />
+            <Route path="product/:id" element={<ShoppingProductDetails />} />
 
           </Route>
           <Route path="/unauth-page" element={<UnauthPage />} />

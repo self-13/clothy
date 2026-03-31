@@ -364,6 +364,101 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// ---------------- UPDATE PROFILE ----------------
+const updateProfileSchema = Joi.object({
+  userName: Joi.string().min(3).max(30),
+  email: Joi.string().email().max(254),
+  currentPassword: Joi.string().min(8).max(1024).required(),
+  newPassword: Joi.string().min(8).max(1024),
+});
+
+const updateProfile = async (req, res) => {
+  try {
+    const { error, value } = updateProfileSchema.validate(req.body, {
+      stripUnknown: true,
+    });
+    if (error)
+      return res.status(400).json({ success: false, message: error.message });
+
+    const userId = req.user.id;
+    const { userName, email, currentPassword, newPassword } = value;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid current password" });
+    }
+
+    // Check for unique userName/email if changed
+    if (userName && userName !== user.userName) {
+      if (await User.findOne({ userName })) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Username already taken" });
+      }
+      user.userName = userName;
+    }
+
+    if (email && email !== user.email) {
+      if (await User.findOne({ email })) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Email already in use" });
+      }
+      user.email = email;
+    }
+
+    // Update password if provided
+    if (newPassword) {
+      user.password = await bcrypt.hash(newPassword, 12);
+    }
+
+    await user.save();
+
+    // Generate new token with updated info
+    const token = jwt.sign(
+      {
+        id: user._id,
+        role: user.role,
+        email: user.email,
+        userName: user.userName,
+      },
+      process.env.CLIENT_SECRET_KEY,
+      { expiresIn: "60m" }
+    );
+
+    const isProduction = process.env.NODE_ENV === "production";
+    const isSecure = req.secure || req.headers["x-forwarded-proto"] === "https";
+
+    res
+      .cookie("token", token, {
+        httpOnly: true,
+        secure: isProduction || isSecure,
+        sameSite: isProduction || isSecure ? "None" : "Lax",
+      })
+      .json({
+        success: true,
+        message: "Profile updated successfully",
+        user: {
+          email: user.email,
+          role: user.role,
+          id: user._id,
+          userName: user.userName,
+        },
+      });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -373,4 +468,5 @@ module.exports = {
   resendOTP,
   forgotPassword,
   resetPassword,
+  updateProfile,
 };

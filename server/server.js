@@ -19,6 +19,9 @@ const shopSearchRouter = require("./routes/shop/search-routes");
 const shopReviewRouter = require("./routes/shop/review-routes");
 const commonFeatureRouter = require("./routes/common/feature-routes");
 const shopWishlistRouter = require("./routes/shop/wishlist-routes");
+const adminCouponRouter = require("./routes/admin/coupon-routes");
+const adminDashboardRouter = require("./routes/admin/dashboard-routes");
+const adminUserRouter = require("./routes/admin/user-routes"); // Added Admin User Router
 
 const app = express();
 const PORT = process.env.PORT || 3003;
@@ -92,6 +95,8 @@ app.use((req, res, next) => {
 app.use("/api/auth", authRouter);
 app.use("/api/admin/products", adminProductsRouter);
 app.use("/api/admin/orders", adminOrderRouter);
+app.use("/api/admin/dashboard", adminDashboardRouter);
+app.use("/api/admin/users", adminUserRouter); // Added Admin User API Route
 app.use("/api/shop/products", shopProductsRouter);
 app.use("/api/shop/cart", shopCartRouter);
 app.use("/api/shop/address", shopAddressRouter);
@@ -100,6 +105,8 @@ app.use("/api/shop/search", shopSearchRouter);
 app.use("/api/shop/review", shopReviewRouter);
 app.use("/api/common/feature", commonFeatureRouter);
 app.use("/api/shop/wishlist", shopWishlistRouter);
+app.use("/api/admin/coupons", adminCouponRouter);
+app.use("/api/admin/dashboard", adminDashboardRouter);
 
 // Health check
 app.get("/", (req, res) => res.status(200).send("OK - Server is running"));
