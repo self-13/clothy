@@ -43,19 +43,19 @@ function MenuItems({ onItemClick }) {
     sessionStorage.removeItem("filters");
     const currentFilter =
       getCurrentMenuItem.id !== "home" &&
-      getCurrentMenuItem.id !== "products" &&
-      getCurrentMenuItem.id !== "search"
+        getCurrentMenuItem.id !== "products" &&
+        getCurrentMenuItem.id !== "search"
         ? {
-            category: [getCurrentMenuItem.id],
-          }
+          category: [getCurrentMenuItem.id],
+        }
         : null;
 
     sessionStorage.setItem("filters", JSON.stringify(currentFilter));
 
     location.pathname.includes("listing") && currentFilter !== null
       ? setSearchParams(
-          new URLSearchParams(`?category=${getCurrentMenuItem.id}`)
-        )
+        new URLSearchParams(`?category=${getCurrentMenuItem.id}`)
+      )
       : navigate(getCurrentMenuItem.path);
 
     if (onItemClick) {
@@ -86,15 +86,15 @@ function UserMenu({ user, handleLogout, navigate }) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <div className="flex items-center gap-3 cursor-pointer group">
-           <div className="hidden md:block text-right">
-              <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 leading-none">Account</p>
-              <p className="text-sm font-bold text-black uppercase tracking-tight">{user?.userName}</p>
-           </div>
-           <Avatar className="h-10 w-10 rounded-none border-2 border-black p-0.5 bg-white group-hover:bg-black group-hover:text-white transition-all duration-300">
-             <AvatarFallback className="bg-transparent text-inherit font-black text-xs">
-               {user?.userName?.[0]?.toUpperCase()}
-             </AvatarFallback>
-           </Avatar>
+          <div className="hidden md:block text-right">
+            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 leading-none">Account</p>
+            <p className="text-sm font-bold text-black uppercase tracking-tight">{user?.userName}</p>
+          </div>
+          <Avatar className="h-10 w-10 rounded-none border-2 border-black p-0.5 bg-white group-hover:bg-black group-hover:text-white transition-all duration-300">
+            <AvatarFallback className="bg-transparent text-inherit font-black text-xs">
+              {user?.userName?.[0]?.toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
         </div>
       </DropdownMenuTrigger>
       <DropdownMenuContent
@@ -169,12 +169,12 @@ function ShoppingHeader() {
         {/* Right Section */}
         <div className="flex items-center gap-4 md:gap-8">
           {/* Search Button */}
-          <button 
+          {/* <button 
             onClick={() => setSearchOpen(!searchOpen)}
             className="text-black hover:scale-110 transition-transform duration-300"
           >
              <Search className="w-5 h-5 stroke-[2.5]" />
-          </button>
+          </button> */}
 
           {/* Cart */}
           <Sheet
@@ -188,7 +188,7 @@ function ShoppingHeader() {
               <ShoppingCart className="w-5 h-5 stroke-[2.5]" />
               {cartItems?.items?.length > 0 && (
                 <span className="absolute -top-2 -right-2 font-black text-[8px] bg-black text-white rounded-none w-4 h-4 flex items-center justify-center">
-                   {cartItems.items.length}
+                  {cartItems.items.length}
                 </span>
               )}
             </button>
@@ -227,36 +227,42 @@ function ShoppingHeader() {
               side="left"
               className="w-full max-w-xs bg-white border-r-2 border-black p-0"
             >
-               <div className="flex flex-col h-full bg-white">
-                  <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-black text-white">
-                     <span className="font-black uppercase tracking-tighter text-2xl">Navigation</span>
-                     <X onClick={() => setMobileMenuOpen(false)} className="w-6 h-6 cursor-pointer" />
-                  </div>
-                  <div className="p-8 space-y-8 flex-1">
-                     <MenuItems onItemClick={() => setMobileMenuOpen(false)} />
-                  </div>
-                  {user && (
-                    <div className="p-8 bg-zinc-50 space-y-4">
-                       <div className="flex items-center gap-4 mb-4">
-                          <Avatar className="h-12 w-12 rounded-none border-2 border-black p-0.5 bg-white">
-                            <AvatarFallback className="bg-transparent text-black font-black">
-                              {user?.userName?.[0]?.toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex flex-col">
-                             <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Authenticated as</span>
-                             <span className="text-lg font-bold text-black uppercase tracking-tight">{user?.userName}</span>
-                          </div>
-                       </div>
-                       <Button 
-                          onClick={() => { navigate("/shop/account"); setMobileMenuOpen(false); }}
-                          className="w-full h-12 bg-black text-white rounded-none font-black uppercase tracking-widest text-[10px]"
-                       >
-                          Manage Account
-                       </Button>
+              <div className="flex flex-col h-full bg-white">
+                <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-black text-white">
+                  <span className="font-black uppercase tracking-tighter text-2xl">Navigation</span>
+                  <X onClick={() => setMobileMenuOpen(false)} className="w-6 h-6 cursor-pointer" />
+                </div>
+                <div className="p-8 space-y-8 flex-1">
+                  <MenuItems onItemClick={() => setMobileMenuOpen(false)} />
+                </div>
+                {user && (
+                  <div className="p-8 bg-zinc-50 space-y-4">
+                    <div className="flex items-center gap-4 mb-4">
+                      <Avatar className="h-12 w-12 rounded-none border-2 border-black p-0.5 bg-white">
+                        <AvatarFallback className="bg-transparent text-black font-black">
+                          {user?.userName?.[0]?.toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Authenticated as</span>
+                        <span className="text-lg font-bold text-black uppercase tracking-tight">{user?.userName}</span>
+                      </div>
                     </div>
-                  )}
-               </div>
+                    <Button
+                      onClick={() => { navigate("/shop/account"); setMobileMenuOpen(false); }}
+                      className="w-full h-12 bg-black text-white rounded-none font-black uppercase tracking-widest text-[10px]"
+                    >
+                      Manage Account
+                    </Button>
+                    <Button
+                      onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
+                      className="w-full h-12 bg-white text-black border-2 border-black rounded-none font-black uppercase tracking-widest text-[10px] hover:bg-black hover:text-white transition-all shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+                    >
+                      Terminate Session
+                    </Button>
+                  </div>
+                )}
+              </div>
             </SheetContent>
           </Sheet>
         </div>
@@ -264,20 +270,20 @@ function ShoppingHeader() {
 
       {/* Modern Search Overlay */}
       <div className={`absolute left-0 right-0 bg-white border-b border-black overflow-hidden transition-all duration-500 ease-in-out ${searchOpen ? "h-24 opacity-100" : "h-0 opacity-0"}`}>
-         <div className="container mx-auto px-8 h-full flex items-center">
-            <Search className="w-6 h-6 text-zinc-300 mr-4" />
-            <form onSubmit={handleSearch} className="flex-1 flex gap-4">
-               <input 
-                  className="flex-1 bg-transparent border-none outline-none text-2xl font-black uppercase tracking-tighter placeholder:text-zinc-100"
-                  placeholder="What are you looking for?"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  autoFocus={searchOpen}
-               />
-               <button type="submit" className="text-xs font-black uppercase tracking-[0.2em] border-b-2 border-black pb-1 hover:text-zinc-500 transition-colors">Confirm</button>
-            </form>
-            <X onClick={() => setSearchOpen(false)} className="w-6 h-6 ml-8 cursor-pointer text-zinc-300 hover:text-black transition-colors" />
-         </div>
+        <div className="container mx-auto px-8 h-full flex items-center">
+          <Search className="w-6 h-6 text-zinc-300 mr-4" />
+          <form onSubmit={handleSearch} className="flex-1 flex gap-4">
+            <input
+              className="flex-1 bg-transparent border-none outline-none text-2xl font-black uppercase tracking-tighter placeholder:text-zinc-100"
+              placeholder="What are you looking for?"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              autoFocus={searchOpen}
+            />
+            <button type="submit" className="text-xs font-black uppercase tracking-[0.2em] border-b-2 border-black pb-1 hover:text-zinc-500 transition-colors">Confirm</button>
+          </form>
+          <X onClick={() => setSearchOpen(false)} className="w-6 h-6 ml-8 cursor-pointer text-zinc-300 hover:text-black transition-colors" />
+        </div>
       </div>
     </header>
   );

@@ -92,7 +92,6 @@ const addProduct = async (req, res) => {
       salePrice,
       colors,
       totalStock,
-      averageReview,
       sizes,
       salesCount = 0,
       isFeatured = false,
@@ -143,7 +142,6 @@ const addProduct = async (req, res) => {
       salePrice,
       colors: Array.isArray(colors) ? colors : [colors],
       totalStock,
-      averageReview,
       sizes: sizes || [],
       salesCount,
       isFeatured,
@@ -235,7 +233,6 @@ const editProduct = async (req, res) => {
       salePrice,
       colors,
       totalStock,
-      averageReview,
       sizes,
       salesCount,
       isFeatured,
@@ -261,7 +258,7 @@ const editProduct = async (req, res) => {
     findProduct.colors = colors || findProduct.colors;
     findProduct.totalStock = totalStock || findProduct.totalStock;
     findProduct.images = images || findProduct.images;
-    findProduct.averageReview = averageReview || findProduct.averageReview;
+
     findProduct.sizes = sizes || findProduct.sizes;
     findProduct.salesCount =
       salesCount !== undefined ? salesCount : findProduct.salesCount;

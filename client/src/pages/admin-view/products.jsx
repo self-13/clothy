@@ -154,7 +154,7 @@ function AdminProducts() {
         totalStockFromSizes > 0
           ? totalStockFromSizes
           : parseInt(formData.totalStock) || 0,
-      averageReview: parseFloat(formData.averageReview) || 0,
+
       sizes,
       colors: formData.colors || [],
       tags: Array.isArray(formData.tags)

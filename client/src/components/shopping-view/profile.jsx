@@ -25,7 +25,8 @@ function Profile() {
       return;
     }
 
-    dispatch(updateProfile(formData)).then((data) => {
+    const { email, ...payload } = formData;
+    dispatch(updateProfile(payload)).then((data) => {
       if (data?.payload?.success) {
         toast({ title: "Profile updated successfully" });
         setFormData({ ...formData, currentPassword: "", newPassword: "" });
@@ -58,15 +59,16 @@ function Profile() {
                     onChange={(e) => setFormData({ ...formData, userName: e.target.value })}
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 flex items-center gap-1">
-                    <Mail className="w-3 h-3" /> Email Address
+                <div className="space-y-2 opacity-60 cursor-not-allowed">
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 flex items-center gap-1 cursor-not-allowed">
+                    <Mail className="w-3 h-3" /> Email Address <Lock className="w-2.5 h-2.5 text-zinc-400" />
                   </label>
                   <Input
-                    className="rounded-none border-2 border-zinc-200 focus:border-black h-12 font-bold"
+                    className="rounded-none border-2 border-zinc-200 bg-zinc-50 h-12 font-bold cursor-not-allowed pointer-events-none"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    disabled
                   />
+                  <p className="text-[9px] font-black uppercase text-zinc-400 tracking-wider">Primary login identifier cannot be modified</p>
                 </div>
               </div>
 

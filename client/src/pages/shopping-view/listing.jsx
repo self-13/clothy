@@ -149,10 +149,6 @@ function ShoppingListing() {
     sessionStorage.setItem("filters", JSON.stringify(cpyFilters));
   }
 
-  function handleGetProductDetails(getCurrentProductId) {
-    navigate(`/shop/product/${getCurrentProductId}`);
-  }
-
   function handleAddtoCart(getCurrentProductId, selectedSize = null) {
     if (!selectedSize) {
       toast({
@@ -215,7 +211,8 @@ function ShoppingListing() {
     if (savedFilters) {
       setFilters(JSON.parse(savedFilters));
     }
-  }, [categoryParam, subcategoryParam]);
+    dispatch(resetProductDetails());
+  }, [categoryParam, subcategoryParam, dispatch]);
 
   useEffect(() => {
     if (filters && Object.keys(filters).length > 0) {
@@ -432,7 +429,6 @@ function ShoppingListing() {
                         if (productList.length === index + 1) {
                           return <div ref={lastProductElementRef} key={productItem._id}>
                             <ShoppingProductTile
-                              handleGetProductDetails={handleGetProductDetails}
                               product={productItem}
                               handleAddtoCart={handleAddtoCart}
                               viewMode={viewMode}
@@ -441,7 +437,6 @@ function ShoppingListing() {
                         }
                         return <ShoppingProductTile
                           key={productItem._id}
-                          handleGetProductDetails={handleGetProductDetails}
                           product={productItem}
                           handleAddtoCart={handleAddtoCart}
                           viewMode={viewMode}

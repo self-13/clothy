@@ -367,7 +367,6 @@ const resetPassword = async (req, res) => {
 // ---------------- UPDATE PROFILE ----------------
 const updateProfileSchema = Joi.object({
   userName: Joi.string().min(3).max(30),
-  email: Joi.string().email().max(254),
   currentPassword: Joi.string().min(8).max(1024).required(),
   newPassword: Joi.string().min(8).max(1024),
 });
@@ -381,7 +380,7 @@ const updateProfile = async (req, res) => {
       return res.status(400).json({ success: false, message: error.message });
 
     const userId = req.user.id;
-    const { userName, email, currentPassword, newPassword } = value;
+    const { userName, currentPassword, newPassword } = value;
 
     const user = await User.findById(userId);
     if (!user) {
@@ -404,15 +403,6 @@ const updateProfile = async (req, res) => {
           .json({ success: false, message: "Username already taken" });
       }
       user.userName = userName;
-    }
-
-    if (email && email !== user.email) {
-      if (await User.findOne({ email })) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Email already in use" });
-      }
-      user.email = email;
     }
 
     // Update password if provided

@@ -150,15 +150,7 @@ export const addProductFormElements = [
     placeholder: "Enter sale price",
     min: 0,
   },
-  {
-    type: "number",
-    name: "averageReview",
-    label: "Average Review",
-    placeholder: "Enter average review (0-5)",
-    min: 0,
-    max: 5,
-    step: 0.1,
-  },
+
 ];
 
 export const shoppingViewHeaderMenuItems = [
