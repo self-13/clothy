@@ -8,6 +8,7 @@ const {
   resendOTP,
   forgotPassword,
   resetPassword,
+  updateProfile,
 } = require("../../controllers/auth/auth-controller");
 
 const router = express.Router();
@@ -19,6 +20,7 @@ router.post("/login", loginUser);
 router.post("/logout", logoutUser);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
+router.put("/update-profile", authMiddleware, updateProfile);
 router.get("/check-auth", authMiddleware, (req, res) => {
   res
     .status(200)

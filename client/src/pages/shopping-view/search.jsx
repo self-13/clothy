@@ -1,4 +1,4 @@
-import ProductDetailsDialog from "@/components/shopping-view/product-details";
+import ShoppingProductDetails from "@/components/shopping-view/product-details";
 import ShoppingProductTile from "@/components/shopping-view/product-tile";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
@@ -109,11 +109,6 @@ function SearchProducts() {
           />
         ))}
       </div>
-      <ProductDetailsDialog
-        open={openDetailsDialog}
-        setOpen={setOpenDetailsDialog}
-        productDetails={productDetails}
-      />
     </div>
   );
 }

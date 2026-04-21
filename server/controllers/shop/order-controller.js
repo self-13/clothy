@@ -11,6 +11,7 @@ const {
   sendOrderStatusUpdateEmail,
 } = require("../../helpers/emailService");
 const User = require("../../models/User");
+const Coupon = require("../../models/Coupon");
 
 // ✅ Enhanced: Create Order with all new fields
 const createOrder = async (req, res) => {
@@ -41,6 +42,34 @@ const createOrder = async (req, res) => {
     } else {
       shippingFee = 0;
       finalAmount = finalAmount + shippingFee;
+    }
+
+    // ✅ Handle Coupon Discount
+    let discountAmount = 0;
+    if (orderData.couponCode) {
+      const coupon = await Coupon.findOne({
+        code: orderData.couponCode.toUpperCase(),
+        isActive: true,
+      });
+
+      if (coupon) {
+        const now = new Date();
+        const isNotExpired = coupon.expirationDate >= now;
+        const hasUsageLeft =
+          coupon.usageLimit === null || coupon.usedCount < coupon.usageLimit;
+        const meetsMinAmount = totalAmount >= coupon.minOrderAmount;
+
+        if (isNotExpired && hasUsageLeft && meetsMinAmount) {
+          if (coupon.discountType === "percentage") {
+            discountAmount = (totalAmount * coupon.discountAmount) / 100;
+          } else {
+            discountAmount = coupon.discountAmount;
+          }
+          // Ensure discount doesn't exceed total amount
+          discountAmount = Math.min(discountAmount, totalAmount);
+          finalAmount = finalAmount - discountAmount;
+        }
+      }
     }
 
     // Validate stock availability for all items
@@ -76,6 +105,7 @@ const createOrder = async (req, res) => {
         totalAmount: finalAmount,
         cashHandlingFee,
         shippingFee,
+        discount: discountAmount,
         paymentMethod,
         orderStatus: "confirmed",
         paymentStatus: "pending",
@@ -117,6 +147,14 @@ const createOrder = async (req, res) => {
         product.salesCount += item.quantity;
 
         await product.save();
+      }
+
+      // Increment coupon used count if applicable
+      if (orderData.couponCode && discountAmount > 0) {
+        await Coupon.findOneAndUpdate(
+          { code: orderData.couponCode.toUpperCase() },
+          { $inc: { usedCount: 1 } }
+        );
       }
 
       // Delete cart after order confirmed for COD
@@ -195,6 +233,8 @@ const createOrder = async (req, res) => {
           totalAmount: finalAmount,
           shippingFee,
           cashHandlingFee: paymentMethod === "cod" ? cashHandlingFee : 0,
+          discount: discountAmount,
+          couponCode: orderData.couponCode,
         },
       });
     }
@@ -264,6 +304,8 @@ const capturePayment = async (req, res) => {
       totalAmount: orderData.totalAmount,
       shippingFee: orderData.shippingFee || 0,
       cashHandlingFee: orderData.cashHandlingFee || 0,
+      discount: orderData.discount || 0,
+      couponCode: orderData.couponCode,
       paymentMethod: orderData.paymentMethod,
       orderStatus: "confirmed",
       paymentStatus: "paid",
@@ -298,6 +340,15 @@ const capturePayment = async (req, res) => {
       console.log(
         `Stock updated for product: ${item.title}, size: ${item.selectedSize}`
       );
+    }
+
+    // Increment coupon used count if applicable
+    if (orderData.couponCode && orderData.discount > 0) {
+      await Coupon.findOneAndUpdate(
+        { code: orderData.couponCode.toUpperCase() },
+        { $inc: { usedCount: 1 } }
+      );
+      console.log(`Coupon used count incremented for: ${orderData.couponCode}`);
     }
 
     // Delete cart after order confirmed

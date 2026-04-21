@@ -20,6 +20,9 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { clearCart } from "@/store/shop/cart-slice";
+import { validateCoupon, clearCoupon } from "@/store/shop/coupon-slice";
+import { Input } from "@/components/ui/input";
+import { Ticket, X } from "lucide-react";
 
 function ShoppingCheckout() {
   const { cartItems } = useSelector((state) => state.shopCart);
@@ -33,6 +36,8 @@ function ShoppingCheckout() {
   const [currentStep, setCurrentStep] = useState(1); // 1: Order Items, 2: Address, 3: Payment
   const dispatch = useDispatch();
   const { toast } = useToast();
+  const [couponCode, setCouponCode] = useState("");
+  const { appliedCoupon, isLoading: isCouponLoading } = useSelector((state) => state.shopCoupons);
 
   useEffect(() => {
     const loadRazorpay = () => {
@@ -77,7 +82,33 @@ function ShoppingCheckout() {
   const totalCartAmount = cartSummary.subtotal || 0;
   const shippingFee = 0;
   const cashHandlingFee = paymentMethod === "cod" ? 60 : 0;
-  const finalAmount = totalCartAmount + shippingFee + cashHandlingFee;
+
+  let couponDiscount = 0;
+  if (appliedCoupon) {
+    if (appliedCoupon.discountType === "fixed") {
+      couponDiscount = appliedCoupon.discountAmount;
+    } else {
+      couponDiscount = (totalCartAmount * appliedCoupon.discountAmount) / 100;
+    }
+  }
+
+  const finalAmount = Math.max(0, totalCartAmount + shippingFee + cashHandlingFee - couponDiscount);
+
+  const handleApplyCoupon = () => {
+    if (!couponCode) return;
+    dispatch(validateCoupon({ code: couponCode, orderAmount: totalCartAmount })).then((data) => {
+      if (data?.payload?.success) {
+        toast({ title: "Coupon applied successfully" });
+      } else {
+        toast({ title: data?.payload?.message || "Invalid coupon", variant: "destructive" });
+      }
+    });
+  };
+
+  const handleRemoveCoupon = () => {
+    dispatch(clearCoupon());
+    setCouponCode("");
+  };
 
   const resetPaymentState = () => {
     setIsPaymentStart(false);
@@ -160,7 +191,10 @@ function ShoppingCheckout() {
           type: currentSelectedAddress?.type || "home",
         },
         paymentMethod: paymentMethod,
-        totalAmount: totalCartAmount,
+        totalAmount: finalAmount,
+        couponId: appliedCoupon?._id,
+        couponCode: appliedCoupon?.code,
+        discountAmount: couponDiscount,
       };
 
       console.log("🔄 Creating order with data:", orderData);
@@ -300,8 +334,8 @@ function ShoppingCheckout() {
               {steps.map((step, index) => (
                 <div key={step.number} className="flex items-center">
                   <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${step.completed || currentStep === step.number
-                      ? "bg-black border-black text-white"
-                      : "bg-white border-gray-300 text-gray-400"
+                    ? "bg-black border-black text-white"
+                    : "bg-white border-gray-300 text-gray-400"
                     }`}>
                     {step.completed ? (
                       <Check className="w-5 h-5" />
@@ -310,8 +344,8 @@ function ShoppingCheckout() {
                     )}
                   </div>
                   <span className={`ml-3 font-medium ${step.completed || currentStep === step.number
-                      ? "text-black"
-                      : "text-gray-400"
+                    ? "text-black"
+                    : "text-gray-400"
                     }`}>
                     {step.title}
                   </span>
@@ -390,7 +424,7 @@ function ShoppingCheckout() {
                   <MapPin className="w-6 h-6 text-black" />
                   <h2 className="text-xl font-bold text-black">Shipping Address</h2>
                 </div>
-                <Button
+                {/* <Button
                   variant="outline"
                   className="border-black text-black hover:bg-gray-50"
                   onClick={() => {
@@ -403,7 +437,7 @@ function ShoppingCheckout() {
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add New Address
-                </Button>
+                </Button> */}
               </div>
 
               <Address
@@ -452,15 +486,15 @@ function ShoppingCheckout() {
                   {/* Online Payment */}
                   <div
                     className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${paymentMethod === "online"
-                        ? "border-black bg-gray-50"
-                        : "border-gray-200 hover:border-gray-400"
+                      ? "border-black bg-gray-50"
+                      : "border-gray-200 hover:border-gray-400"
                       }`}
                     onClick={() => setPaymentMethod("online")}
                   >
                     <div
                       className={`h-5 w-5 rounded-full border-2 mr-4 flex items-center justify-center ${paymentMethod === "online"
-                          ? "border-black bg-black"
-                          : "border-gray-400"
+                        ? "border-black bg-black"
+                        : "border-gray-400"
                         }`}
                     >
                       {paymentMethod === "online" && (
@@ -477,15 +511,15 @@ function ShoppingCheckout() {
                   {/* COD Option */}
                   <div
                     className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${paymentMethod === "cod"
-                        ? "border-black bg-gray-50"
-                        : "border-gray-200 hover:border-gray-400"
+                      ? "border-black bg-gray-50"
+                      : "border-gray-200 hover:border-gray-400"
                       }`}
                     onClick={() => setPaymentMethod("cod")}
                   >
                     <div
                       className={`h-5 w-5 rounded-full border-2 mr-4 flex items-center justify-center ${paymentMethod === "cod"
-                          ? "border-black bg-black"
-                          : "border-gray-400"
+                        ? "border-black bg-black"
+                        : "border-gray-400"
                         }`}
                     >
                       {paymentMethod === "cod" && (
@@ -563,19 +597,56 @@ function ShoppingCheckout() {
 
                   {cartSummary.totalDiscount > 0 && (
                     <div className="flex justify-between text-base">
-                      <span className="text-gray-600">Discount</span>
-                      <span className="font-semibold text-green-600">
+                      <span className="text-gray-600">Product Discount</span>
+                      <span className="font-semibold text-emerald-600">
                         -₹{cartSummary.totalDiscount.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+
+                  {appliedCoupon && (
+                    <div className="flex justify-between text-base bg-emerald-50 p-2 border-l-4 border-emerald-500">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-black uppercase text-emerald-700 tracking-widest">Coupon: {appliedCoupon.code}</span>
+                        <span className="text-xs text-emerald-600 font-medium cursor-pointer" onClick={handleRemoveCoupon}>Remove</span>
+                      </div>
+                      <span className="font-bold text-emerald-700">
+                        -₹{couponDiscount.toFixed(2)}
                       </span>
                     </div>
                   )}
 
                   <div className="border-t border-gray-200 pt-4">
                     <div className="flex justify-between text-lg font-bold">
-                      <span className="text-black">Total Amount</span>
+                      <span className="text-black uppercase tracking-tighter">Total Payable</span>
                       <span className="text-black">
                         ₹{finalAmount.toFixed(2)}
                       </span>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 mt-4 border-t border-zinc-100">
+                    <div className="space-y-4">
+                      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Promotional Code</label>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Ticket className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                          <Input
+                            placeholder="ENTER CODE"
+                            className="pl-10 rounded-none border-2 border-zinc-200 focus:border-black h-12 font-black uppercase tracking-widest"
+                            value={couponCode}
+                            onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                            disabled={!!appliedCoupon || isCouponLoading}
+                          />
+                        </div>
+                        <Button
+                          onClick={handleApplyCoupon}
+                          disabled={!couponCode || !!appliedCoupon || isCouponLoading}
+                          className="bg-black hover:bg-zinc-800 text-white rounded-none h-12 px-6 font-black uppercase tracking-widest text-[10px]"
+                        >
+                          Apply
+                        </Button>
+                      </div>
                     </div>
                   </div>
 

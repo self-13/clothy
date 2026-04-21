@@ -1,5 +1,4 @@
 import ProductFilter from "@/components/shopping-view/filter";
-import ProductDetailsDialog from "@/components/shopping-view/product-details";
 import ShoppingProductTile from "@/components/shopping-view/product-tile";
 import ShoppingSubheader from "@/components/shopping-view/sub-header";
 import { Button } from "@/components/ui/button";
@@ -21,7 +20,7 @@ import {
 import { ArrowUpDownIcon, FilterIcon, Grid3X3, List } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRef, useCallback } from "react";
 
@@ -48,7 +47,7 @@ function ShoppingListing() {
   const [filters, setFilters] = useState({});
   const [sort, setSort] = useState("most-selling");
   const [searchParams, setSearchParams] = useSearchParams();
-  const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
+  const navigate = useNavigate();
   const [viewMode, setViewMode] = useState("grid");
   const [showFilters, setShowFilters] = useState(false);
 
@@ -150,10 +149,6 @@ function ShoppingListing() {
     sessionStorage.setItem("filters", JSON.stringify(cpyFilters));
   }
 
-  function handleGetProductDetails(getCurrentProductId) {
-    dispatch(fetchProductDetails(getCurrentProductId));
-  }
-
   function handleAddtoCart(getCurrentProductId, selectedSize = null) {
     if (!selectedSize) {
       toast({
@@ -209,12 +204,6 @@ function ShoppingListing() {
     });
   }
 
-  function handleCloseDialog() {
-    setOpenDetailsDialog(false);
-    setTimeout(() => {
-      dispatch(resetProductDetails());
-    }, 300);
-  }
 
   useEffect(() => {
     setSort("most-selling");
@@ -222,7 +211,8 @@ function ShoppingListing() {
     if (savedFilters) {
       setFilters(JSON.parse(savedFilters));
     }
-  }, [categoryParam, subcategoryParam]);
+    dispatch(resetProductDetails());
+  }, [categoryParam, subcategoryParam, dispatch]);
 
   useEffect(() => {
     if (filters && Object.keys(filters).length > 0) {
@@ -259,11 +249,6 @@ function ShoppingListing() {
     }
   }, [dispatch, currentPage]);
 
-  useEffect(() => {
-    if (productDetails !== null) {
-      setOpenDetailsDialog(true);
-    }
-  }, [productDetails]);
 
   // Clear filters function
   const clearFilters = () => {
@@ -444,7 +429,6 @@ function ShoppingListing() {
                         if (productList.length === index + 1) {
                           return <div ref={lastProductElementRef} key={productItem._id}>
                             <ShoppingProductTile
-                              handleGetProductDetails={handleGetProductDetails}
                               product={productItem}
                               handleAddtoCart={handleAddtoCart}
                               viewMode={viewMode}
@@ -453,7 +437,6 @@ function ShoppingListing() {
                         }
                         return <ShoppingProductTile
                           key={productItem._id}
-                          handleGetProductDetails={handleGetProductDetails}
                           product={productItem}
                           handleAddtoCart={handleAddtoCart}
                           viewMode={viewMode}
@@ -494,12 +477,6 @@ function ShoppingListing() {
         </div>
       </div>
 
-      {/* Product Details Dialog */}
-      <ProductDetailsDialog
-        open={openDetailsDialog && productDetails !== null}
-        setOpen={handleCloseDialog}
-        productDetails={productDetails}
-      />
     </div >
   );
 }

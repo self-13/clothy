@@ -183,6 +183,7 @@ const OrderSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    couponCode: String,
     orderDate: {
       type: Date,
       default: Date.now,

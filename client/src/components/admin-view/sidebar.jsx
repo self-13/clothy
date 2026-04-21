@@ -5,6 +5,9 @@ import {
   ShoppingBasket,
   XCircle,
   RefreshCw,
+  Ticket,
+  Image as ImageIcon,
+  Users as UserIcon,
 } from "lucide-react";
 import { Fragment } from "react";
 import { useNavigate } from "react-router-dom";
@@ -41,6 +44,24 @@ const adminSidebarMenuItems = [
     path: "/admin/returns",
     icon: <RefreshCw />,
   },
+  {
+    id: "coupons",
+    label: "Coupons",
+    path: "/admin/coupons",
+    icon: <Ticket />,
+  },
+  {
+    id: "features",
+    label: "Features",
+    path: "/admin/features",
+    icon: <ImageIcon />,
+  },
+  {
+    id: "users",
+    label: "Users",
+    path: "/admin/users",
+    icon: <UserIcon />,
+  },
 ];
 
 function MenuItems({ setOpen }) {
@@ -55,9 +76,9 @@ function MenuItems({ setOpen }) {
             navigate(menuItem.path);
             setOpen ? setOpen(false) : null;
           }}
-          className="flex cursor-pointer text-xl items-center gap-2 rounded-md px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="flex cursor-pointer text-sm font-black uppercase tracking-widest items-center gap-4 px-4 py-4 text-zinc-400 hover:text-black hover:bg-zinc-50 border-l-4 border-transparent hover:border-black transition-all duration-300"
         >
-          {menuItem.icon}
+          <div className="w-5 h-5">{menuItem.icon}</div>
           <span>{menuItem.label}</span>
         </div>
       ))}
@@ -74,26 +95,26 @@ function AdminSideBar({ open, setOpen }) {
         <SheetContent side="left" className="w-64">
           <div className="flex flex-col h-full">
             <SheetHeader className="border-b">
-              <SheetTitle className="flex gap-2 mt-5 mb-5 items-center justify-center">
-                <img
-                  src="/luxeridge_favicon.png"
-                  alt="logo"
-                  className="size-24"
-                />
-                <h1 className="text-2xl font-extrabold">Admin</h1>
+              <SheetTitle className="flex gap-3 mt-10 mb-10 items-center justify-center">
+                 <div className="bg-black text-white px-3 py-1 font-black text-2xl tracking-tighter uppercase leading-none">
+                  CL.
+                </div>
+                <h1 className="text-2xl font-black uppercase tracking-tight">Admin</h1>
               </SheetTitle>
             </SheetHeader>
             <MenuItems setOpen={setOpen} />
           </div>
         </SheetContent>
       </Sheet>
-      <aside className="hidden w-64 flex-col border-r bg-background p-6 lg:flex">
+      <aside className="hidden w-72 flex-col border-r border-zinc-100 bg-white lg:flex">
         <div
           onClick={() => navigate("/admin/dashboard")}
-          className="flex cursor-pointer items-center gap-2"
+          className="flex cursor-pointer items-center gap-3 p-10 border-b border-zinc-100"
         >
-          <img src="/luxeridge_favicon.png" alt="logo" className="size-24" />
-          <h1 className="text-2xl font-extrabold">Admin</h1>
+          <div className="bg-black text-white px-3 py-1 font-black text-2xl tracking-tighter uppercase leading-none">
+            CL.
+          </div>
+          <h1 className="text-2xl font-black uppercase tracking-tight">Admin</h1>
         </div>
         <MenuItems />
       </aside>
