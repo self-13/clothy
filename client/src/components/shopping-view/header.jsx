@@ -199,7 +199,7 @@ function ShoppingHeader() {
           </Sheet>
 
           {/* User / Login */}
-          <div className="hidden md:block">
+          <div className="flex items-center">
             {user ? (
               <UserMenu
                 user={user}
@@ -209,7 +209,7 @@ function ShoppingHeader() {
             ) : (
               <Button
                 onClick={() => navigate("/auth/login")}
-                className="bg-black text-white rounded-none font-black uppercase tracking-widest text-[10px] h-10 px-8 hover:bg-zinc-800 transition-all"
+                className="bg-black text-white rounded-none font-black uppercase tracking-widest text-[10px] h-8 md:h-10 px-4 md:px-8 hover:bg-zinc-800 transition-all whitespace-nowrap"
               >
                 Sign In
               </Button>
@@ -235,7 +235,7 @@ function ShoppingHeader() {
                 <div className="p-8 space-y-8 flex-1">
                   <MenuItems onItemClick={() => setMobileMenuOpen(false)} />
                 </div>
-                {user && (
+                {user ? (
                   <div className="p-8 bg-zinc-50 space-y-4">
                     <div className="flex items-center gap-4 mb-4">
                       <Avatar className="h-12 w-12 rounded-none border-2 border-black p-0.5 bg-white">
@@ -259,6 +259,18 @@ function ShoppingHeader() {
                       className="w-full h-12 bg-white text-black border-2 border-black rounded-none font-black uppercase tracking-widest text-[10px] hover:bg-black hover:text-white transition-all shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
                     >
                       Terminate Session
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="p-8 bg-zinc-50">
+                    <Button
+                      onClick={() => {
+                        navigate("/auth/login");
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full h-12 bg-black text-white rounded-none font-black uppercase tracking-widest text-[10px]"
+                    >
+                      Sign In
                     </Button>
                   </div>
                 )}
