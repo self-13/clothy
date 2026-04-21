@@ -218,11 +218,11 @@ function ShoppingHeader() {
 
           {/* Mobile menu trigger */}
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <SheetTrigger asChild>
+            {/* <SheetTrigger asChild>
               <button className="lg:hidden text-black">
                 <Menu className="h-6 w-6 stroke-[2.5]" />
               </button>
-            </SheetTrigger>
+            </SheetTrigger> */}
             <SheetContent
               side="left"
               className="w-full max-w-xs bg-white border-r-2 border-black p-0"
