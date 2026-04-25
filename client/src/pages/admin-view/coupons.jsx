@@ -140,6 +140,15 @@ function AdminCoupons() {
                   />
                 </div>
               </div>
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-widest text-zinc-500">Minimum Order Amount</label>
+                <Input
+                  type="number"
+                  className="rounded-none border-2 border-zinc-200 focus:border-black h-12 text-lg font-bold"
+                  value={formData.minOrderAmount}
+                  onChange={(e) => setFormData({ ...formData, minOrderAmount: e.target.value })}
+                />
+              </div>
               <Button type="submit" className="w-full h-14 bg-black hover:bg-zinc-800 text-white rounded-none font-black uppercase tracking-widest text-lg transition-all duration-300">
                 {editId ? "Update" : "Launch"} Coupon
               </Button>
@@ -156,6 +165,7 @@ function AdminCoupons() {
                 <TableHead className="font-black uppercase tracking-widest text-zinc-500 h-16">Code</TableHead>
                 <TableHead className="font-black uppercase tracking-widest text-zinc-500 h-16">Type</TableHead>
                 <TableHead className="font-black uppercase tracking-widest text-zinc-500 h-16">Value</TableHead>
+                <TableHead className="font-black uppercase tracking-widest text-zinc-500 h-16">Min Order</TableHead>
                 <TableHead className="font-black uppercase tracking-widest text-zinc-500 h-16 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -165,6 +175,7 @@ function AdminCoupons() {
                   <TableCell className="font-black text-xl tracking-tighter text-black">{coupon.code}</TableCell>
                   <TableCell className="uppercase text-xs font-black tracking-widest text-zinc-400">{coupon.discountType}</TableCell>
                   <TableCell className="font-bold text-lg">{coupon.discountType === "fixed" ? `₹${coupon.discountAmount}` : `${coupon.discountAmount}%`}</TableCell>
+                  <TableCell className="font-bold text-lg">₹{coupon.minOrderAmount}</TableCell>
                   <TableCell className="text-right space-x-2">
                     <Button variant="outline" className="rounded-none border-2 border-zinc-200 h-10 w-10 p-0 text-black hover:bg-black hover:text-white hover:border-black transition-all" onClick={() => handleEdit(coupon)}>
                       <Edit2 className="w-4 h-4" />
@@ -177,7 +188,7 @@ function AdminCoupons() {
               ))}
               {couponList?.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-20 text-zinc-400 font-bold uppercase tracking-widest italic text-sm">No coupons established yet.</TableCell>
+                  <TableCell colSpan={5} className="text-center py-20 text-zinc-400 font-bold uppercase tracking-widest italic text-sm">No coupons established yet.</TableCell>
                 </TableRow>
               )}
             </TableBody>

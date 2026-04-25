@@ -3,15 +3,15 @@ import api from "../../api";
 
 const initialState = {
   isLoading: false,
-  couponDetails: null,
+  appliedCoupon: null,
   error: null,
 };
 
 export const validateCoupon = createAsyncThunk(
   "/shop/validatecoupon",
-  async ({ code, cartAmount }, { rejectWithValue }) => {
+  async ({ code, orderAmount }, { rejectWithValue }) => {
     try {
-      const result = await api.post("/admin/coupons/validate", { code, cartAmount });
+      const result = await api.post("/admin/coupons/validate", { code, orderAmount });
       return result.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || {
@@ -27,7 +27,7 @@ const shopCouponSlice = createSlice({
   initialState,
   reducers: {
     clearCoupon: (state) => {
-      state.couponDetails = null;
+      state.appliedCoupon = null;
       state.error = null;
     },
   },
@@ -39,12 +39,12 @@ const shopCouponSlice = createSlice({
       })
       .addCase(validateCoupon.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.couponDetails = action.payload.data;
+        state.appliedCoupon = action.payload.data;
         state.error = null;
       })
       .addCase(validateCoupon.rejected, (state, action) => {
         state.isLoading = false;
-        state.couponDetails = null;
+        state.appliedCoupon = null;
         state.error = action.payload?.message || "Invalid coupon";
       });
   },

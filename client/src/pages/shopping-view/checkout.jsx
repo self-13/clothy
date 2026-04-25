@@ -92,7 +92,8 @@ function ShoppingCheckout() {
     }
   }
 
-  const finalAmount = Math.max(0, totalCartAmount + shippingFee + cashHandlingFee - couponDiscount);
+  const rawFinalAmount = Math.max(0, totalCartAmount + shippingFee + cashHandlingFee - couponDiscount);
+  const finalAmount = paymentMethod === "cod" ? Math.ceil(rawFinalAmount) : rawFinalAmount;
 
   const handleApplyCoupon = () => {
     if (!couponCode) return;
@@ -607,7 +608,9 @@ function ShoppingCheckout() {
                   {appliedCoupon && (
                     <div className="flex justify-between text-base bg-emerald-50 p-2 border-l-4 border-emerald-500">
                       <div className="flex flex-col">
-                        <span className="text-[10px] font-black uppercase text-emerald-700 tracking-widest">Coupon: {appliedCoupon.code}</span>
+                        <span className="text-[10px] font-black uppercase text-emerald-700 tracking-widest">
+                          Coupon: {appliedCoupon.code} ({appliedCoupon.discountType === "percentage" ? `${appliedCoupon.discountAmount}%` : `₹${appliedCoupon.discountAmount}`})
+                        </span>
                         <span className="text-xs text-emerald-600 font-medium cursor-pointer" onClick={handleRemoveCoupon}>Remove</span>
                       </div>
                       <span className="font-bold text-emerald-700">

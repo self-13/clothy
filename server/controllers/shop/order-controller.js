@@ -30,18 +30,21 @@ const createOrder = async (req, res) => {
     // Assign userId to orderData
     orderData.userId = userId;
 
-    // Calculate cash handling fee if COD is selected
-    let finalAmount = parseFloat(totalAmount);
+    // Calculate subtotal from cart items to ensure price integrity
+    let subtotal = 0;
+    for (let item of orderData.cartItems) {
+      subtotal += item.price * item.quantity;
+    }
+
+    // Calculate fees
     let cashHandlingFee = 0;
     let shippingFee = 0;
 
     if (paymentMethod === "cod") {
       cashHandlingFee = 60;
-      shippingFee = 40;
-      finalAmount = finalAmount + cashHandlingFee + shippingFee;
+      shippingFee = 0;
     } else {
       shippingFee = 0;
-      finalAmount = finalAmount + shippingFee;
     }
 
     // ✅ Handle Coupon Discount
@@ -57,20 +60,25 @@ const createOrder = async (req, res) => {
         const isNotExpired = coupon.expirationDate >= now;
         const hasUsageLeft =
           coupon.usageLimit === null || coupon.usedCount < coupon.usageLimit;
-        const meetsMinAmount = totalAmount >= coupon.minOrderAmount;
+        const meetsMinAmount = subtotal >= coupon.minOrderAmount;
 
         if (isNotExpired && hasUsageLeft && meetsMinAmount) {
           if (coupon.discountType === "percentage") {
-            discountAmount = (totalAmount * coupon.discountAmount) / 100;
+            discountAmount = (subtotal * coupon.discountAmount) / 100;
           } else {
             discountAmount = coupon.discountAmount;
           }
-          // Ensure discount doesn't exceed total amount
-          discountAmount = Math.min(discountAmount, totalAmount);
-          finalAmount = finalAmount - discountAmount;
+          // Ensure discount doesn't exceed subtotal
+          discountAmount = Math.min(discountAmount, subtotal);
         }
       }
     }
+
+    let finalAmount = subtotal + cashHandlingFee + shippingFee - discountAmount;
+    if (paymentMethod === "cod") {
+      finalAmount = Math.ceil(finalAmount);
+    }
+
 
     // Validate stock availability for all items
     for (let item of orderData.cartItems) {
