@@ -8,12 +8,22 @@ const UserSchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    required: true,
     unique: true,
+    sparse: true, // Allow multiple nulls
   },
   password: {
     type: String,
-    required: true,
+  },
+  phoneNumber: {
+    type: String,
+    unique: true,
+    sparse: true,
+  },
+  firstName: {
+    type: String,
+  },
+  lastName: {
+    type: String,
   },
   role: {
     type: String,
@@ -30,6 +40,7 @@ const UserSchema = new mongoose.Schema({
   resetPasswordToken: String,
   resetPasswordExpires: Date,
 }, { timestamps: true });
+
 
 const User = mongoose.model("User", UserSchema);
 module.exports = User;

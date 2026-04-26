@@ -13,6 +13,7 @@ import AddressCard from "./address-card";
 import { useToast } from "../ui/use-toast";
 
 const initialAddressFormData = {
+  name: "",
   address: "",
   city: "",
   phone: "",
@@ -27,6 +28,21 @@ function Address({ setCurrentSelectedAddress, selectedId }) {
   const { user } = useSelector((state) => state.auth);
   const { addressList } = useSelector((state) => state.shopAddress);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (user && !currentEditedId) {
+      const fullName = user.firstName && user.lastName 
+        ? `${user.firstName} ${user.lastName}` 
+        : user.userName || "";
+        
+      setFormData(prev => ({
+        ...prev,
+        name: prev.name || fullName,
+        phone: prev.phone || user.phoneNumber || "",
+      }));
+    }
+  }, [user, currentEditedId]);
+
 
   function handleManageAddress(event) {
     event.preventDefault();
@@ -89,6 +105,7 @@ function Address({ setCurrentSelectedAddress, selectedId }) {
     setCurrentEditedId(getCuurentAddress?._id);
     setFormData({
       ...formData,
+      name: getCuurentAddress?.name || "",
       address: getCuurentAddress?.address,
       city: getCuurentAddress?.city,
       phone: getCuurentAddress?.phone,

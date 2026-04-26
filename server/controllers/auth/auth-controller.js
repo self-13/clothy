@@ -133,6 +133,9 @@ const loginUser = async (req, res) => {
         role: user.role,
         id: user._id,
         userName: user.userName,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phoneNumber: user.phoneNumber,
       },
     });
   } catch (err) {
@@ -367,6 +370,9 @@ const resetPassword = async (req, res) => {
 // ---------------- UPDATE PROFILE ----------------
 const updateProfileSchema = Joi.object({
   userName: Joi.string().min(3).max(30),
+  firstName: Joi.string().max(50),
+  lastName: Joi.string().max(50),
+  phoneNumber: Joi.string().max(15),
   currentPassword: Joi.string().min(8).max(1024).required(),
   newPassword: Joi.string().min(8).max(1024),
 });
@@ -380,7 +386,7 @@ const updateProfile = async (req, res) => {
       return res.status(400).json({ success: false, message: error.message });
 
     const userId = req.user.id;
-    const { userName, currentPassword, newPassword } = value;
+    const { userName, firstName, lastName, phoneNumber, currentPassword, newPassword } = value;
 
     const user = await User.findById(userId);
     if (!user) {
@@ -388,14 +394,16 @@ const updateProfile = async (req, res) => {
     }
 
     // Verify current password
-    const isMatch = await bcrypt.compare(currentPassword, user.password);
-    if (!isMatch) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid current password" });
+    if (user.password) {
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      if (!isMatch) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid current password" });
+      }
     }
 
-    // Check for unique userName/email if changed
+    // Update fields
     if (userName && userName !== user.userName) {
       if (await User.findOne({ userName })) {
         return res
@@ -403,6 +411,17 @@ const updateProfile = async (req, res) => {
           .json({ success: false, message: "Username already taken" });
       }
       user.userName = userName;
+    }
+
+    if (firstName) user.firstName = firstName;
+    if (lastName) user.lastName = lastName;
+    if (phoneNumber && phoneNumber !== user.phoneNumber) {
+      if (await User.findOne({ phoneNumber })) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Phone number already in use" });
+      }
+      user.phoneNumber = phoneNumber;
     }
 
     // Update password if provided
@@ -419,6 +438,9 @@ const updateProfile = async (req, res) => {
         role: user.role,
         email: user.email,
         userName: user.userName,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phoneNumber: user.phoneNumber,
       },
       process.env.CLIENT_SECRET_KEY,
       { expiresIn: "60m" }
@@ -437,12 +459,113 @@ const updateProfile = async (req, res) => {
         success: true,
         message: "Profile updated successfully",
         user: {
-          email: user.email,
-          role: user.role,
           id: user._id,
+          role: user.role,
+          email: user.email,
           userName: user.userName,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          phoneNumber: user.phoneNumber,
         },
       });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+
+// ---------------- PHONE LOGIN ----------------
+const phoneLoginUser = async (req, res) => {
+  try {
+    const { phoneNumber, firstName, lastName, password, isOtpLogin } = req.body;
+
+    if (!phoneNumber) {
+      return res.status(400).json({ success: false, message: "Phone number is required" });
+    }
+
+    let user = await User.findOne({ phoneNumber });
+
+    if (!user) {
+      // Create new user if it doesn't exist
+      if (!firstName || !lastName) {
+        return res.status(400).json({ success: false, message: "First and last name are required for new users" });
+      }
+
+      // Generate userName from full name
+      const baseUserName = `${firstName}_${lastName}`.toLowerCase().replace(/\s+/g, "_");
+      const randomSuffix = Math.floor(100 + Math.random() * 900);
+      const userName = `${baseUserName}_${randomSuffix}`;
+
+      let hashedPassword = null;
+      if (password) {
+        hashedPassword = await bcrypt.hash(password, 12);
+      }
+
+      user = new User({
+        phoneNumber,
+        firstName,
+        lastName,
+        userName,
+        password: hashedPassword,
+        isVerified: true, // Verified via Firebase OTP
+        role: "user",
+      });
+
+      await user.save();
+    } else {
+      // User exists, if not OTP login, verify password
+      if (!isOtpLogin) {
+        if (!password || !user.password) {
+          return res.status(400).json({ success: false, message: "Password is required for this login method" });
+        }
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+          return res.status(400).json({ success: false, message: "Invalid credentials" });
+        }
+      }
+      
+      // If user exists but doesn't have password, and one was provided, save it
+      if (password && !user.password) {
+        user.password = await bcrypt.hash(password, 12);
+        await user.save();
+      }
+    }
+
+    const token = jwt.sign(
+      {
+        id: user._id,
+        role: user.role,
+        email: user.email,
+        userName: user.userName,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phoneNumber: user.phoneNumber,
+      },
+      process.env.CLIENT_SECRET_KEY,
+      { expiresIn: "60m" }
+    );
+
+    const isProduction = process.env.NODE_ENV === "production";
+    const isSecure = req.secure || req.headers["x-forwarded-proto"] === "https";
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: isProduction || isSecure,
+      sameSite: (isProduction || isSecure) ? "None" : "Lax",
+    }).json({
+      success: true,
+      message: "Logged in successfully",
+      user: {
+        id: user._id,
+        role: user.role,
+        email: user.email,
+        userName: user.userName,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phoneNumber: user.phoneNumber,
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Server error" });
@@ -459,4 +582,6 @@ module.exports = {
   forgotPassword,
   resetPassword,
   updateProfile,
+  phoneLoginUser,
 };
+

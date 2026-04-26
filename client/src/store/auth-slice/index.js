@@ -145,6 +145,22 @@ export const updateProfile = createAsyncThunk(
   }
 );
 
+export const phoneLogin = createAsyncThunk(
+  "/auth/phonelogin",
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await api.post("/auth/phone-login", formData);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || {
+        success: false,
+        message: "Phone login failed"
+      });
+    }
+  }
+);
+
+
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -266,7 +282,24 @@ const authSlice = createSlice({
       })
       .addCase(updateProfile.rejected, (state, action) => {
         state.isLoading = false;
+      })
+      .addCase(phoneLogin.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(phoneLogin.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload.success ? action.payload.user : null;
+        state.isAuthenticated = action.payload.success;
+        if (action.payload.success && action.payload.user) {
+          localStorage.setItem("user", JSON.stringify(action.payload.user));
+        }
+      })
+      .addCase(phoneLogin.rejected, (state, action) => {
+        state.isLoading = false;
+        state.user = null;
+        state.isAuthenticated = false;
       });
+
   },
 });
 

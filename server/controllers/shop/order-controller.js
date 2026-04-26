@@ -174,7 +174,11 @@ const createOrder = async (req, res) => {
       try {
         const user = await User.findById(newOrder.userId);
         if (user) {
-          await sendOrderConfirmationEmail(user.email, user.name, {
+          const fullName = user.firstName && user.lastName 
+            ? `${user.firstName} ${user.lastName}` 
+            : user.name || user.userName;
+
+          await sendOrderConfirmationEmail(user.email, fullName, {
             orderId: newOrder._id,
             orderDate: newOrder.orderDate,
             paymentMethod: newOrder.paymentMethod,
@@ -193,11 +197,15 @@ const createOrder = async (req, res) => {
       try {
         const adminEmail = process.env.ADMIN_EMAIL || "admin@example.com";
         const user = await User.findById(newOrder.userId);
+        const fullName = user && user.firstName && user.lastName 
+          ? `${user.firstName} ${user.lastName}` 
+          : (user ? (user.name || user.userName) : "Customer");
 
         await sendNewOrderNotificationEmail(adminEmail, {
           orderId: newOrder._id,
-          userName: user ? user.name : "Customer",
+          userName: fullName,
           userEmail: user ? user.email : "N/A",
+
           orderDate: newOrder.orderDate,
           paymentMethod: newOrder.paymentMethod,
           totalAmount: newOrder.totalAmount,
@@ -369,7 +377,11 @@ const capturePayment = async (req, res) => {
     try {
       const user = await User.findById(newOrder.userId);
       if (user) {
-        await sendOrderConfirmationEmail(user.email, user.name, {
+        const fullName = user.firstName && user.lastName 
+          ? `${user.firstName} ${user.lastName}` 
+          : user.name || user.userName;
+
+        await sendOrderConfirmationEmail(user.email, fullName, {
           orderId: newOrder._id,
           orderDate: newOrder.orderDate,
           paymentMethod: newOrder.paymentMethod,
@@ -387,11 +399,15 @@ const capturePayment = async (req, res) => {
     try {
       const adminEmail = process.env.ADMIN_EMAIL || "admin@example.com";
       const user = await User.findById(newOrder.userId);
+      const fullName = user && user.firstName && user.lastName 
+        ? `${user.firstName} ${user.lastName}` 
+        : (user ? (user.name || user.userName) : "Customer");
 
       await sendNewOrderNotificationEmail(adminEmail, {
         orderId: newOrder._id,
-        userName: user ? user.name : "Customer",
+        userName: fullName,
         userEmail: user ? user.email : "N/A",
+
         orderDate: newOrder.orderDate,
         paymentMethod: newOrder.paymentMethod,
         totalAmount: newOrder.totalAmount,

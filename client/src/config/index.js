@@ -1,17 +1,42 @@
 export const registerFormControls = [
   {
-    name: "userName",
-    label: "User Name",
-    placeholder: "Enter your user name",
+    name: "firstName",
+    label: "First Name",
+    placeholder: "Enter your first name",
     componentType: "input",
     type: "text",
   },
   {
-    name: "email",
-    label: "Email",
-    placeholder: "Enter your email",
+    name: "lastName",
+    label: "Last Name",
+    placeholder: "Enter your last name",
     componentType: "input",
-    type: "email",
+    type: "text",
+  },
+  {
+    name: "phoneNumber",
+    label: "Phone Number",
+    placeholder: "Enter your phone number (with country code, e.g. +91...)",
+    componentType: "input",
+    type: "text",
+  },
+  {
+    name: "password",
+    label: "Password",
+    placeholder: "Enter your password (optional)",
+    componentType: "input",
+    type: "password",
+  },
+];
+
+
+export const loginFormControls = [
+  {
+    name: "phoneNumber",
+    label: "Phone Number",
+    placeholder: "Enter your phone number",
+    componentType: "input",
+    type: "text",
   },
   {
     name: "password",
@@ -22,22 +47,16 @@ export const registerFormControls = [
   },
 ];
 
-export const loginFormControls = [
+export const phoneLoginFormControls = [
   {
-    name: "email",
-    label: "Email",
-    placeholder: "Enter your email",
+    name: "phoneNumber",
+    label: "Phone Number",
+    placeholder: "Enter your phone number",
     componentType: "input",
-    type: "email",
-  },
-  {
-    name: "password",
-    label: "Password",
-    placeholder: "Enter your password",
-    componentType: "input",
-    type: "password",
+    type: "text",
   },
 ];
+
 
 export const otpFormControls = [
   {
@@ -193,6 +212,13 @@ export const sortOptions = [
 
 export const addressFormControls = [
   {
+    label: "Full Name",
+    name: "name",
+    componentType: "input",
+    type: "text",
+    placeholder: "Enter your full name",
+  },
+  {
     label: "Address",
     name: "address",
     componentType: "input",
@@ -227,3 +253,4 @@ export const addressFormControls = [
     placeholder: "Enter any additional notes",
   },
 ];
+

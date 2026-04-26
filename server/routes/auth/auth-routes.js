@@ -9,6 +9,7 @@ const {
   forgotPassword,
   resetPassword,
   updateProfile,
+  phoneLoginUser,
 } = require("../../controllers/auth/auth-controller");
 
 const router = express.Router();
@@ -17,6 +18,8 @@ router.post("/register", registerUser);
 router.post("/verify-otp", verifyOTP);
 router.post("/resend-otp", resendOTP);
 router.post("/login", loginUser);
+router.post("/phone-login", phoneLoginUser);
+
 router.post("/logout", logoutUser);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
