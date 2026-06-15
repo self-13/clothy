@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { LogOut, ShoppingCart, UserCog, Search, X, Menu } from "lucide-react";
+import { LogOut, ShoppingCart, UserCog, X, Menu } from "lucide-react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Sheet, SheetContent } from "../ui/sheet";
 import { Button } from "../ui/button";
@@ -188,14 +188,6 @@ export default function ShoppingHeader() {
 
         {/* Right Section */}
         <div className="flex items-center gap-4 md:gap-6">
-          {/* Search Trigger */}
-          <button
-            onClick={() => setSearchOpen(!searchOpen)}
-            className="hover:scale-110 transition-transform duration-300 p-2"
-            aria-label="Search products"
-          >
-            <Search className="w-5 h-5 stroke-[2]" />
-          </button>
 
           {/* Cart Trigger */}
           <Sheet open={openCartSheet} onOpenChange={setOpenCartSheet}>
@@ -308,38 +300,6 @@ export default function ShoppingHeader() {
         </div>
       </div>
 
-      {/* Modern Search Overlay */}
-      <div
-        className={`absolute left-0 right-0 top-0 bg-white border-b border-zinc-200 overflow-hidden transition-all duration-300 ease-in-out flex items-center ${
-          searchOpen ? "h-20 opacity-100" : "h-0 opacity-0 pointer-events-none"
-        }`}
-      >
-        <div className="container mx-auto px-4 md:px-8 h-full flex items-center w-full">
-          <Search className="w-6 h-6 text-zinc-400 mr-4 flex-shrink-0" />
-          <form onSubmit={handleSearch} className="flex-1 flex gap-4 items-center">
-            <input
-              className="flex-1 bg-transparent border-none outline-none text-xl md:text-2xl font-bold uppercase tracking-tight placeholder:text-zinc-300 text-black"
-              placeholder="What are you looking for?"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              autoFocus={searchOpen}
-            />
-            <button
-              type="submit"
-              className="text-xs font-bold uppercase tracking-[0.1em] border-b-2 border-black pb-1 hover:text-zinc-600 transition-colors text-black flex-shrink-0"
-            >
-              Confirm
-            </button>
-          </form>
-          <button
-            onClick={() => setSearchOpen(false)}
-            className="w-6 h-6 ml-8 text-zinc-400 hover:text-black transition-colors flex-shrink-0"
-            aria-label="Close search"
-          >
-            <X className="w-full h-full" />
-          </button>
-        </div>
-      </div>
     </header>
   );
 }

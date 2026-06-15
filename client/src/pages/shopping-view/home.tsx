@@ -10,6 +10,53 @@ import { useToast } from "@/components/ui/use-toast";
 import ShoppingProductTile from "@/components/shopping-view/product-tile";
 import Footer from "@/components/shopping-view/footer";
 
+
+const fadeInUp = {
+  hidden: { opacity: 0, y: 40 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: [0.215, 0.61, 0.355, 1] as const }
+  }
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    }
+  }
+};
+
+const slideInLeft = {
+  hidden: { opacity: 0, x: -50 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.8, ease: [0.215, 0.61, 0.355, 1] as const }
+  }
+};
+
+const slideInRight = {
+  hidden: { opacity: 0, x: 50 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.8, ease: [0.215, 0.61, 0.355, 1] as const }
+  }
+};
+
+const scaleUp = {
+  hidden: { opacity: 0, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.6, ease: [0.215, 0.61, 0.355, 1] as const }
+  }
+};
+
 export default function ShoppingHome() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [genderView, setGenderView] = useState(() => {
@@ -221,7 +268,13 @@ export default function ShoppingHome() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             
             {/* Left Image Wrapper */}
-            <div className="lg:col-span-5 relative aspect-[3/4] bg-zinc-50 rounded-2xl overflow-hidden group">
+            <motion.div
+              variants={slideInLeft}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-100px" }}
+              className="lg:col-span-5 relative aspect-[3/4] bg-zinc-50 rounded-2xl overflow-hidden group"
+            >
               <img
                 src={featureImageList?.[0]?.image || "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=600"}
                 alt="Brand experience"
@@ -232,10 +285,16 @@ export default function ShoppingHome() {
                 <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-300 mb-2">*EXPERIENCE</p>
                 <h3 className="text-2xl font-bold uppercase tracking-tight">Unmatched Comfort & Style</h3>
               </div>
-            </div>
+            </motion.div>
 
             {/* Right Cards Wrap */}
-            <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <motion.div
+              variants={staggerContainer}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-100px" }}
+              className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6"
+            >
               {[
                 {
                   id: "01",
@@ -262,7 +321,11 @@ export default function ShoppingHome() {
                   icon: Star,
                 },
               ].map((card) => (
-                <div key={card.id} className="p-6 rounded-xl bg-[#f8f8f8] hover:bg-white border border-transparent hover:border-zinc-200 transition-all duration-300 space-y-4 shadow-sm hover:shadow">
+                <motion.div
+                  key={card.id}
+                  variants={fadeInUp}
+                  className="p-6 rounded-xl bg-[#f8f8f8] hover:bg-white border border-transparent hover:border-zinc-200 transition-all duration-300 space-y-4 shadow-sm hover:shadow"
+                >
                   <div className="flex justify-between items-center">
                     <span className="w-10 h-10 rounded-lg bg-white border border-zinc-200 flex items-center justify-center">
                       <card.icon className="w-5 h-5 text-black" />
@@ -273,9 +336,9 @@ export default function ShoppingHome() {
                     <h4 className="font-bold text-md text-black uppercase tracking-tight mb-2">{card.title}</h4>
                     <p className="text-zinc-500 text-xs leading-relaxed">{card.desc}</p>
                   </div>
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -283,7 +346,13 @@ export default function ShoppingHome() {
       {/* 3. Collection Section (Hot Deals) */}
       <section className="py-24 bg-[#f8f8f8]">
         <div className="container mx-auto px-4 md:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
+          <motion.div
+            variants={fadeInUp}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6"
+          >
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 mb-2">*COLLECTIONS</p>
               <h2 className="text-3xl md:text-5xl font-bold uppercase tracking-tighter text-black">
@@ -296,24 +365,37 @@ export default function ShoppingHome() {
             >
               Explore All
             </button>
-          </div>
+          </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <motion.div
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
             {hotCollections.map((product) => (
-              <ShoppingProductTile
-                key={product._id}
-                product={product}
-                handleAddtoCart={handleAddtoCart}
-              />
+              <motion.div key={product._id} variants={fadeInUp}>
+                <ShoppingProductTile
+                  product={product}
+                  handleAddtoCart={handleAddtoCart}
+                />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* 4. Browse Categories Tab Section */}
       <section className="py-24 bg-white">
         <div className="container mx-auto px-4 md:px-8">
-          <div className="text-center space-y-4 mb-12">
+          <motion.div
+            variants={fadeInUp}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            className="text-center space-y-4 mb-12"
+          >
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">*CATEGORY</p>
             <h2 className="text-3xl md:text-5xl font-bold uppercase tracking-tighter text-black">
               BROWSE OUR CATEGORIES
@@ -321,10 +403,16 @@ export default function ShoppingHome() {
             <p className="text-zinc-500 text-sm max-w-md mx-auto">
               Explore handpicked essentials designed to refine your style and enhance your everyday comfort.
             </p>
-          </div>
+          </motion.div>
 
           {/* Gender selection */}
-          <div className="flex justify-center gap-6 mb-8 border-b border-zinc-100 pb-4">
+          <motion.div
+            variants={fadeInUp}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            className="flex justify-center gap-6 mb-8 border-b border-zinc-100 pb-4"
+          >
             <button
               onClick={() => handleGenderViewChange("MEN")}
               className={`pb-2 font-bold uppercase tracking-widest text-sm relative transition-all duration-300 ${
@@ -347,10 +435,16 @@ export default function ShoppingHome() {
                 <span className="absolute bottom-0 left-0 w-full h-[2px] bg-black" />
               )}
             </button>
-          </div>
+          </motion.div>
 
           {/* Subcategory Tabs */}
-          <div className="flex flex-wrap justify-center gap-2 mb-12">
+          <motion.div
+            variants={fadeInUp}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            className="flex flex-wrap justify-center gap-2 mb-12"
+          >
             {["All", "winterwear", "plus-size", "shirts", "t-shirts", "jeans", "dresses", "activewear"].map((tab) => (
               <button
                 key={tab}
@@ -364,19 +458,26 @@ export default function ShoppingHome() {
                 {tab}
               </button>
             ))}
-          </div>
+          </motion.div>
 
           {/* Tab Content */}
           {tabFilteredProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <motion.div
+              variants={staggerContainer}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-100px" }}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+            >
               {tabFilteredProducts.map((product) => (
-                <ShoppingProductTile
-                  key={product._id}
-                  product={product}
-                  handleAddtoCart={handleAddtoCart}
-                />
+                <motion.div key={product._id} variants={fadeInUp}>
+                  <ShoppingProductTile
+                    product={product}
+                    handleAddtoCart={handleAddtoCart}
+                  />
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           ) : (
             <div className="py-16 text-center border border-dashed border-zinc-200 rounded-2xl">
               <p className="text-zinc-400 text-sm">No items found in this subcategory.</p>
@@ -389,7 +490,13 @@ export default function ShoppingHome() {
       <section className="py-24 bg-[#f8f8f8]">
         <div className="container mx-auto px-4 md:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6">
+            <motion.div
+              variants={slideInLeft}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-100px" }}
+              className="space-y-6"
+            >
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">*FIT & FORM</p>
               <h2 className="text-3xl md:text-5xl font-bold uppercase tracking-tighter text-black leading-tight">
                 COMFORT AND STYLE IN EVERY STITCH
@@ -403,15 +510,21 @@ export default function ShoppingHome() {
               >
                 Discover Collection
               </button>
-            </div>
+            </motion.div>
 
-            <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-zinc-100 relative group">
+            <motion.div
+              variants={slideInRight}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-100px" }}
+              className="aspect-[4/3] rounded-2xl overflow-hidden bg-zinc-100 relative group"
+            >
               <img
                 src={featureImageList?.[1]?.image || "https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=800"}
                 alt="Styling representation"
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -421,7 +534,13 @@ export default function ShoppingHome() {
         <div className="absolute inset-0 opacity-[0.03] font-bold text-[30vw] select-none pointer-events-none leading-none tracking-tighter text-center flex items-center justify-center">
           OFFER
         </div>
-        <div className="container mx-auto px-4 text-center space-y-6 z-10">
+        <motion.div
+          variants={scaleUp}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          className="container mx-auto px-4 text-center space-y-6 z-10"
+        >
           <span className="bg-white/10 px-4 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest border border-white/10">
             SEASONAL EVENT
           </span>
@@ -437,7 +556,7 @@ export default function ShoppingHome() {
           >
             Claim Discount
           </button>
-        </div>
+        </motion.div>
       </section>
 
       <Footer />
