@@ -2,10 +2,10 @@
 module.exports = {
   darkMode: ["class"],
   content: [
-    './pages/**/*.{js,jsx}',
-    './components/**/*.{js,jsx}',
-    './app/**/*.{js,jsx}',
-    './src/**/*.{js,jsx}',
+    './pages/**/*.{js,jsx,ts,tsx}',
+    './components/**/*.{js,jsx,ts,tsx}',
+    './app/**/*.{js,jsx,ts,tsx}',
+    './src/**/*.{js,jsx,ts,tsx}',
   ],
   prefix: "",
   theme: {
@@ -17,7 +17,16 @@ module.exports = {
       },
     },
     extend: {
+      fontFamily: {
+        bigShoulders: ["'Big Shoulders Display'", "sans-serif"],
+        spaceGrotesk: ["'Space Grotesk'", "sans-serif"],
+      },
       colors: {
+        gold: {
+          DEFAULT: "#baa37b",
+          light: "#cbbba0",
+          dark: "#a58f66",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
