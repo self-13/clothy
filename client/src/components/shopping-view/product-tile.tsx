@@ -48,6 +48,11 @@ export default function ShoppingProductTile({
     navigate(`/shop/product/${product?._id}`);
   };
 
+  const handleViewProduct = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/shop/product/${product?._id}`);
+  };
+
   const handleAddToCartRequest = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isOutOfStock) return;
@@ -168,18 +173,15 @@ export default function ShoppingProductTile({
             ) : null}
           </div>
 
-          {/* Hover Action Overlay (Quick Buy) */}
-          {!isOutOfStock && (
-            <div className="absolute bottom-3 left-3 right-3 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 z-10">
-              <button
-                onClick={handleAddToCartRequest}
-                className="w-full bg-white text-black border border-zinc-200 hover:bg-black hover:text-white py-2.5 rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-sm transition-all duration-300"
-              >
-                <ShoppingBag className="w-3.5 h-3.5" />
-                Quick Add
-              </button>
-            </div>
-          )}
+          {/* Hover Action Overlay (View Product) */}
+          <div className="absolute bottom-3 left-3 right-3 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 z-10">
+            <button
+              onClick={handleViewProduct}
+              className="w-full bg-white text-black border border-zinc-200 hover:bg-black hover:text-white py-2.5 rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-sm transition-all duration-300"
+            >
+              <span>View Product</span>
+            </button>
+          </div>
         </div>
 
         {/* Text Area */}
