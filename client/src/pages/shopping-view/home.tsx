@@ -191,7 +191,7 @@ export default function ShoppingHome() {
   }, [productList, genderView, activeCategoryTab]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-white font-spaceGrotesk pt-20">
+    <div className="flex flex-col min-h-screen bg-white font-spaceGrotesk">
       
       {/* 1. Banner Section (Hero) */}
       <section className="relative w-full h-[85vh] overflow-hidden bg-zinc-950 flex flex-col justify-end text-white">

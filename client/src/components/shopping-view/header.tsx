@@ -20,9 +20,10 @@ import { Label } from "../ui/label";
 
 interface MenuItemsProps {
   onItemClick?: () => void;
+  isTransparent?: boolean;
 }
 
-function MenuItems({ onItemClick }: MenuItemsProps) {
+function MenuItems({ onItemClick, isTransparent }: MenuItemsProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [, setSearchParams] = useSearchParams();
@@ -58,11 +59,15 @@ function MenuItems({ onItemClick }: MenuItemsProps) {
         .map((menuItem) => (
           <span
             onClick={() => handleNavigate(menuItem)}
-            className="text-[14px] font-medium uppercase tracking-[0.1em] cursor-pointer text-zinc-600 hover:text-black transition-all duration-300 relative group py-2"
+            className={`text-[14px] font-medium uppercase tracking-[0.1em] cursor-pointer transition-all duration-300 relative group py-2 ${
+              isTransparent ? "text-white/80 hover:text-white" : "text-zinc-600 hover:text-black"
+            }`}
             key={menuItem.id}
           >
             {menuItem.label}
-            <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-black transition-all duration-300 group-hover:w-full" />
+            <span className={`absolute bottom-0 left-0 w-0 h-[2px] transition-all duration-300 group-hover:w-full ${
+              isTransparent ? "bg-white" : "bg-black"
+            }`} />
           </span>
         ))}
     </nav>
@@ -73,18 +78,25 @@ interface UserMenuProps {
   user: any;
   handleLogout: () => void;
   navigate: ReturnType<typeof useNavigate>;
+  isTransparent?: boolean;
 }
 
-function UserMenu({ user, handleLogout, navigate }: UserMenuProps) {
+function UserMenu({ user, handleLogout, navigate, isTransparent }: UserMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <div className="flex items-center gap-3 cursor-pointer group">
           <div className="hidden md:block text-right">
             <p className="text-[10px] font-medium uppercase tracking-widest text-zinc-400 leading-none">Account</p>
-            <p className="text-sm font-semibold text-black uppercase tracking-tight">{user?.userName}</p>
+            <p className={`text-sm font-semibold uppercase tracking-tight ${
+              isTransparent ? "text-white" : "text-black"
+            }`}>{user?.userName}</p>
           </div>
-          <Avatar className="h-10 w-10 rounded-full border border-black p-0.5 bg-white group-hover:bg-black group-hover:text-white transition-all duration-300">
+          <Avatar className={`h-10 w-10 rounded-full border p-0.5 transition-all duration-300 ${
+            isTransparent
+              ? "border-white bg-transparent text-white group-hover:bg-white group-hover:text-black"
+              : "border-black bg-white text-black group-hover:bg-black group-hover:text-white"
+          }`}>
             <AvatarFallback className="bg-transparent text-inherit font-bold text-xs">
               {user?.userName?.[0]?.toUpperCase()}
             </AvatarFallback>
@@ -168,7 +180,7 @@ export default function ShoppingHeader() {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 h-20 flex items-center ${
         isTransparent
-          ? "bg-transparent border-b border-transparent text-white"
+          ? "bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800/50 text-white"
           : "bg-white/90 backdrop-blur-xl border-b border-zinc-100 text-black shadow-sm"
       }`}
     >
@@ -178,12 +190,12 @@ export default function ShoppingHeader() {
           to="/shop/home"
           className="flex items-center gap-2 hover:scale-105 transition-transform"
         >
-          <img src="/logo.png" alt="logo" className="size-24" />
+          <img src="/logo.png" alt="logo" className={`size-24 ${isTransparent ? "invert" : ""}`} />
         </Link>
 
         {/* Desktop Menu */}
         <div className="hidden lg:block">
-          <MenuItems />
+          <MenuItems isTransparent={isTransparent} />
         </div>
 
         {/* Right Section */}
@@ -198,7 +210,11 @@ export default function ShoppingHeader() {
             >
               <ShoppingCart className="w-5 h-5 stroke-[2]" />
               {cartItems?.items?.length > 0 && (
-                <span className="absolute -top-1 -right-1 font-bold text-[9px] bg-black text-white border border-white rounded-full w-4 h-4 flex items-center justify-center">
+                <span className={`absolute -top-1 -right-1 font-bold text-[9px] rounded-full w-4 h-4 flex items-center justify-center transition-colors duration-300 ${
+                  isTransparent
+                    ? "bg-white text-black border border-transparent"
+                    : "bg-black text-white border border-white"
+                }`}>
                   {cartItems.items.length}
                 </span>
               )}
@@ -212,7 +228,7 @@ export default function ShoppingHeader() {
           {/* User Profile / Login */}
           <div className="flex items-center">
             {user ? (
-              <UserMenu user={user} handleLogout={handleLogout} navigate={navigate} />
+              <UserMenu user={user} handleLogout={handleLogout} navigate={navigate} isTransparent={isTransparent} />
             ) : (
               <Button
                 onClick={() => navigate("/auth/login")}
@@ -238,7 +254,7 @@ export default function ShoppingHeader() {
 
           {/* Mobile Navigation Sheet */}
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <SheetContent side="left" className="w-full max-w-xs bg-white border-r border-zinc-200 p-0">
+            <SheetContent hideCloseButton side="left" className="w-full max-w-xs bg-white border-r border-zinc-200 p-0">
               <div className="flex flex-col h-full bg-white text-black font-spaceGrotesk">
                 <div className="p-6 border-b border-zinc-100 flex justify-between items-center bg-zinc-50">
                   <span className="font-black uppercase tracking-tighter text-2xl">Navigation</span>
