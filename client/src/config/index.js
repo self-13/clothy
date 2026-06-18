@@ -170,11 +170,6 @@ export const shoppingViewHeaderMenuItems = [
     path: "/shop/listing",
   },
   {
-    id: "kids",
-    label: "Kids",
-    path: "/shop/listing",
-  },
-  {
     id: "search",
     label: "Search",
     path: "/shop/search",
@@ -197,10 +192,13 @@ export const brandOptionsMap = {
 };
 
 export const filterOptions = {
-  category: [
-    { id: "men", label: "Men" },
-    { id: "women", label: "Women" },
-    { id: "", label: "Kids" },
+  size: [
+    { id: "XS", label: "XS" },
+    { id: "S", label: "S" },
+    { id: "M", label: "M" },
+    { id: "L", label: "L" },
+    { id: "XL", label: "XL" },
+    { id: "XXL", label: "XXL" },
   ],
 };
 

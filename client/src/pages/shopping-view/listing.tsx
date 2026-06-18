@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowUpDownIcon, Grid3X3, List, Star } from "lucide-react";
+import { ArrowUpDownIcon, Grid3X3, List, Star, Filter } from "lucide-react";
 import ShoppingSubheader from "@/components/shopping-view/sub-header";
 import ShoppingProductTile from "@/components/shopping-view/product-tile";
 import { Button } from "@/components/ui/button";
@@ -17,18 +17,9 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import ProductFilter from "@/components/shopping-view/filter";
 import Footer from "@/components/shopping-view/footer";
-
-function createSearchParamsHelper(filterParams: Record<string, string[]>) {
-  const queryParams: string[] = [];
-  for (const [key, value] of Object.entries(filterParams)) {
-    if (Array.isArray(value) && value.length > 0) {
-      const paramValue = value.join(",");
-      queryParams.push(`${key}=${encodeURIComponent(paramValue)}`);
-    }
-  }
-  return queryParams.join("&");
-}
 
 export default function ShoppingListing() {
   const dispatch = useDispatch();
@@ -41,7 +32,6 @@ export default function ShoppingListing() {
   const { cartItems } = useSelector((state: any) => state.shopCart);
   const { user } = useSelector((state: any) => state.auth);
 
-  const [filters, setFilters] = useState<Record<string, string[]>>({});
   const [sort, setSort] = useState("most-selling");
   const [searchParams, setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -66,13 +56,21 @@ export default function ShoppingListing() {
 
   const categoryParam = searchParams.get("category");
   const subcategoryParam = searchParams.get("subcategory");
+  const brandParam = searchParams.get("brand");
+  const colorParam = searchParams.get("color");
+  const sizeParam = searchParams.get("size");
+  const searchParam = searchParams.get("search");
+
+  const getCurrentGender = () => {
+    const gender = categoryParam || localStorage.getItem("selectedGender") || "man";
+    if (gender === "men" || gender === "man") return "man";
+    if (gender === "women" || gender === "woman") return "woman";
+    return gender;
+  };
 
   const [genderView, setGenderView] = useState(() => {
-    if (categoryParam) {
-      return categoryParam.toUpperCase();
-    }
-    const savedGender = localStorage.getItem("selectedGender");
-    return savedGender ? savedGender.toUpperCase() : "MEN";
+    const currentGender = getCurrentGender();
+    return currentGender === "woman" ? "WOMEN" : "MEN";
   });
 
   const [activeCategory, setActiveCategory] = useState("");
@@ -91,21 +89,82 @@ export default function ShoppingListing() {
     "ACCESSORIES",
   ];
 
-  const getCurrentGender = () => {
-    return localStorage.getItem("selectedGender") || "men";
-  };
+  // Synchronous React state for filters to ensure checkbox checking/unchecking is 150% reliable
+  const [filters, setFilters] = useState<Record<string, string[]>>({});
+
+  // Sync state filters from URL search params on mount or param changes (e.g. manual URL changes, back/forward navigation)
+  useEffect(() => {
+    const brand = searchParams.get("brand");
+    const color = searchParams.get("color");
+    const size = searchParams.get("size");
+
+    const newFilters: Record<string, string[]> = {};
+    if (brand) newFilters.brand = brand.split(",");
+    if (color) newFilters.color = color.split(",");
+    if (size) newFilters.size = size.split(",");
+
+    const isSizeDifferent = JSON.stringify(newFilters.size) !== JSON.stringify(filters.size);
+    const isBrandDifferent = JSON.stringify(newFilters.brand) !== JSON.stringify(filters.brand);
+    const isColorDifferent = JSON.stringify(newFilters.color) !== JSON.stringify(filters.color);
+
+    if (isSizeDifferent || isBrandDifferent || isColorDifferent) {
+      setFilters(newFilters);
+    }
+  }, [searchParams]);
 
   const buildFilterParams = useMemo(() => {
-    const filterParams: Record<string, string[]> = { ...filters, isActive: ["true"] as any };
+    const filterParams: Record<string, string[]> = { isActive: ["true"] as any };
     const currentGender = getCurrentGender();
+    
     if (currentGender) {
       filterParams.category = [currentGender];
     }
     if (subcategoryParam) {
       filterParams.subcategory = [subcategoryParam];
     }
+    if (brandParam) {
+      filterParams.brand = brandParam.split(",");
+    }
+    if (colorParam) {
+      filterParams.color = colorParam.split(",");
+    }
+    if (sizeParam) {
+      filterParams.size = sizeParam.split(",");
+    }
+    if (searchParam) {
+      filterParams.search = [searchParam];
+    }
+    
     return filterParams;
-  }, [filters, subcategoryParam]);
+  }, [categoryParam, subcategoryParam, brandParam, colorParam, sizeParam, searchParam]);
+
+  const handleFilter = (sectionId: string, optionId: string) => {
+    const currentParams = new URLSearchParams(searchParams);
+    let sectionValues = currentParams.get(sectionId)?.split(",") || [];
+    
+    if (sectionValues.includes(optionId)) {
+      sectionValues = sectionValues.filter((v) => v !== optionId);
+    } else {
+      sectionValues = [...sectionValues, optionId];
+    }
+    
+    if (sectionValues.length > 0) {
+      currentParams.set(sectionId, sectionValues.join(","));
+    } else {
+      currentParams.delete(sectionId);
+    }
+    
+    // Update local state synchronously for instantaneous checkbox feedback
+    const updatedFilters = { ...filters };
+    if (sectionValues.length > 0) {
+      updatedFilters[sectionId] = sectionValues;
+    } else {
+      delete updatedFilters[sectionId];
+    }
+    setFilters(updatedFilters);
+    
+    setSearchParams(currentParams);
+  };
 
   const handleSort = (value: string) => {
     setSort(value);
@@ -128,21 +187,26 @@ export default function ShoppingListing() {
     });
   };
 
+  // Synchronize category selection, sub-header UI states, and localStorage with URL changes
   useEffect(() => {
-    setSort("most-selling");
-    const savedFilters = sessionStorage.getItem("filters");
-    if (savedFilters) {
-      setFilters(JSON.parse(savedFilters));
+    const currentGender = getCurrentGender();
+    const normalizedGenderDisplay = currentGender === "woman" ? "WOMEN" : "MEN";
+    setGenderView(normalizedGenderDisplay);
+    
+    if (subcategoryParam) {
+      setActiveCategory(subcategoryParam.toUpperCase());
+    } else {
+      setActiveCategory(normalizedGenderDisplay);
     }
-    dispatch(resetProductDetails() as any);
-  }, [categoryParam, subcategoryParam, dispatch]);
+
+    // Keep localStorage in sync so that subheader navigation links behave correctly
+    localStorage.setItem("selectedGender", currentGender);
+  }, [categoryParam, subcategoryParam]);
 
   useEffect(() => {
-    if (filters && Object.keys(filters).length > 0) {
-      const createQueryString = createSearchParamsHelper(filters);
-      setSearchParams(new URLSearchParams(createQueryString));
-    }
-  }, [filters, setSearchParams]);
+    setSort("most-selling");
+    dispatch(resetProductDetails() as any);
+  }, [categoryParam, subcategoryParam, dispatch]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -169,8 +233,11 @@ export default function ShoppingListing() {
 
   const clearFilters = () => {
     setFilters({});
-    sessionStorage.removeItem("filters");
-    setSearchParams(new URLSearchParams());
+    const currentParams = new URLSearchParams(searchParams);
+    currentParams.delete("brand");
+    currentParams.delete("color");
+    currentParams.delete("size");
+    setSearchParams(currentParams);
   };
 
   const getPageTitle = () => {
@@ -188,7 +255,7 @@ export default function ShoppingListing() {
 
   const getPageDescription = () => {
     const currentGender = getCurrentGender();
-    const genderText = currentGender === "men" ? "men's" : "women's";
+    const genderText = currentGender === "man" ? "men's" : "women's";
     return `Discover our complete collection of curated fashion pieces crafted for ${genderText}.`;
   };
 
@@ -226,6 +293,21 @@ export default function ShoppingListing() {
               </span>
 
               <div className="flex items-center gap-3">
+                {/* Mobile Filter Button */}
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <button className="md:hidden flex items-center gap-2 px-5 py-2.5 rounded-full border border-zinc-200 text-xs font-bold uppercase tracking-wider bg-white hover:border-black transition-colors duration-300">
+                      <Filter className="w-3.5 h-3.5" />
+                      <span>Filter</span>
+                    </button>
+                  </SheetTrigger>
+                  <SheetContent side="left" className="w-full max-w-xs bg-white p-6 overflow-y-auto">
+                    <div className="pt-6">
+                      <ProductFilter filters={filters} handleFilter={handleFilter} />
+                    </div>
+                  </SheetContent>
+                </Sheet>
+
                 {/* View Mode buttons */}
                 <div className="flex bg-[#f8f8f8] border border-zinc-200 rounded-full p-1">
                   <button
@@ -274,78 +356,86 @@ export default function ShoppingListing() {
             </div>
           </div>
 
-          {/* Catalog grid */}
-          <div className="w-full">
-            {isLoading && currentPage === 1 ? (
-              <div
-                className={
-                  viewMode === "grid"
-                    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                    : "space-y-4"
-                }
-              >
-                {Array.from({ length: 8 }).map((_, index) => (
-                  <div key={index} className="space-y-4">
-                    <Skeleton className="aspect-[4/5] w-full rounded-2xl" />
-                    <div className="space-y-2">
-                      <Skeleton className="h-4 w-2/3" />
-                      <Skeleton className="h-4 w-1/2" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <>
-                {productList && productList.length > 0 ? (
-                  <>
-                    <div
-                      className={
-                        viewMode === "grid"
-                          ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                          : "space-y-4"
-                      }
-                    >
-                      {productList.map((productItem: any, index: number) => {
-                        const isLast = productList.length === index + 1;
-                        return (
-                          <div
-                            ref={isLast ? lastProductElementRef : null}
-                            key={productItem._id}
-                          >
-                            <ShoppingProductTile
-                              product={productItem}
-                              handleAddtoCart={handleAddtoCart}
-                              viewMode={viewMode}
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-                    {/* Infinite Scroll loading indicator */}
-                    {isLoading && currentPage > 1 && (
-                      <div className="flex justify-center items-center py-12">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+          {/* Catalog Layout */}
+          <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-8 items-start">
+            {/* Desktop Sidebar Filter */}
+            <aside className="hidden md:block sticky top-32 bg-white border border-zinc-100 rounded-3xl p-6 shadow-sm">
+              <ProductFilter filters={filters} handleFilter={handleFilter} />
+            </aside>
+
+            {/* Catalog grid */}
+            <div className="w-full">
+              {isLoading && currentPage === 1 ? (
+                <div
+                  className={
+                    viewMode === "grid"
+                      ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                      : "space-y-4"
+                  }
+                >
+                  {Array.from({ length: 8 }).map((_, index) => (
+                    <div key={index} className="space-y-4">
+                      <Skeleton className="aspect-[4/5] w-full rounded-2xl" />
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-2/3" />
+                        <Skeleton className="h-4 w-1/2" />
                       </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="text-center py-24 border border-dashed border-zinc-200 rounded-3xl">
-                    <div className="text-zinc-400 text-lg mb-2 uppercase font-bold tracking-tight">
-                      No products found
                     </div>
-                    <p className="text-zinc-500 text-xs mb-6 max-w-xs mx-auto leading-relaxed">
-                      Try adjusting your search criteria or clearing filters.
-                    </p>
-                    <button
-                      onClick={clearFilters}
-                      className="bg-black text-white hover:bg-zinc-800 px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all shadow"
-                    >
-                      Clear All Filters
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
+                  ))}
+                </div>
+              ) : (
+                <>
+                  {productList && productList.length > 0 ? (
+                    <>
+                      <div
+                        className={
+                          viewMode === "grid"
+                            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                            : "space-y-4"
+                        }
+                      >
+                        {productList.map((productItem: any, index: number) => {
+                          const isLast = productList.length === index + 1;
+                          return (
+                            <div
+                              ref={isLast ? lastProductElementRef : null}
+                              key={productItem._id}
+                            >
+                              <ShoppingProductTile
+                                product={productItem}
+                                handleAddtoCart={handleAddtoCart}
+                                viewMode={viewMode}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {/* Infinite Scroll loading indicator */}
+                      {isLoading && currentPage > 1 && (
+                        <div className="flex justify-center items-center py-12">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-center py-24 border border-dashed border-zinc-200 rounded-3xl">
+                      <div className="text-zinc-400 text-lg mb-2 uppercase font-bold tracking-tight">
+                        No products found
+                      </div>
+                      <p className="text-zinc-500 text-xs mb-6 max-w-xs mx-auto leading-relaxed">
+                        Try adjusting your search criteria or clearing filters.
+                      </p>
+                      <button
+                        onClick={clearFilters}
+                        className="bg-black text-white hover:bg-zinc-800 px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all shadow"
+                      >
+                        Clear All Filters
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>

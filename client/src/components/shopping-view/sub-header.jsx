@@ -45,14 +45,8 @@ function ShoppingSubheader({
     setGenderView(gender);
     setActiveCategory(gender);
 
-    // Navigate to listing page with the selected gender and reload
-    // navigate(`/shop/listing?category=${storageGender}`);
-
-    // Reload the page after a short delay to ensure navigation happens
-    setTimeout(() => {
-      console.log("🔄 Reloading page...");
-      window.location.reload();
-    }, 100);
+    // Navigate to listing page with the selected gender
+    navigate(`/shop/listing?category=${storageGender}`);
   };
 
   // Function to handle category selection (non-gender categories)
@@ -74,17 +68,7 @@ function ShoppingSubheader({
     );
   };
 
-  // Convert localStorage gender to display format
-  const getDisplayGender = () => {
-    const savedGender = localStorage.getItem("selectedGender");
-    return savedGender === "man"
-      ? "MEN"
-      : savedGender === "woman"
-      ? "WOMEN"
-      : "MEN";
-  };
-
-  const currentDisplayGender = getDisplayGender();
+  const currentDisplayGender = genderView;
 
   return (
     <div className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
