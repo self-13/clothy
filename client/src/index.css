@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -54,8 +56,14 @@
     @apply border-zinc-200;
   }
   body {
-    @apply bg-white text-black font-sans selection:bg-black selection:text-white;
+    @apply bg-white text-black font-spaceGrotesk selection:bg-black selection:text-white;
     -webkit-font-smoothing: antialiased;
+  }
+  h1 {
+    @apply font-bigShoulders;
+  }
+  h2, h3, h4, h5, h6 {
+    @apply font-spaceGrotesk;
   }
 }
 
