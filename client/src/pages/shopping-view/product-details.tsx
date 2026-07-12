@@ -63,16 +63,6 @@ export default function ShoppingProductDetails() {
   }, [productDetails]);
 
   const handleAddToCart = () => {
-    if (!isAuthenticated) {
-      toast({
-        title: "Please Login",
-        description: "You need to be logged in to add items to cart",
-        variant: "destructive",
-      });
-      navigate("/auth/login");
-      return;
-    }
-
     if (!selectedSize) {
       toast({
         title: "Selection Required",

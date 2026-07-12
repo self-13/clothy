@@ -15,7 +15,7 @@ import {
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { logoutUser } from "@/store/auth-slice";
 import UserCartWrapper from "./cart-wrapper";
-import { fetchCartItems } from "@/store/shop/cart-slice";
+import { fetchCartItems, addToCart } from "@/store/shop/cart-slice";
 import { Label } from "../ui/label";
 
 interface MenuItemsProps {
@@ -156,9 +156,37 @@ export default function ShoppingHeader() {
   }
 
   useEffect(() => {
-    if (user?.id) {
-      dispatch(fetchCartItems(user.id) as any);
-    }
+    const syncAndFetchCart = async () => {
+      if (user?.id) {
+        const storedCart = localStorage.getItem("guestCart");
+        if (storedCart) {
+          try {
+            const guestCart = JSON.parse(storedCart);
+            if (guestCart && guestCart.items && guestCart.items.length > 0) {
+              for (const item of guestCart.items) {
+                await dispatch(
+                  addToCart({
+                    userId: user.id,
+                    productId: item.productId,
+                    quantity: item.quantity,
+                    selectedSize: item.selectedSize,
+                    selectedColor: item.selectedColor,
+                  }) as any
+                );
+              }
+              localStorage.removeItem("guestCart");
+            }
+          } catch (e) {
+            console.error("Error syncing guest cart:", e);
+          }
+        }
+        dispatch(fetchCartItems(user.id) as any);
+      } else {
+        dispatch(fetchCartItems(undefined) as any);
+      }
+    };
+
+    syncAndFetchCart();
   }, [dispatch, user?.id]);
 
   useEffect(() => {
