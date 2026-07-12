@@ -386,14 +386,14 @@ export default function ShoppingProductDetails() {
                   Quantity
                 </label>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex items-center border border-zinc-200 rounded-full h-12 bg-white overflow-hidden w-full sm:w-auto">
+                  <div className="flex items-center border border-zinc-200 rounded-full h-12 bg-white overflow-hidden w-full sm:w-36">
                     <button
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
                       className="w-12 h-full flex items-center justify-center hover:bg-zinc-50 border-r border-zinc-100 text-black transition-colors"
                     >
                       <Minus className="w-3.5 h-3.5" />
                     </button>
-                    <span className="w-12 text-center text-xs font-bold text-black">{quantity}</span>
+                    <span className="flex-1 text-center text-xs font-bold text-black">{quantity}</span>
                     <button
                       onClick={() => setQuantity(quantity + 1)}
                       className="w-12 h-full flex items-center justify-center hover:bg-zinc-50 border-l border-zinc-100 text-black transition-colors"
@@ -405,7 +405,7 @@ export default function ShoppingProductDetails() {
                   <button
                     onClick={handleAddToCart}
                     disabled={productDetails.totalStock === 0}
-                    className="flex-1 h-12 bg-black hover:bg-zinc-800 text-white rounded-full font-bold uppercase tracking-widest text-xs transition-all shadow flex items-center justify-center gap-3 disabled:opacity-50"
+                    className="w-full sm:flex-1 h-12 bg-black hover:bg-zinc-800 text-white rounded-full font-bold uppercase tracking-widest text-xs transition-all shadow flex items-center justify-center gap-3 disabled:opacity-50"
                   >
                     <ShoppingCart className="w-4 h-4" />
                     {productDetails.totalStock === 0 ? "Out of Stock" : "Add to Cart"}
