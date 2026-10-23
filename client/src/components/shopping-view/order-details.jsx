@@ -1,10 +1,8 @@
 import { useSelector } from "react-redux";
 import { Badge } from "../ui/badge";
 import { DialogContent } from "../ui/dialog";
-import { Label } from "../ui/label";
 import { Separator } from "../ui/separator";
-import { Button } from "../ui/button";
-import { X, RotateCcw, Clock, CheckCircle, XCircle } from "lucide-react";
+import { X, RotateCcw, Clock, CheckCircle, XCircle, Package, MapPin, CreditCard } from "lucide-react";
 
 function ShoppingOrderDetailsView({
   orderDetails,
@@ -15,35 +13,42 @@ function ShoppingOrderDetailsView({
 }) {
   const { user } = useSelector((state) => state.auth);
 
-  // Add null check at the beginning
   if (!orderDetails) {
     return (
-      <DialogContent className="sm:max-w-[650px]">
-        <div className="text-center py-8">
-          <p className="text-muted-foreground">Order details not available.</p>
+      <DialogContent className="sm:max-w-[650px] bg-[#FAF9F6] border border-zinc-200">
+        <div className="text-center py-12">
+          <p className="text-xs uppercase tracking-widest text-zinc-400">Order record not available</p>
         </div>
       </DialogContent>
     );
   }
 
-  const getStatusColor = (status) => {
+  const getStatusBadge = (status) => {
     switch (status) {
       case "confirmed":
-        return "bg-green-500 text-white";
-      case "processing":
-        return "bg-yellow-500 text-white";
-      case "shipped":
-        return "bg-blue-500 text-white";
-      case "out_for_delivery":
-        return "bg-purple-500 text-white";
       case "delivered":
-        return "bg-green-600 text-white";
+        return {
+          bg: "bg-emerald-50 text-emerald-800 border-emerald-200/80",
+          dot: "bg-emerald-600",
+        };
+      case "processing":
+      case "shipped":
+      case "out_for_delivery":
+        return {
+          bg: "bg-amber-50 text-amber-800 border-amber-200/80",
+          dot: "bg-amber-600",
+        };
       case "cancelled":
-        return "bg-red-600 text-white";
+        return {
+          bg: "bg-rose-50 text-rose-800 border-rose-200/80",
+          dot: "bg-rose-600",
+        };
       case "returned":
-        return "bg-gray-600 text-white";
       default:
-        return "bg-gray-500 text-white";
+        return {
+          bg: "bg-zinc-100 text-zinc-700 border-zinc-200",
+          dot: "bg-zinc-500",
+        };
     }
   };
 
@@ -58,20 +63,20 @@ function ShoppingOrderDetailsView({
     switch (status) {
       case "pending":
         return {
-          text: `Cancellation Requested (${requestedAt})`,
-          color: "bg-yellow-500 text-white",
+          text: `Cancellation Pending (${requestedAt})`,
+          style: "bg-amber-50 text-amber-800 border-amber-200/80",
           icon: <Clock className="w-3 h-3 mr-1" />,
         };
       case "approved":
         return {
           text: `Cancellation Approved (${requestedAt})`,
-          color: "bg-green-500 text-white",
+          style: "bg-emerald-50 text-emerald-800 border-emerald-200/80",
           icon: <CheckCircle className="w-3 h-3 mr-1" />,
         };
       case "rejected":
         return {
-          text: `Cancellation Rejected (${requestedAt})`,
-          color: "bg-red-500 text-white",
+          text: `Cancellation Declined (${requestedAt})`,
+          style: "bg-rose-50 text-rose-800 border-rose-200/80",
           icon: <XCircle className="w-3 h-3 mr-1" />,
         };
       default:
@@ -88,20 +93,20 @@ function ShoppingOrderDetailsView({
     switch (status) {
       case "pending":
         return {
-          text: `Return Requested (${requestedAt})`,
-          color: "bg-yellow-500 text-white",
+          text: `Return Pending (${requestedAt})`,
+          style: "bg-amber-50 text-amber-800 border-amber-200/80",
           icon: <Clock className="w-3 h-3 mr-1" />,
         };
       case "approved":
         return {
           text: `Return Approved (${requestedAt})`,
-          color: "bg-green-500 text-white",
+          style: "bg-emerald-50 text-emerald-800 border-emerald-200/80",
           icon: <CheckCircle className="w-3 h-3 mr-1" />,
         };
       case "rejected":
         return {
-          text: `Return Rejected (${requestedAt})`,
-          color: "bg-red-500 text-white",
+          text: `Return Declined (${requestedAt})`,
+          style: "bg-rose-50 text-rose-800 border-rose-200/80",
           icon: <XCircle className="w-3 h-3 mr-1" />,
         };
       default:
@@ -113,224 +118,164 @@ function ShoppingOrderDetailsView({
   const returnStatus = getReturnStatus(orderDetails);
   const showCancelButton = canCancelOrder(orderDetails) && !cancellationStatus;
   const showReturnButton = canReturnOrder(orderDetails) && !returnStatus;
+  const statusConfig = getStatusBadge(orderDetails.orderStatus);
 
-  // Calculate items total
   const itemsTotal =
     orderDetails.items?.reduce((total, item) => {
       return total + (item.salePrice || item.price) * item.quantity;
     }, 0) || 0;
 
   return (
-    <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-      <div className="grid gap-6">
-        {/* Header with Order ID */}
-        <div className="text-center border-b pb-4">
-          <h2 className="text-xl font-bold text-gray-900">Order Details</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Order #{orderDetails._id.slice(-8).toUpperCase()}
-          </p>
-        </div>
-
-        {/* Status Badges */}
-        <div className="flex flex-wrap gap-2 justify-center">
-          <Badge
-            className={`py-2 px-4 text-sm font-medium ${getStatusColor(
-              orderDetails.orderStatus
-            )}`}
-          >
-            {orderDetails.orderStatus?.replace(/_/g, " ").toUpperCase()}
-          </Badge>
-
-          {cancellationStatus && (
-            <Badge
-              className={`py-2 px-4 text-sm font-medium flex items-center ${cancellationStatus.color}`}
-            >
-              {cancellationStatus.icon}
-              {cancellationStatus.text}
-            </Badge>
-          )}
-
-          {returnStatus && (
-            <Badge
-              className={`py-2 px-4 text-sm font-medium flex items-center ${returnStatus.color}`}
-            >
-              {returnStatus.icon}
-              {returnStatus.text}
-            </Badge>
-          )}
-        </div>
-
-        {/* Order Information */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
-          <div className="space-y-2">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Order Date</p>
-              <p className="text-sm text-gray-900">
-                {new Date(orderDetails.orderDate).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-600">
-                Payment Method
-              </p>
-              <p className="text-sm text-gray-900 capitalize">
-                {orderDetails.paymentMethod}
-              </p>
-            </div>
+    <DialogContent className="sm:max-w-[700px] max-h-[88vh] overflow-y-auto bg-[#FAF9F6] border border-zinc-200/80 p-6 sm:p-8 font-sans">
+      <div className="space-y-6">
+        {/* Header with Order ID & Status */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-zinc-200/80">
+          <div>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-400 block mb-1">
+              Order Dossier
+            </span>
+            <h2 className="font-serif text-2xl text-[#121212]">
+              #{orderDetails._id.slice(-8).toUpperCase()}
+            </h2>
           </div>
-          <div className="space-y-2">
-            <div>
-              <p className="text-sm font-medium text-gray-600">
-                Payment Status
-              </p>
-              <p className="text-sm text-gray-900 capitalize">
-                {orderDetails.paymentStatus}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-600">Last Updated</p>
-              <p className="text-sm text-gray-900">
-                {new Date(orderDetails.orderUpdateDate).toLocaleDateString(
-                  "en-US",
-                  {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  }
-                )}
-              </p>
-            </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold uppercase tracking-wider rounded-sm border ${statusConfig.bg}`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dot}`} />
+              {orderDetails.orderStatus?.replace(/_/g, " ")}
+            </span>
+
+            {cancellationStatus && (
+              <span
+                className={`inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-sm border ${cancellationStatus.style}`}
+              >
+                {cancellationStatus.icon}
+                {cancellationStatus.text}
+              </span>
+            )}
+
+            {returnStatus && (
+              <span
+                className={`inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-sm border ${returnStatus.style}`}
+              >
+                {returnStatus.icon}
+                {returnStatus.text}
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Action Buttons */}
+        {/* Quick Meta Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-white rounded-sm border border-zinc-200/70 text-xs">
+          <div>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 block">Placed On</span>
+            <span className="text-[#121212] font-medium mt-1 block">
+              {new Date(orderDetails.orderDate).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </span>
+          </div>
+
+          <div>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 block">Settlement</span>
+            <span className="text-[#121212] font-medium mt-1 block uppercase tracking-wide">
+              {orderDetails.paymentMethod}
+            </span>
+          </div>
+
+          <div>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 block">Payment State</span>
+            <span className="text-emerald-700 font-semibold mt-1 block capitalize">
+              {orderDetails.paymentStatus}
+            </span>
+          </div>
+
+          <div>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 block">Updated</span>
+            <span className="text-[#121212] font-medium mt-1 block">
+              {new Date(orderDetails.orderUpdateDate || orderDetails.orderDate).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              })}
+            </span>
+          </div>
+        </div>
+
+        {/* Action Buttons if eligible */}
         {(showCancelButton || showReturnButton) && (
           <div className="flex gap-3">
             {showCancelButton && (
-              <Button
+              <button
                 onClick={() => onCancellationRequest(orderDetails)}
-                variant="destructive"
-                className="flex-1 flex items-center gap-2"
+                className="flex-1 py-2 px-4 border border-rose-300 text-rose-700 hover:bg-rose-50 text-xs font-semibold uppercase tracking-wider rounded-sm transition-colors flex items-center justify-center gap-1.5"
               >
-                <X className="w-4 h-4" />
-                Request Cancellation
-              </Button>
+                <X className="w-3.5 h-3.5" />
+                <span>Request Cancellation</span>
+              </button>
             )}
             {showReturnButton && (
-              <Button
+              <button
                 onClick={() => onReturnRequest(orderDetails)}
-                variant="outline"
-                className="flex-1 flex items-center gap-2 border-red-200 text-red-600 hover:bg-red-50"
+                className="flex-1 py-2 px-4 border border-zinc-300 text-zinc-700 hover:bg-zinc-100 text-xs font-semibold uppercase tracking-wider rounded-sm transition-colors flex items-center justify-center gap-1.5"
               >
-                <RotateCcw className="w-4 h-4" />
-                Request Return
-              </Button>
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Request Return</span>
+              </button>
             )}
           </div>
         )}
 
-        <Separator />
-
         {/* Order Items */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900">Order Items</h3>
-          <div className="space-y-4">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Package className="w-4 h-4 text-zinc-400 stroke-[1.8]" />
+            <h3 className="font-serif text-base text-[#121212]">Curated Items</h3>
+          </div>
+
+          <div className="space-y-2.5">
             {orderDetails.items?.map((item, index) => (
               <div
                 key={index}
-                className="flex gap-4 p-4 border border-gray-200 rounded-lg"
+                className="flex items-center gap-4 p-3.5 bg-white border border-zinc-200/70 rounded-sm"
               >
                 <img
                   src={item.image}
                   alt={item.title}
-                  className="w-20 h-20 object-cover rounded-lg flex-shrink-0"
+                  className="w-16 h-20 object-contain bg-[#FAF9F6] rounded-xs border border-zinc-200/60 p-1 flex-shrink-0"
                 />
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-gray-900 text-sm sm:text-base">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-400 block">
+                    {item.brand}
+                  </span>
+                  <h4 className="font-serif text-sm text-[#121212] truncate mt-0.5">
                     {item.title}
                   </h4>
-                  <p className="text-sm text-gray-600 mb-2">by {item.brand}</p>
-
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <span className="text-gray-600">Size:</span>
-                      <span className="ml-2 font-medium">
-                        {item.selectedSize}
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-600 mt-1.5">
+                    {item.selectedSize && (
+                      <span className="bg-zinc-100 px-2 py-0.5 rounded-xs font-medium">
+                        Size: {item.selectedSize}
                       </span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Color:</span>
-                      <span className="ml-2 font-medium capitalize">
-                        {item.selectedColor}
+                    )}
+                    {item.selectedColor && (
+                      <span className="bg-zinc-100 px-2 py-0.5 rounded-xs capitalize font-medium">
+                        Color: {item.selectedColor}
                       </span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Quantity:</span>
-                      <span className="ml-2 font-medium">{item.quantity}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Price:</span>
-                      <span className="ml-2 font-medium">
-                        ₹{item.salePrice || item.price}
-                      </span>
-                    </div>
+                    )}
+                    <span className="text-zinc-500 font-medium">
+                      Qty: {item.quantity}
+                    </span>
                   </div>
-
-                  {/* Product Details from productDetails */}
-                  {item.productDetails && (
-                    <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                      <p className="text-xs text-gray-600 mb-2">
-                        Product Information:
-                      </p>
-                      <div className="grid grid-cols-2 gap-1 text-xs">
-                        <div>
-                          <span className="text-gray-600">Category:</span>
-                          <span className="ml-1 font-medium capitalize">
-                            {item.productDetails.category}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Subcategory:</span>
-                          <span className="ml-1 font-medium capitalize">
-                            {item.productDetails.subcategory}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">
-                            Available Colors:
-                          </span>
-                          <span className="ml-1 font-medium">
-                            {item.productDetails.colors?.join(", ")}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">
-                            Available Sizes:
-                          </span>
-                          <span className="ml-1 font-medium">
-                            {item.productDetails.sizes
-                              ?.map((s) => `${s.size}(${s.stock})`)
-                              .join(", ")}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold text-gray-900">
+                <div className="text-right flex-shrink-0">
+                  <p className="font-serif text-sm font-semibold text-[#121212]">
                     ₹{(item.salePrice || item.price) * item.quantity}
                   </p>
                   {item.salePrice && item.salePrice < item.price && (
-                    <p className="text-sm text-gray-500 line-through">
+                    <p className="text-[11px] text-zinc-400 line-through">
                       ₹{item.price * item.quantity}
                     </p>
                   )}
@@ -340,120 +285,81 @@ function ShoppingOrderDetailsView({
           </div>
         </div>
 
-        <Separator />
-
-        {/* Price Breakdown */}
-        <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-gray-900">Price Details</h3>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Items Total:</span>
-              <span className="font-medium">₹{itemsTotal}</span>
+        {/* Pricing Breakdown & Shipping Address Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Shipping Address */}
+          <div className="p-4 bg-white border border-zinc-200/70 rounded-sm space-y-2">
+            <div className="flex items-center gap-2 mb-2">
+              <MapPin className="w-3.5 h-3.5 text-zinc-400 stroke-[1.8]" />
+              <h4 className="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-700">
+                Delivery Destination
+              </h4>
             </div>
-            {orderDetails.shippingFee > 0 && (
-              <div className="flex justify-between">
-                <span className="text-gray-600">Shipping Fee:</span>
-                <span className="font-medium">₹{orderDetails.shippingFee}</span>
-              </div>
+            <p className="font-medium text-xs text-[#121212]">
+              {user?.userName || user?.name || "Client"}
+            </p>
+            <p className="text-xs text-zinc-600 leading-relaxed">
+              {orderDetails.addressInfo?.address}
+            </p>
+            <p className="text-xs text-zinc-600">
+              {orderDetails.addressInfo?.city}, {orderDetails.addressInfo?.state} {orderDetails.addressInfo?.pincode}
+            </p>
+            <p className="text-xs text-zinc-500 pt-1">
+              Contact: {orderDetails.addressInfo?.phone}
+            </p>
+            {orderDetails.addressInfo?.notes && (
+              <p className="text-[11px] text-zinc-500 italic pt-1">
+                Note: {orderDetails.addressInfo.notes}
+              </p>
             )}
+          </div>
+
+          {/* Pricing Breakdown */}
+          <div className="p-4 bg-white border border-zinc-200/70 rounded-sm space-y-2 text-xs">
+            <h4 className="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-700 mb-2">
+              Financial Summary
+            </h4>
+            <div className="flex justify-between text-zinc-600">
+              <span>Items Subtotal</span>
+              <span className="font-medium text-[#121212]">₹{itemsTotal}</span>
+            </div>
+            <div className="flex justify-between text-zinc-600">
+              <span>Standard Logistics</span>
+              <span className="font-medium text-emerald-700">
+                {orderDetails.shippingFee > 0 ? `₹${orderDetails.shippingFee}` : "Complimentary"}
+              </span>
+            </div>
             {orderDetails.cashHandlingFee > 0 && (
-              <div className="flex justify-between">
-                <span className="text-gray-600">Cash Handling Fee:</span>
-                <span className="font-medium">
-                  ₹{orderDetails.cashHandlingFee}
-                </span>
+              <div className="flex justify-between text-zinc-600">
+                <span>Cash Handling Fee</span>
+                <span className="font-medium text-[#121212]">₹{orderDetails.cashHandlingFee}</span>
               </div>
             )}
             {orderDetails.discount > 0 && (
-              <div className="flex justify-between text-green-600">
-                <span>Discount:</span>
-                <span>-₹{orderDetails.discount}</span>
+              <div className="flex justify-between text-emerald-700">
+                <span>Promotional Privilege</span>
+                <span className="font-semibold">-₹{orderDetails.discount}</span>
               </div>
             )}
-            <Separator />
-            <div className="flex justify-between text-lg font-bold">
-              <span>Total Amount:</span>
-              <span>₹{orderDetails.totalAmount}</span>
+            <div className="pt-2 mt-2 border-t border-zinc-200 flex justify-between items-baseline">
+              <span className="font-semibold uppercase tracking-wider text-xs text-[#121212]">
+                Total Settled
+              </span>
+              <span className="font-serif text-lg font-bold text-[#121212]">
+                ₹{orderDetails.totalAmount}
+              </span>
             </div>
           </div>
         </div>
 
-        <Separator />
-
-        {/* Shipping Address */}
-        <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-gray-900">
-            Shipping Address
-          </h3>
-          <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
-            <div className="space-y-2 text-sm">
-              <p className="font-medium text-gray-900">
-                {user?.userName || user?.name || "Customer"}
-              </p>
-              <p className="text-gray-600">
-                {orderDetails.addressInfo?.address}
-              </p>
-              <p className="text-gray-600">{orderDetails.addressInfo?.city}</p>
-              <p className="text-gray-600">
-                Pincode: {orderDetails.addressInfo?.pincode}
-              </p>
-              <p className="text-gray-600">
-                Phone: {orderDetails.addressInfo?.phone}
-              </p>
-              {orderDetails.addressInfo?.type && (
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-600">Address Type:</span>
-                  <Badge variant="outline" className="capitalize">
-                    {orderDetails.addressInfo.type}
-                  </Badge>
-                </div>
-              )}
-              {orderDetails.addressInfo?.notes && (
-                <div className="mt-2 p-2 bg-white rounded border">
-                  <p className="text-xs text-gray-600 mb-1">Delivery Notes:</p>
-                  <p className="text-sm">{orderDetails.addressInfo.notes}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Cancellation Details */}
+        {/* Cancellation Reason if present */}
         {orderDetails.cancellation?.requested && (
-          <>
-            <Separator />
-            <div className="space-y-3">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Cancellation Details
-              </h3>
-              <div className="p-4 border border-yellow-200 rounded-lg bg-yellow-50">
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Requested On:</span>
-                    <span className="font-medium">
-                      {new Date(
-                        orderDetails.cancellation.requestedAt
-                      ).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Reason:</span>
-                    <p className="font-medium mt-1">
-                      {orderDetails.cancellation.reason}
-                    </p>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Status:</span>
-                    <Badge
-                      className={cancellationStatus?.color || "bg-gray-500"}
-                    >
-                      {orderDetails.cancellation.status}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </>
+          <div className="p-4 bg-amber-50/60 border border-amber-200/70 rounded-sm text-xs space-y-1">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-800 block">
+              Cancellation File Note
+            </span>
+            <p className="text-zinc-700">{orderDetails.cancellation.reason}</p>
+          </div>
         )}
       </div>
     </DialogContent>

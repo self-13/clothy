@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { LogOut, ShoppingCart, UserCog, X, Menu } from "lucide-react";
+import { LogOut, ShoppingBag, User, X, Menu } from "lucide-react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Sheet, SheetContent } from "../ui/sheet";
 import { Button } from "../ui/button";
@@ -10,13 +10,13 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { logoutUser } from "@/store/auth-slice";
 import UserCartWrapper from "./cart-wrapper";
 import { fetchCartItems, addToCart } from "@/store/shop/cart-slice";
-import { Label } from "../ui/label";
 
 interface MenuItemsProps {
   onItemClick?: () => void;
@@ -53,22 +53,26 @@ function MenuItems({ onItemClick, isTransparent }: MenuItemsProps) {
   }
 
   return (
-    <nav className="flex flex-col mb-3 lg:mb-0 lg:items-center gap-8 lg:flex-row">
+    <nav className="flex flex-col lg:flex-row lg:items-center gap-6 lg:gap-8">
       {shoppingViewHeaderMenuItems
         .filter((menuItem) => menuItem.id !== "search")
         .map((menuItem) => (
-          <span
-            onClick={() => handleNavigate(menuItem)}
-            className={`text-[14px] font-medium uppercase tracking-[0.1em] cursor-pointer transition-all duration-300 relative group py-2 ${
-              isTransparent ? "text-white/80 hover:text-white" : "text-zinc-600 hover:text-black"
-            }`}
+          <button
             key={menuItem.id}
+            onClick={() => handleNavigate(menuItem)}
+            className={`text-xs uppercase tracking-[0.18em] font-medium transition-colors duration-200 relative group py-1 text-left ${
+              isTransparent
+                ? "text-white/85 hover:text-white"
+                : "text-zinc-600 hover:text-black"
+            }`}
           >
             {menuItem.label}
-            <span className={`absolute bottom-0 left-0 w-0 h-[2px] transition-all duration-300 group-hover:w-full ${
-              isTransparent ? "bg-white" : "bg-black"
-            }`} />
-          </span>
+            <span
+              className={`absolute bottom-0 left-0 w-0 h-[1.5px] transition-all duration-300 group-hover:w-full ${
+                isTransparent ? "bg-white" : "bg-[#121212]"
+              }`}
+            />
+          </button>
         ))}
     </nav>
   );
@@ -85,42 +89,41 @@ function UserMenu({ user, handleLogout, navigate, isTransparent }: UserMenuProps
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <div className="flex items-center gap-3 cursor-pointer group">
-          <div className="hidden md:block text-right">
-            <p className="text-[10px] font-medium uppercase tracking-widest text-zinc-400 leading-none">Account</p>
-            <p className={`text-sm font-semibold uppercase tracking-tight ${
-              isTransparent ? "text-white" : "text-black"
-            }`}>{user?.userName}</p>
-          </div>
-          <Avatar className={`h-10 w-10 rounded-full border p-0.5 transition-all duration-300 ${
-            isTransparent
-              ? "border-white bg-transparent text-white group-hover:bg-white group-hover:text-black"
-              : "border-black bg-white text-black group-hover:bg-black group-hover:text-white"
-          }`}>
-            <AvatarFallback className="bg-transparent text-inherit font-bold text-xs">
+        <button
+          className={`flex items-center gap-2.5 p-1 rounded-full transition-transform active:scale-95 ${
+            isTransparent ? "text-white" : "text-[#121212]"
+          }`}
+          aria-label="User account menu"
+        >
+          <Avatar className="h-8 w-8 rounded-full border border-zinc-300/80 bg-zinc-100">
+            <AvatarFallback className="bg-transparent text-[#121212] font-semibold text-xs font-sans">
               {user?.userName?.[0]?.toUpperCase()}
             </AvatarFallback>
           </Avatar>
-        </div>
+          <span className="hidden md:inline-block text-xs font-medium uppercase tracking-[0.12em]">
+            {user?.userName}
+          </span>
+        </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="w-56 bg-white border border-zinc-200 rounded-lg shadow-lg p-2 mt-2"
+        className="w-56 bg-white border border-zinc-200/90 rounded-sm shadow-xl p-1.5 mt-2 animate-in fade-in-0 zoom-in-95 duration-150"
       >
-        <DropdownMenuLabel className="text-black font-bold uppercase tracking-tight text-xs px-2 py-3 border-b border-zinc-100">
-          PRO_FILE
+        <DropdownMenuLabel className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400 px-3 py-2">
+          Signed In As <span className="text-black block font-bold text-xs normal-case">{user?.userName}</span>
         </DropdownMenuLabel>
+        <DropdownMenuSeparator className="bg-zinc-100" />
         <DropdownMenuItem
           onClick={() => navigate("/shop/account")}
-          className="rounded-md focus:bg-zinc-100 cursor-pointer font-bold uppercase text-[10px] tracking-widest py-3 px-2 flex items-center gap-2 mt-1"
+          className="rounded-sm cursor-pointer text-xs font-medium uppercase tracking-[0.12em] py-2.5 px-3 flex items-center gap-2.5 hover:bg-zinc-100/70"
         >
-          <UserCog className="h-4 w-4" /> Management
+          <User className="h-3.5 w-3.5 text-zinc-500" /> Account Overview
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={handleLogout}
-          className="rounded-md focus:bg-red-50 focus:text-red-600 cursor-pointer font-bold uppercase text-[10px] tracking-widest py-3 px-2 flex items-center gap-2"
+          className="rounded-sm cursor-pointer text-xs font-medium uppercase tracking-[0.12em] py-2.5 px-3 flex items-center gap-2.5 text-rose-600 hover:bg-rose-50"
         >
-          <LogOut className="h-4 w-4" /> Terminate Session
+          <LogOut className="h-3.5 w-3.5" /> Sign Out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -131,8 +134,6 @@ export default function ShoppingHeader() {
   const { user } = useSelector((state: any) => state.auth);
   const { cartItems } = useSelector((state: any) => state.shopCart);
   const [openCartSheet, setOpenCartSheet] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -140,19 +141,10 @@ export default function ShoppingHeader() {
   const dispatch = useDispatch();
   const location = useLocation();
 
-  const isHome = location.pathname === "/shop/home";
+  const isHome = location.pathname === "/shop/home" || location.pathname === "/";
 
   function handleLogout() {
     dispatch(logoutUser() as any);
-  }
-
-  function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/shop/listing?search=${encodeURIComponent(searchQuery)}`);
-      setSearchOpen(false);
-      setSearchQuery("");
-    }
   }
 
   useEffect(() => {
@@ -191,7 +183,7 @@ export default function ShoppingHeader() {
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 50) {
+      if (window.scrollY > 40) {
         setScrolled(true);
       } else {
         setScrolled(false);
@@ -201,149 +193,167 @@ export default function ShoppingHeader() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Determine transparent or solid styles
   const isTransparent = isHome && !scrolled;
 
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 h-20 flex items-center ${
-        isTransparent
-          ? "bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800/50 text-white"
-          : "bg-white/90 backdrop-blur-xl border-b border-zinc-100 text-black shadow-sm"
-      }`}
-    >
-      <div className="container mx-auto px-4 md:px-8 h-full flex items-center justify-between gap-8">
-        {/* Logo */}
-        <Link
-          to="/shop/home"
-          className="flex items-center gap-2 hover:scale-105 transition-transform"
-        >
-          <img src="/logo.png" alt="logo" className={`size-24 ${isTransparent ? "invert" : ""}`} />
-        </Link>
-
-        {/* Desktop Menu */}
-        <div className="hidden lg:block">
-          <MenuItems isTransparent={isTransparent} />
-        </div>
-
-        {/* Right Section */}
-        <div className="flex items-center gap-4 md:gap-6">
-
-          {/* Cart Trigger */}
-          <Sheet open={openCartSheet} onOpenChange={setOpenCartSheet}>
+    <>
+      <header
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 h-20 flex items-center ${
+          isTransparent
+            ? "bg-transparent text-white"
+            : "bg-[#FAF9F6]/95 backdrop-blur-md border-b border-zinc-200/70 text-[#121212] shadow-[0_1px_3px_rgba(0,0,0,0.03)]"
+        }`}
+      >
+        <div className="container mx-auto px-4 md:px-8 h-full flex items-center justify-between gap-6">
+          
+          {/* Left: Mobile Menu & Brand */}
+          <div className="flex items-center gap-4">
             <button
-              onClick={() => setOpenCartSheet(true)}
-              className="relative hover:scale-110 transition-transform duration-300 p-2"
-              aria-label="Open cart"
+              onClick={() => setMobileMenuOpen(true)}
+              className="lg:hidden p-1.5 -ml-1.5 transition-transform active:scale-95"
+              aria-label="Open menu"
             >
-              <ShoppingCart className="w-5 h-5 stroke-[2]" />
-              {cartItems?.items?.length > 0 && (
-                <span className={`absolute -top-1 -right-1 font-bold text-[9px] rounded-full w-4 h-4 flex items-center justify-center transition-colors duration-300 ${
-                  isTransparent
-                    ? "bg-white text-black border border-transparent"
-                    : "bg-black text-white border border-white"
-                }`}>
-                  {cartItems.items.length}
-                </span>
-              )}
+              <Menu className="h-5 w-5 stroke-[1.8]" />
             </button>
-            <UserCartWrapper
-              setOpenCartSheet={setOpenCartSheet}
-              cartItems={cartItems?.items?.length > 0 ? cartItems.items : []}
-            />
-          </Sheet>
 
-          {/* User Profile / Login */}
-          <div className="flex items-center">
+            <Link
+              to="/shop/home"
+              className="flex items-center gap-3 transition-opacity hover:opacity-85"
+            >
+              <span className={`font-serif text-xl sm:text-2xl tracking-[0.16em] uppercase font-medium ${
+                isTransparent ? "text-white" : "text-[#121212]"
+              }`}>
+                LUXERIDGE
+              </span>
+            </Link>
+          </div>
+
+          {/* Center: Desktop Navigation */}
+          <div className="hidden lg:flex items-center justify-center flex-1">
+            <MenuItems isTransparent={isTransparent} />
+          </div>
+
+          {/* Right: Actions (Cart, User) */}
+          <div className="flex items-center gap-3 sm:gap-5">
+            {/* Shopping Bag Trigger */}
+            <Sheet open={openCartSheet} onOpenChange={setOpenCartSheet}>
+              <button
+                onClick={() => setOpenCartSheet(true)}
+                className={`relative p-2 transition-transform active:scale-95 rounded-full hover:bg-black/5 ${
+                  isTransparent ? "hover:bg-white/10 text-white" : "text-[#121212]"
+                }`}
+                aria-label="Open shopping bag"
+              >
+                <ShoppingBag className="w-4 h-4 stroke-[1.8]" />
+                {cartItems?.items?.length > 0 && (
+                  <span className={`absolute -top-0.5 -right-0.5 text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center ${
+                    isTransparent
+                      ? "bg-white text-black"
+                      : "bg-[#121212] text-white"
+                  }`}>
+                    {cartItems.items.length}
+                  </span>
+                )}
+              </button>
+              <UserCartWrapper
+                setOpenCartSheet={setOpenCartSheet}
+                cartItems={cartItems?.items?.length > 0 ? cartItems.items : []}
+              />
+            </Sheet>
+
+            {/* User Profile or Sign In */}
             {user ? (
-              <UserMenu user={user} handleLogout={handleLogout} navigate={navigate} isTransparent={isTransparent} />
+              <UserMenu
+                user={user}
+                handleLogout={handleLogout}
+                navigate={navigate}
+                isTransparent={isTransparent}
+              />
             ) : (
-              <Button
+              <button
                 onClick={() => navigate("/auth/login")}
-                className={`rounded-full font-bold uppercase tracking-widest text-[10px] h-9 px-6 transition-all border ${
+                className={`text-xs uppercase tracking-[0.14em] font-semibold py-2 px-4 transition-all duration-200 active:scale-95 rounded-sm ${
                   isTransparent
-                    ? "bg-white text-black border-white hover:bg-transparent hover:text-white"
-                    : "bg-black text-white border-black hover:bg-white hover:text-black"
+                    ? "bg-white text-[#121212] hover:bg-white/90"
+                    : "bg-[#121212] text-[#FAF9F6] hover:bg-zinc-800"
                 }`}
               >
                 Sign In
-              </Button>
+              </button>
             )}
           </div>
+        </div>
+      </header>
 
-          {/* Mobile Menu Trigger */}
-          <button
-            onClick={() => setMobileMenuOpen(true)}
-            className="lg:hidden hover:scale-110 transition-transform duration-300 p-2"
-            aria-label="Open navigation menu"
-          >
-            <Menu className="h-6 w-6 stroke-[2]" />
-          </button>
+      {/* Mobile Menu Sheet */}
+      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+        <SheetContent side="left" className="w-[85vw] max-w-sm bg-[#FAF9F6] border-r border-zinc-200 p-0 flex flex-col justify-between">
+          <div>
+            <div className="p-6 border-b border-zinc-200/80 flex justify-between items-center">
+              <span className="font-serif text-xl tracking-[0.15em] uppercase font-medium">LUXERIDGE</span>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-1 text-zinc-500 hover:text-black"
+                aria-label="Close menu"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-[10px] uppercase tracking-[0.2em] font-semibold text-zinc-400 mb-2">Navigation</p>
+              <MenuItems onItemClick={() => setMobileMenuOpen(false)} isTransparent={false} />
+            </div>
+          </div>
 
-          {/* Mobile Navigation Sheet */}
-          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <SheetContent hideCloseButton side="left" className="w-full max-w-xs bg-white border-r border-zinc-200 p-0">
-              <div className="flex flex-col h-full bg-white text-black font-spaceGrotesk">
-                <div className="p-6 border-b border-zinc-100 flex justify-between items-center bg-zinc-50">
-                  <span className="font-black uppercase tracking-tighter text-2xl">Navigation</span>
-                  <button onClick={() => setMobileMenuOpen(false)} aria-label="Close menu">
-                    <X className="w-6 h-6" />
+          <div className="p-6 border-t border-zinc-200/80 bg-white space-y-3">
+            {user ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-9 w-9 border border-zinc-200">
+                    <AvatarFallback className="font-semibold text-xs bg-zinc-100 text-black">
+                      {user?.userName?.[0]?.toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <span className="text-[10px] uppercase tracking-wider text-zinc-400 block">Signed in</span>
+                    <span className="text-sm font-semibold text-[#121212]">{user?.userName}</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 pt-2">
+                  <button
+                    onClick={() => {
+                      navigate("/shop/account");
+                      setMobileMenuOpen(false);
+                    }}
+                    className="py-2.5 px-3 bg-zinc-100 hover:bg-zinc-200 text-xs font-semibold uppercase tracking-wider text-center rounded-sm"
+                  >
+                    Account
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="py-2.5 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold uppercase tracking-wider text-center rounded-sm"
+                  >
+                    Sign Out
                   </button>
                 </div>
-                <div className="p-6 flex-1 space-y-6">
-                  <MenuItems onItemClick={() => setMobileMenuOpen(false)} />
-                </div>
-                {user ? (
-                  <div className="p-6 bg-zinc-50 border-t border-zinc-100 space-y-4">
-                    <div className="flex items-center gap-4 mb-2">
-                      <Avatar className="h-12 w-12 border border-black p-0.5 bg-white">
-                        <AvatarFallback className="bg-transparent text-black font-bold">
-                          {user?.userName?.[0]?.toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-col">
-                        <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-400">Authenticated as</span>
-                        <span className="text-md font-semibold text-black uppercase tracking-tight">{user?.userName}</span>
-                      </div>
-                    </div>
-                    <Button
-                      onClick={() => {
-                        navigate("/shop/account");
-                        setMobileMenuOpen(false);
-                      }}
-                      className="w-full h-10 bg-black text-white rounded-full font-bold uppercase tracking-widest text-[10px]"
-                    >
-                      Manage Account
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        handleLogout();
-                        setMobileMenuOpen(false);
-                      }}
-                      className="w-full h-10 bg-white text-black border border-black rounded-full font-bold uppercase tracking-widest text-[10px] hover:bg-black hover:text-white transition-all duration-300"
-                    >
-                      Terminate Session
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="p-6 bg-zinc-50 border-t border-zinc-100">
-                    <Button
-                      onClick={() => {
-                        navigate("/auth/login");
-                        setMobileMenuOpen(false);
-                      }}
-                      className="w-full h-10 bg-black text-white rounded-full font-bold uppercase tracking-widest text-[10px]"
-                    >
-                      Sign In
-                    </Button>
-                  </div>
-                )}
               </div>
-            </SheetContent>
-          </Sheet>
-        </div>
-      </div>
-
-    </header>
+            ) : (
+              <button
+                onClick={() => {
+                  navigate("/auth/login");
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full py-3 bg-[#121212] text-white text-xs font-semibold uppercase tracking-[0.15em] text-center rounded-sm"
+              >
+                Sign In / Register
+              </button>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }

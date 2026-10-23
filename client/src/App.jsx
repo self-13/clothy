@@ -49,7 +49,7 @@ function App() {
   if (isLoading) return <Skeleton className="w-[800] bg-black h-[600px]" />;
 
   return (
-    <div className="flex flex-col overflow-hidden bg-slate-300">
+    <div className="flex flex-col min-h-screen bg-[#FAF9F6] text-[#121212] font-sans">
       <Suspense fallback={<Skeleton className="w-full h-screen bg-slate-100" />}>
         <Routes>
           <Route

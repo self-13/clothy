@@ -5,8 +5,7 @@ import {
   removeFromWishlist,
 } from "@/store/shop/wishlist-slice";
 import ShoppingProductTile from "../shopping-view/product-tile";
-import { Button } from "../ui/button";
-import { HeartOff } from "lucide-react";
+import { Heart, X } from "lucide-react";
 import { useToast } from "../ui/use-toast";
 import { fetchProductDetails } from "@/store/shop/products-slice";
 
@@ -30,61 +29,70 @@ function ShoppingWishlist() {
     ).then((data) => {
       if (data?.payload?.success) {
         toast({
-          title: "Removed from wishlist",
+          title: "Removed from wishlist.",
         });
       }
     });
   };
 
   const handleGetProductDetails = (productId) => {
-    console.log("Fetching details for product ID:", productId);
     dispatch(fetchProductDetails(productId));
   };
 
   if (!wishlistItems?.items || wishlistItems.items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-8 sm:py-12 px-4">
-        <HeartOff className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 mb-3 sm:mb-4" />
-        <h3 className="text-lg sm:text-xl font-medium text-gray-900 mb-2 text-center">
-          Your wishlist is empty
+      <div className="flex flex-col items-center justify-center py-16 px-4 text-center font-sans space-y-3">
+        <div className="w-12 h-12 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400 mb-2">
+          <Heart className="w-5 h-5 stroke-[1.5]" />
+        </div>
+        <h3 className="font-serif text-xl text-[#121212]">
+          Your Wishlist is Empty
         </h3>
-        <p className="text-gray-600 text-center text-sm sm:text-base max-w-md">
-          Save your favorite items here to easily find them later.
+        <p className="text-zinc-500 text-xs font-light max-w-sm">
+          Bookmark garments as you browse to revisit your curated selections here anytime.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-      {wishlistItems.items.map((item) => (
-        <div key={item.productId} className="relative group">
-          {/* FIX: Create a proper product object that ShoppingProductTile expects */}
-          <ShoppingProductTile
-            product={{
-              _id: item.productId, // This is the crucial fix - map productId to _id
-              image: item.image,
-              title: item.title,
-              price: item.price,
-              salePrice: item.salePrice,
-              category: item.category,
-              brand: item.brand,
-              averageReview: item.averageReview,
-              totalStock: 10, // Default value since wishlist doesn't provide stock info
-            }}
-            handleGetProductDetails={handleGetProductDetails}
-          />
-          <Button
-            variant="destructive"
-            size="sm"
-            className="absolute top-2 right-2 opacity-0 group-hover:opacity-90 hover:opacity-100 transition-opacity duration-200 text-xs sm:text-sm h-8 sm:h-9"
-            onClick={() => handleRemoveFromWishlist(item.productId)}
-          >
-            <HeartOff className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-            Remove
-          </Button>
+    <div className="font-sans">
+      <div className="mb-6 pb-4 border-b border-zinc-200/70 flex justify-between items-center">
+        <div>
+          <h3 className="font-serif text-xl text-[#121212]">Saved Garments</h3>
+          <p className="text-xs text-zinc-400 font-light mt-0.5">
+            {wishlistItems.items.length} {wishlistItems.items.length === 1 ? "Piece" : "Pieces"} in your archive
+          </p>
         </div>
-      ))}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
+        {wishlistItems.items.map((item) => (
+          <div key={item.productId} className="relative group">
+            <ShoppingProductTile
+              product={{
+                _id: item.productId,
+                image: item.image,
+                title: item.title,
+                price: item.price,
+                salePrice: item.salePrice,
+                category: item.category,
+                brand: item.brand,
+                averageReview: item.averageReview,
+                totalStock: 10,
+              }}
+              handleGetProductDetails={handleGetProductDetails}
+            />
+            <button
+              onClick={() => handleRemoveFromWishlist(item.productId)}
+              className="absolute top-3 right-3 w-7 h-7 bg-white/95 rounded-full flex items-center justify-center text-zinc-400 hover:text-black shadow-xs opacity-0 group-hover:opacity-100 transition-opacity z-20"
+              aria-label="Remove from wishlist"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

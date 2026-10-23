@@ -9,12 +9,11 @@ import {
 } from "@/store/shop/order-slice";
 
 import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Dialog } from "../ui/dialog";
 import ShoppingOrderDetailsView from "./order-details";
 import { Badge } from "../ui/badge";
 import ReasonFormDialog from "./reason-form-dialog";
-import { Package, Calendar, Eye, X, RotateCcw, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Package, Calendar, Eye, X, RotateCcw, Clock, CheckCircle, XCircle, ArrowUpRight } from "lucide-react";
 
 function ShoppingOrders() {
   const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
@@ -84,7 +83,7 @@ function ShoppingOrders() {
   const canCancelOrder = (order) => {
     if (!order) return false;
     if (!["confirmed", "processing"].includes(order.orderStatus)) return false;
-    if (order.cancellation?.requested) return false; // Already requested
+    if (order.cancellation?.requested) return false;
 
     const orderDate = new Date(order.orderDate);
     const threeDaysLater = new Date(
@@ -97,7 +96,7 @@ function ShoppingOrders() {
   const canReturnOrder = (order) => {
     if (!order) return false;
     if (order.orderStatus !== "delivered") return false;
-    if (order.return?.requested) return false; // Already requested
+    if (order.return?.requested) return false;
 
     const orderDate = new Date(order.orderDate);
     const fifteenDaysFromOrder = new Date(
@@ -116,24 +115,32 @@ function ShoppingOrders() {
     );
   };
 
-  const getStatusColor = (status) => {
+  const getStatusBadge = (status) => {
     switch (status) {
       case "confirmed":
-        return "bg-green-100 text-green-800 border border-green-200";
-      case "processing":
-        return "bg-yellow-100 text-yellow-800 border border-yellow-200";
-      case "shipped":
-        return "bg-blue-100 text-blue-800 border border-blue-200";
-      case "out_for_delivery":
-        return "bg-purple-100 text-purple-800 border border-purple-200";
       case "delivered":
-        return "bg-green-100 text-green-800 border border-green-200";
+        return {
+          bg: "bg-emerald-50 text-emerald-800 border-emerald-200/80",
+          dot: "bg-emerald-600",
+        };
+      case "processing":
+      case "shipped":
+      case "out_for_delivery":
+        return {
+          bg: "bg-amber-50 text-amber-800 border-amber-200/80",
+          dot: "bg-amber-600",
+        };
       case "cancelled":
-        return "bg-red-100 text-red-800 border border-red-200";
+        return {
+          bg: "bg-rose-50 text-rose-800 border-rose-200/80",
+          dot: "bg-rose-600",
+        };
       case "returned":
-        return "bg-gray-100 text-gray-800 border border-gray-200";
       default:
-        return "bg-gray-100 text-gray-800 border border-gray-200";
+        return {
+          bg: "bg-zinc-100 text-zinc-700 border-zinc-200",
+          dot: "bg-zinc-500",
+        };
     }
   };
 
@@ -151,21 +158,21 @@ function ShoppingOrders() {
     switch (status) {
       case "pending":
         return {
-          text: "Cancellation Requested",
-          color: "bg-yellow-100 text-yellow-800 border border-yellow-200",
-          icon: <Clock className="w-3 h-3 mr-1" />
+          text: "Cancellation Pending",
+          style: "bg-amber-50 text-amber-800 border-amber-200/80",
+          icon: <Clock className="w-3 h-3 mr-1" />,
         };
       case "approved":
         return {
           text: "Cancellation Approved",
-          color: "bg-green-100 text-green-800 border border-green-200",
-          icon: <CheckCircle className="w-3 h-3 mr-1" />
+          style: "bg-emerald-50 text-emerald-800 border-emerald-200/80",
+          icon: <CheckCircle className="w-3 h-3 mr-1" />,
         };
       case "rejected":
         return {
-          text: "Cancellation Rejected",
-          color: "bg-red-100 text-red-800 border border-red-200",
-          icon: <XCircle className="w-3 h-3 mr-1" />
+          text: "Cancellation Declined",
+          style: "bg-rose-50 text-rose-800 border-rose-200/80",
+          icon: <XCircle className="w-3 h-3 mr-1" />,
         };
       default:
         return null;
@@ -179,21 +186,21 @@ function ShoppingOrders() {
     switch (status) {
       case "pending":
         return {
-          text: "Return Requested",
-          color: "bg-yellow-100 text-yellow-800 border border-yellow-200",
-          icon: <Clock className="w-3 h-3 mr-1" />
+          text: "Return Pending",
+          style: "bg-amber-50 text-amber-800 border-amber-200/80",
+          icon: <Clock className="w-3 h-3 mr-1" />,
         };
       case "approved":
         return {
           text: "Return Approved",
-          color: "bg-green-100 text-green-800 border border-green-200",
-          icon: <CheckCircle className="w-3 h-3 mr-1" />
+          style: "bg-emerald-50 text-emerald-800 border-emerald-200/80",
+          icon: <CheckCircle className="w-3 h-3 mr-1" />,
         };
       case "rejected":
         return {
-          text: "Return Rejected",
-          color: "bg-red-100 text-red-800 border border-red-200",
-          icon: <XCircle className="w-3 h-3 mr-1" />
+          text: "Return Declined",
+          style: "bg-rose-50 text-rose-800 border-rose-200/80",
+          icon: <XCircle className="w-3 h-3 mr-1" />,
         };
       default:
         return null;
@@ -201,188 +208,204 @@ function ShoppingOrders() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Header */}
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-            My Orders
-          </h1>
-          <p className="text-gray-600 text-sm sm:text-base">
-            Track and manage your orders
-          </p>
+    <div className="space-y-6">
+      {/* Header bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-6 border-b border-zinc-200/70">
+        <div>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-400 block mb-1">
+            Archive & Orders
+          </span>
+          <h2 className="font-serif text-2xl text-[#121212]">
+            Order History
+          </h2>
         </div>
+        <div className="text-xs text-zinc-500 font-sans tracking-wide">
+          {orderList?.length || 0} order{orderList?.length === 1 ? "" : "s"} placed
+        </div>
+      </div>
 
-        {/* Reason Form Dialogs */}
-        <ReasonFormDialog
-          open={openCancellationDialog}
-          onOpenChange={setOpenCancellationDialog}
-          onSubmit={submitCancellationRequest}
-          type="cancellation"
-          isLoading={isLoading}
-        />
+      {/* Reason Form Dialogs */}
+      <ReasonFormDialog
+        open={openCancellationDialog}
+        onOpenChange={setOpenCancellationDialog}
+        onSubmit={submitCancellationRequest}
+        type="cancellation"
+        isLoading={isLoading}
+      />
 
-        <ReasonFormDialog
-          open={openReturnDialog}
-          onOpenChange={setOpenReturnDialog}
-          onSubmit={submitReturnRequest}
-          type="return"
-          isLoading={isLoading}
-        />
+      <ReasonFormDialog
+        open={openReturnDialog}
+        onOpenChange={setOpenReturnDialog}
+        onSubmit={submitReturnRequest}
+        type="return"
+        isLoading={isLoading}
+      />
 
-        {/* Orders Grid */}
-        {orderList && orderList.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-            {orderList.map((order) => {
-              const product = order.items?.[0];
-              const cancellationBadge = getCancellationBadge(order);
-              const returnBadge = getReturnBadge(order);
-              const showCancelButton = canCancelOrder(order);
-              const showReturnButton = canReturnOrder(order);
+      {/* Orders Grid / List */}
+      {orderList && orderList.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {orderList.map((order) => {
+            const product = order.items?.[0];
+            const cancellationBadge = getCancellationBadge(order);
+            const returnBadge = getReturnBadge(order);
+            const showCancelButton = canCancelOrder(order);
+            const showReturnButton = canReturnOrder(order);
+            const statusConfig = getStatusBadge(order.orderStatus);
 
-              return (
-                <Card
-                  key={order._id}
-                  className="flex flex-col justify-between border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-300"
-                >
-                  <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6">
-                    <div className="flex flex-col gap-2 mb-3">
-                      <div className="flex justify-between items-start">
-                        <CardTitle className="text-base sm:text-lg font-semibold text-gray-900 truncate">
-                          Order #{order._id.slice(-8).toUpperCase()}
-                        </CardTitle>
-                        <Badge
-                          className={`${getStatusColor(
-                            order.orderStatus
-                          )} text-xs sm:text-sm`}
-                        >
-                          {getStatusText(order.orderStatus)}
-                        </Badge>
-                      </div>
-
-                      {/* Cancellation/Return Badges */}
-                      <div className="flex flex-wrap gap-1">
-                        {cancellationBadge && (
-                          <Badge className={`text-xs flex items-center ${cancellationBadge.color}`}>
-                            {cancellationBadge.icon}
-                            {cancellationBadge.text}
-                          </Badge>
-                        )}
-                        {returnBadge && (
-                          <Badge className={`text-xs flex items-center ${returnBadge.color}`}>
-                            {returnBadge.icon}
-                            {returnBadge.text}
-                          </Badge>
-                        )}
-                      </div>
+            return (
+              <div
+                key={order._id}
+                className="bg-white border border-zinc-200/80 rounded-sm p-5 flex flex-col justify-between hover:border-zinc-300 transition-all duration-200 shadow-xs"
+              >
+                <div>
+                  {/* Card Header: Order ID + Status */}
+                  <div className="flex items-start justify-between gap-3 mb-4 pb-3 border-b border-zinc-100">
+                    <div>
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-400 block">
+                        Order Identifier
+                      </span>
+                      <p className="font-mono text-xs font-semibold text-[#121212] tracking-wider mt-0.5">
+                        #{order._id.slice(-8).toUpperCase()}
+                      </p>
                     </div>
 
-                    <div className="flex items-center text-xs sm:text-sm text-gray-600">
-                      <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-sm border ${statusConfig.bg}`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dot}`} />
+                      {getStatusText(order.orderStatus)}
+                    </span>
+                  </div>
+
+                  {/* Special Status Badges */}
+                  {(cancellationBadge || returnBadge) && (
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      {cancellationBadge && (
+                        <span
+                          className={`inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-sm border ${cancellationBadge.style}`}
+                        >
+                          {cancellationBadge.icon}
+                          {cancellationBadge.text}
+                        </span>
+                      )}
+                      {returnBadge && (
+                        <span
+                          className={`inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-sm border ${returnBadge.style}`}
+                        >
+                          {returnBadge.icon}
+                          {returnBadge.text}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Date */}
+                  <div className="flex items-center text-xs text-zinc-500 mb-4">
+                    <Calendar className="w-3.5 h-3.5 mr-2 text-zinc-400" />
+                    <span>
                       {new Date(order.orderDate).toLocaleDateString("en-US", {
                         year: "numeric",
                         month: "short",
                         day: "numeric",
                       })}
-                    </div>
-                  </CardHeader>
+                    </span>
+                  </div>
 
-                  {/* Rest of the card content remains the same */}
-                  <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
-                    {/* Product Info */}
-                    <div className="flex space-x-3 sm:space-x-4">
-                      {product?.image && (
-                        <img
-                          src={product.image}
-                          alt={product.title}
-                          className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg border border-gray-200 flex-shrink-0"
-                        />
+                  {/* Primary Item Preview */}
+                  <div className="flex items-center gap-3.5 p-2.5 bg-[#FAF9F6] rounded-sm border border-zinc-100 mb-4">
+                    {product?.image ? (
+                      <img
+                        src={product.image}
+                        alt={product.title}
+                        className="w-14 h-16 object-contain bg-white rounded-xs border border-zinc-200/60 p-1 flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-14 h-16 bg-zinc-100 rounded-xs flex items-center justify-center flex-shrink-0">
+                        <Package className="w-5 h-5 text-zinc-400" />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-serif text-xs text-[#121212] truncate">
+                        {product?.title || "Luxury Garment"}
+                      </h4>
+                      {order.items?.length > 1 && (
+                        <p className="text-[11px] text-zinc-400 mt-0.5">
+                          + {order.items.length - 1} additional item{order.items.length - 1 === 1 ? "" : "s"}
+                        </p>
                       )}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-gray-900 text-sm sm:text-base truncate">
-                          {product?.title}
-                        </h3>
-                        {order.items.length > 1 && (
-                          <p className="text-xs sm:text-sm text-gray-600 mt-1">
-                            + {order.items.length - 1} more item(s)
-                          </p>
-                        )}
-                        <div className="flex items-center mt-1 sm:mt-2 text-xs sm:text-sm text-gray-600">
-                          <Package className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                          {order.items.reduce(
-                            (total, item) => total + item.quantity,
-                            0
-                          )}{" "}
-                          items
-                        </div>
-                      </div>
+                      <p className="text-[11px] font-medium text-zinc-500 mt-1">
+                        {order.items?.reduce((tot, it) => tot + it.quantity, 0)} unit(s) total
+                      </p>
                     </div>
+                  </div>
+                </div>
 
-                    {/* Total Price */}
-                    <div className="flex justify-between items-center pt-2 border-t border-gray-100">
-                      <span className="text-xs sm:text-sm font-medium text-gray-600">
-                        Total Amount:
-                      </span>
-                      <span className="text-base sm:text-lg font-bold text-gray-900">
-                        ₹{order.totalAmount}
-                      </span>
-                    </div>
+                {/* Footer: Amount & Actions */}
+                <div className="pt-3 border-t border-zinc-100 space-y-3">
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
+                      Total Payable
+                    </span>
+                    <span className="font-serif text-base font-semibold text-[#121212]">
+                      ₹{order.totalAmount}
+                    </span>
+                  </div>
 
-                    {/* Action Buttons */}
-                    <div className="space-y-2 pt-2">
-                      <Button
-                        onClick={() => handleFetchOrderDetails(order._id)}
-                        className="w-full bg-black text-white hover:bg-gray-800 border border-black text-sm"
-                        variant="default"
-                        size="sm"
-                      >
-                        <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
-                        View Details
-                      </Button>
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => handleFetchOrderDetails(order._id)}
+                      className="w-full py-2.5 px-4 bg-[#121212] hover:bg-black text-[#FAF9F6] text-xs font-semibold uppercase tracking-[0.14em] rounded-sm transition-all flex items-center justify-center gap-1.5 active:scale-[0.98]"
+                    >
+                      <Eye className="w-3.5 h-3.5 stroke-[1.8]" />
+                      <span>View Dossier</span>
+                    </button>
 
-                      {/* Action Buttons Row */}
-                      <div className="flex flex-col sm:flex-row gap-2">
+                    {(showCancelButton || showReturnButton) && (
+                      <div className="flex gap-2">
                         {showCancelButton && (
-                          <Button
+                          <button
                             onClick={() => handleCancellationRequest(order)}
-                            className="flex-1 bg-red-500 text-white border border-red-500 hover:bg-red-600 text-xs sm:text-sm"
-                            variant="destructive"
-                            size="sm"
+                            className="flex-1 py-1.5 px-3 border border-rose-200 text-rose-700 hover:bg-rose-50 text-[11px] font-medium rounded-sm transition-colors flex items-center justify-center gap-1"
                           >
-                            <X className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                            Cancel Order
-                          </Button>
+                            <X className="w-3 h-3" />
+                            <span>Cancel</span>
+                          </button>
                         )}
-
                         {showReturnButton && (
-                          <Button
+                          <button
                             onClick={() => handleReturnRequest(order)}
-                            className="flex-1 bg-orange-500 text-white border border-orange-500 hover:bg-orange-600 text-xs sm:text-sm"
-                            size="sm"
+                            className="flex-1 py-1.5 px-3 border border-zinc-300 text-zinc-700 hover:bg-zinc-100 text-[11px] font-medium rounded-sm transition-colors flex items-center justify-center gap-1"
                           >
-                            <RotateCcw className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                            Return Order
-                          </Button>
+                            <RotateCcw className="w-3 h-3" />
+                            <span>Return</span>
+                          </button>
                         )}
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="text-center py-8 sm:py-12">
-            <Package className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-3 sm:mb-4" />
-            <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
-              No orders found
-            </h3>
-            <p className="text-gray-600 text-sm sm:text-base">
-              You haven't placed any orders yet.
-            </p>
-          </div>
-        )}
-      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="text-center py-16 bg-[#FAF9F6] border border-zinc-200/70 rounded-sm">
+          <Package className="w-12 h-12 text-zinc-400 mx-auto mb-4 stroke-[1.3]" />
+          <h3 className="font-serif text-xl text-[#121212] mb-1">
+            No Orders on Record
+          </h3>
+          <p className="text-xs text-zinc-500 max-w-sm mx-auto mb-6">
+            Your acquisition history is currently pristine. Explore our ready-to-wear collections to place your inaugural order.
+          </p>
+          <a
+            href="/shop/listing"
+            className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#121212] text-white hover:bg-black text-xs font-medium uppercase tracking-[0.14em] rounded-sm transition-all active:scale-[0.98]"
+          >
+            <span>Explore Collection</span>
+            <ArrowUpRight className="w-3.5 h-3.5" />
+          </a>
+        </div>
+      )}
 
       {/* Order Details Dialog */}
       <Dialog

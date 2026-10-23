@@ -1,10 +1,9 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowUpDownIcon, Grid3X3, List, Star, Filter } from "lucide-react";
+import { ArrowUpDownIcon, LayoutGrid, List, SlidersHorizontal, X } from "lucide-react";
 import ShoppingSubheader from "@/components/shopping-view/sub-header";
 import ShoppingProductTile from "@/components/shopping-view/product-tile";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/use-toast";
 import { sortOptions } from "@/config";
@@ -29,7 +28,6 @@ export default function ShoppingListing() {
   const { productList, isLoading, pagination } = useSelector(
     (state: any) => state.shopProducts
   );
-  const { cartItems } = useSelector((state: any) => state.shopCart);
   const { user } = useSelector((state: any) => state.auth);
 
   const [sort, setSort] = useState("most-selling");
@@ -89,10 +87,8 @@ export default function ShoppingListing() {
     "ACCESSORIES",
   ];
 
-  // Synchronous React state for filters to ensure checkbox checking/unchecking is 150% reliable
   const [filters, setFilters] = useState<Record<string, string[]>>({});
 
-  // Sync state filters from URL search params on mount or param changes (e.g. manual URL changes, back/forward navigation)
   useEffect(() => {
     const brand = searchParams.get("brand");
     const color = searchParams.get("color");
@@ -154,7 +150,6 @@ export default function ShoppingListing() {
       currentParams.delete(sectionId);
     }
     
-    // Update local state synchronously for instantaneous checkbox feedback
     const updatedFilters = { ...filters };
     if (sectionValues.length > 0) {
       updatedFilters[sectionId] = sectionValues;
@@ -162,7 +157,6 @@ export default function ShoppingListing() {
       delete updatedFilters[sectionId];
     }
     setFilters(updatedFilters);
-    
     setSearchParams(currentParams);
   };
 
@@ -180,14 +174,13 @@ export default function ShoppingListing() {
     ).then((data: any) => {
       if (data?.payload?.success) {
         if (user?.id) dispatch(fetchCartItems(user.id) as any);
-        toast({ title: "Product added to cart successfully!" });
+        toast({ title: "Item added to your shopping bag." });
       } else if (data?.payload?.message) {
         toast({ title: data.payload.message, variant: "destructive" });
       }
     });
   };
 
-  // Synchronize category selection, sub-header UI states, and localStorage with URL changes
   useEffect(() => {
     const currentGender = getCurrentGender();
     const normalizedGenderDisplay = currentGender === "woman" ? "WOMEN" : "MEN";
@@ -199,7 +192,6 @@ export default function ShoppingListing() {
       setActiveCategory(normalizedGenderDisplay);
     }
 
-    // Keep localStorage in sync so that subheader navigation links behave correctly
     localStorage.setItem("selectedGender", currentGender);
   }, [categoryParam, subcategoryParam]);
 
@@ -242,27 +234,23 @@ export default function ShoppingListing() {
 
   const getPageTitle = () => {
     const currentGender = getCurrentGender();
-    const genderText = currentGender === "man" ? "Men's" : "Women's";
+    const genderText = currentGender === "man" ? "Men's Collection" : "Women's Collection";
 
     if (subcategoryParam) {
       const subcategoryText =
         subcategoryParam.charAt(0).toUpperCase() + subcategoryParam.slice(1);
-      return `${subcategoryText} // ${genderText}`;
+      return `${genderText} — ${subcategoryText}`;
     }
 
-    return `${genderText} Anthology`;
+    return genderText;
   };
 
-  const getPageDescription = () => {
-    const currentGender = getCurrentGender();
-    const genderText = currentGender === "man" ? "men's" : "women's";
-    return `Discover our complete collection of curated fashion pieces crafted for ${genderText}.`;
-  };
+  const activeFiltersCount = Object.values(filters).reduce((acc, curr) => acc + curr.length, 0);
 
   return (
-    <div className="flex flex-col min-h-screen bg-white font-spaceGrotesk pt-20">
+    <div className="flex flex-col min-h-screen bg-[#FAF9F6] text-[#121212] font-sans pt-20">
       
-      {/* Dynamic Subheader */}
+      {/* Subheader */}
       <ShoppingSubheader
         genderView={genderView}
         setGenderView={setGenderView}
@@ -271,80 +259,86 @@ export default function ShoppingListing() {
         categories={categories}
       />
 
-      <div className="flex-1 bg-white">
-        <div className="container mx-auto px-4 md:px-8 py-12">
+      <div className="flex-1">
+        <div className="container mx-auto px-4 md:px-8 py-10 md:py-16">
           
-          {/* Header Description Section */}
-          <div className="mb-12 border-b border-zinc-100 pb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+          {/* Header Section */}
+          <div className="mb-10 pb-8 border-b border-zinc-200/70 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
             <div className="space-y-2">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">*CATALOG</p>
-              <h1 className="text-3xl md:text-5xl font-bold uppercase tracking-tighter text-black">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-400 block">
+                Seasonal Catalog
+              </span>
+              <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl text-[#121212] font-normal tracking-tight">
                 {getPageTitle()}
               </h1>
-              <p className="text-sm text-zinc-500 max-w-xl leading-relaxed">{getPageDescription()}</p>
+              <p className="text-xs sm:text-sm text-zinc-500 font-light max-w-xl leading-relaxed">
+                Discover refined essentials engineered for everyday elegance, premium materials, and timeless silhouettes.
+              </p>
             </div>
 
-            {/* View Mode & Sorting Control */}
-            <div className="flex items-center gap-4 flex-wrap w-full md:w-auto justify-between md:justify-end">
-              
-              {/* Product Count */}
-              <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">
-                {productList?.length || 0} Products
+            {/* Controls Bar: Count, Filter Mobile, View Toggle, Sorting */}
+            <div className="flex items-center gap-3 sm:gap-4 flex-wrap w-full md:w-auto justify-between md:justify-end">
+              <span className="text-xs uppercase tracking-[0.15em] font-medium text-zinc-400">
+                {productList?.length || 0} Pieces
               </span>
 
-              <div className="flex items-center gap-3">
-                {/* Mobile Filter Button */}
+              <div className="flex items-center gap-2.5">
+                {/* Mobile Filter Sheet Trigger */}
                 <Sheet>
                   <SheetTrigger asChild>
-                    <button className="md:hidden flex items-center gap-2 px-5 py-2.5 rounded-full border border-zinc-200 text-xs font-bold uppercase tracking-wider bg-white hover:border-black transition-colors duration-300">
-                      <Filter className="w-3.5 h-3.5" />
-                      <span>Filter</span>
+                    <button className="md:hidden flex items-center gap-2 px-4 py-2 rounded-sm border border-zinc-300 text-xs font-semibold uppercase tracking-[0.14em] bg-white text-[#121212] active:scale-95 transition-transform">
+                      <SlidersHorizontal className="w-3.5 h-3.5" />
+                      <span>Filter {activeFiltersCount > 0 ? `(${activeFiltersCount})` : ""}</span>
                     </button>
                   </SheetTrigger>
-                  <SheetContent side="left" className="w-full max-w-xs bg-white p-6 overflow-y-auto">
-                    <div className="pt-6">
+                  <SheetContent side="left" className="w-[85vw] max-w-xs bg-[#FAF9F6] p-6 overflow-y-auto">
+                    <div className="pt-4">
                       <ProductFilter filters={filters} handleFilter={handleFilter} />
                     </div>
                   </SheetContent>
                 </Sheet>
 
-                {/* View Mode buttons */}
-                <div className="flex bg-[#f8f8f8] border border-zinc-200 rounded-full p-1">
+                {/* Grid / List View Toggle */}
+                <div className="flex items-center bg-[#F4F3EE] border border-zinc-200/80 rounded-sm p-0.5">
                   <button
                     onClick={() => setViewMode("grid")}
-                    className={`p-2 rounded-full transition-all duration-300 ${
-                      viewMode === "grid" ? "bg-black text-white" : "text-zinc-400 hover:text-black"
+                    className={`p-1.5 rounded-xs transition-colors ${
+                      viewMode === "grid"
+                        ? "bg-white text-[#121212] shadow-xs"
+                        : "text-zinc-400 hover:text-black"
                     }`}
-                    aria-label="Grid view"
+                    aria-label="Grid layout"
                   >
-                    <Grid3X3 className="w-4 h-4" />
+                    <LayoutGrid className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setViewMode("list")}
-                    className={`p-2 rounded-full transition-all duration-300 ${
-                      viewMode === "list" ? "bg-black text-white" : "text-zinc-400 hover:text-black"
+                    className={`p-1.5 rounded-xs transition-colors ${
+                      viewMode === "list"
+                        ? "bg-white text-[#121212] shadow-xs"
+                        : "text-zinc-400 hover:text-black"
                     }`}
-                    aria-label="List view"
+                    aria-label="List layout"
                   >
                     <List className="w-4 h-4" />
                   </button>
                 </div>
 
-                {/* Sorting Dropdown */}
+                {/* Sort Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-zinc-200 text-xs font-bold uppercase tracking-wider bg-white hover:border-black transition-colors duration-300">
+                    <button className="flex items-center gap-2 px-4 py-2 rounded-sm border border-zinc-300 bg-white hover:border-black text-xs font-semibold uppercase tracking-[0.14em] text-[#121212] transition-colors active:scale-95">
                       <ArrowUpDownIcon className="w-3.5 h-3.5" />
-                      <span>Sort By</span>
+                      <span>Sort</span>
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-[200px] bg-white border border-zinc-200 rounded-xl shadow-lg mt-2">
+                  <DropdownMenuContent align="end" className="w-52 bg-white border border-zinc-200 rounded-sm shadow-xl p-1 mt-1 animate-in fade-in-0 zoom-in-95 duration-150">
                     <DropdownMenuRadioGroup value={sort} onValueChange={handleSort}>
                       {sortOptions.map((sortItem) => (
                         <DropdownMenuRadioItem
                           value={sortItem.id}
                           key={sortItem.id}
-                          className="text-xs font-bold uppercase tracking-wider text-zinc-600 hover:bg-zinc-50 cursor-pointer focus:bg-zinc-50 focus:text-black p-3"
+                          className="text-xs font-medium uppercase tracking-[0.12em] text-zinc-700 hover:bg-zinc-100 cursor-pointer p-2.5 rounded-sm"
                         >
                           {sortItem.label}
                         </DropdownMenuRadioItem>
@@ -356,29 +350,58 @@ export default function ShoppingListing() {
             </div>
           </div>
 
-          {/* Catalog Layout */}
-          <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-8 items-start">
+          {/* Active Filter Chips */}
+          {activeFiltersCount > 0 && (
+            <div className="flex items-center gap-2 flex-wrap mb-8 pb-4 border-b border-zinc-200/60">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mr-2">
+                Active:
+              </span>
+              {Object.keys(filters).map((categoryKey) =>
+                filters[categoryKey].map((val) => (
+                  <button
+                    key={`${categoryKey}-${val}`}
+                    onClick={() => handleFilter(categoryKey, val)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-zinc-300 rounded-sm text-xs text-[#121212] hover:border-black transition-colors"
+                  >
+                    <span>{val}</span>
+                    <X className="w-3 h-3 text-zinc-400 hover:text-black" />
+                  </button>
+                ))
+              )}
+              <button
+                onClick={clearFilters}
+                className="text-xs font-medium text-zinc-500 hover:text-black underline underline-offset-4 ml-2"
+              >
+                Clear all
+              </button>
+            </div>
+          )}
+
+          {/* Catalog Layout: Sidebar + Products */}
+          <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-10 lg:gap-14 items-start">
+            
             {/* Desktop Sidebar Filter */}
-            <aside className="hidden md:block sticky top-32 bg-white border border-zinc-100 rounded-3xl p-6 shadow-sm">
+            <aside className="hidden md:block sticky top-36 bg-white border border-zinc-200/70 rounded-sm p-6 shadow-xs">
               <ProductFilter filters={filters} handleFilter={handleFilter} />
             </aside>
 
-            {/* Catalog grid */}
+            {/* Product Grid / List */}
             <div className="w-full">
               {isLoading && currentPage === 1 ? (
                 <div
                   className={
                     viewMode === "grid"
-                      ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                      ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8"
                       : "space-y-4"
                   }
                 >
                   {Array.from({ length: 8 }).map((_, index) => (
-                    <div key={index} className="space-y-4">
-                      <Skeleton className="aspect-[4/5] w-full rounded-2xl" />
-                      <div className="space-y-2">
-                        <Skeleton className="h-4 w-2/3" />
-                        <Skeleton className="h-4 w-1/2" />
+                    <div key={index} className="space-y-3">
+                      <Skeleton className="aspect-[3/4] w-full rounded-sm bg-zinc-200/70" />
+                      <div className="space-y-1.5">
+                        <Skeleton className="h-3 w-1/3 bg-zinc-200/70" />
+                        <Skeleton className="h-4 w-2/3 bg-zinc-200/70" />
+                        <Skeleton className="h-3 w-1/4 bg-zinc-200/70" />
                       </div>
                     </div>
                   ))}
@@ -390,7 +413,7 @@ export default function ShoppingListing() {
                       <div
                         className={
                           viewMode === "grid"
-                            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8"
                             : "space-y-4"
                         }
                       >
@@ -410,26 +433,27 @@ export default function ShoppingListing() {
                           );
                         })}
                       </div>
+
                       {/* Infinite Scroll loading indicator */}
                       {isLoading && currentPage > 1 && (
-                        <div className="flex justify-center items-center py-12">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+                        <div className="flex justify-center items-center py-16">
+                          <div className="animate-spin rounded-full h-7 w-7 border-2 border-black border-t-transparent"></div>
                         </div>
                       )}
                     </>
                   ) : (
-                    <div className="text-center py-24 border border-dashed border-zinc-200 rounded-3xl">
-                      <div className="text-zinc-400 text-lg mb-2 uppercase font-bold tracking-tight">
-                        No products found
-                      </div>
-                      <p className="text-zinc-500 text-xs mb-6 max-w-xs mx-auto leading-relaxed">
-                        Try adjusting your search criteria or clearing filters.
+                    <div className="text-center py-24 bg-white border border-dashed border-zinc-200 rounded-sm">
+                      <h3 className="font-serif text-xl text-[#121212] mb-2">
+                        No garments match your filters
+                      </h3>
+                      <p className="text-zinc-500 text-xs mb-6 max-w-xs mx-auto font-light leading-relaxed">
+                        Try resetting your current filters or searching for another category.
                       </p>
                       <button
                         onClick={clearFilters}
-                        className="bg-black text-white hover:bg-zinc-800 px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all shadow"
+                        className="bg-[#121212] text-white hover:bg-black px-6 py-2.5 rounded-sm text-xs font-semibold uppercase tracking-[0.14em] transition-all active:scale-95"
                       >
-                        Clear All Filters
+                        Reset Filters
                       </button>
                     </div>
                   )}

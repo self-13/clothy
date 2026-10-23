@@ -1,8 +1,8 @@
-import { Shirt, Heart, Menu } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
 import { Button } from "../ui/button";
 import { useNavigate } from "react-router-dom";
+import { Menu } from "lucide-react";
 
 function ShoppingSubheader({
   genderView,
@@ -14,55 +14,26 @@ function ShoppingSubheader({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Initialize gender from localStorage on component mount
   useEffect(() => {
     const savedGender = localStorage.getItem("selectedGender");
-    console.log(
-      "🔄 Subheader - Loading gender from localStorage:",
-      savedGender
-    );
-
     if (savedGender) {
-      // Convert localStorage value ("man"/"woman") to display format ("MEN"/"WOMEN")
       const displayGender = savedGender === "man" ? "MEN" : "WOMEN";
       setGenderView(displayGender);
       setActiveCategory(displayGender);
     }
   }, [setGenderView, setActiveCategory]);
 
-  // Function to handle gender selection
   const handleGenderSelect = (gender) => {
-    console.log("🎯 Gender selected:", gender);
-
-    // Convert to lowercase for localStorage
     const storageGender = gender === "MEN" ? "man" : "woman";
-
-    // Save to localStorage with consistent key
     localStorage.setItem("selectedGender", storageGender);
-    console.log("💾 Saved to localStorage:", storageGender);
-
-    // Update state
     setGenderView(gender);
     setActiveCategory(gender);
-
-    // Navigate to listing page with the selected gender
     navigate(`/shop/listing?category=${storageGender}`);
   };
 
-  // Function to handle category selection (non-gender categories)
   const handleCategorySelect = (category) => {
     setActiveCategory(category);
-
-    // Get current gender from localStorage
     const currentGender = localStorage.getItem("selectedGender") || "man";
-    console.log(
-      "📁 Category selected:",
-      category,
-      "with gender:",
-      currentGender
-    );
-
-    // Navigate to listing page with gender as category and clicked category as subcategory
     navigate(
       `/shop/listing?category=${currentGender}&subcategory=${category.toLowerCase()}`
     );
@@ -71,105 +42,98 @@ function ShoppingSubheader({
   const currentDisplayGender = genderView;
 
   return (
-    <div className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
-      <div className="container mx-auto px-4">
+    <div className="bg-[#FAF9F6]/95 backdrop-blur-sm border-b border-zinc-200/80 sticky top-20 z-20 font-sans">
+      <div className="container mx-auto px-4 md:px-8">
+        
         {/* Desktop Layout */}
-        <div className="hidden md:flex items-center justify-between py-4">
-          {/* Gender Toggle Slider */}
-          <div className="flex items-center space-x-6">
-            <div className="bg-gray-100 rounded-full p-1 flex border border-gray-200">
-              <button
-                onClick={() => handleGenderSelect("MEN")}
-                className={`px-6 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center space-x-2 ${
-                  currentDisplayGender === "MEN"
-                    ? "bg-black text-white shadow-md border border-black"
-                    : "text-gray-600 hover:text-black"
-                }`}
-              >
-                <Shirt className="w-4 h-4" />
-                <span>MEN</span>
-              </button>
-              <button
-                onClick={() => handleGenderSelect("WOMEN")}
-                className={`px-6 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center space-x-2 ${
-                  currentDisplayGender === "WOMEN"
-                    ? "bg-black text-white shadow-md border border-black"
-                    : "text-gray-600 hover:text-black"
-                }`}
-              >
-                <Heart className="w-4 h-4" />
-                <span>WOMEN</span>
-              </button>
-            </div>
-
-            {/* Divider */}
-            <div className="h-6 w-px bg-gray-300"></div>
+        <div className="hidden md:flex items-center justify-between py-3.5 gap-8">
+          
+          {/* Gender Segment Control */}
+          <div className="flex items-center gap-1 bg-[#F4F3EE] p-1 rounded-sm border border-zinc-200/70">
+            <button
+              onClick={() => handleGenderSelect("MEN")}
+              className={`px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] rounded-sm transition-all duration-200 active:scale-95 ${
+                currentDisplayGender === "MEN"
+                  ? "bg-[#121212] text-white shadow-sm"
+                  : "text-zinc-600 hover:text-black"
+              }`}
+            >
+              Men
+            </button>
+            <button
+              onClick={() => handleGenderSelect("WOMEN")}
+              className={`px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] rounded-sm transition-all duration-200 active:scale-95 ${
+                currentDisplayGender === "WOMEN"
+                  ? "bg-[#121212] text-white shadow-sm"
+                  : "text-zinc-600 hover:text-black"
+              }`}
+            >
+              Women
+            </button>
           </div>
 
-          {/* Category Links with Black & White Styling */}
-          <div className="flex items-center space-x-6 overflow-x-auto scrollbar-hide flex-1 justify-center">
-            {categories.slice(2).map((category) => (
-              <button
-                key={category}
-                onClick={() => handleCategorySelect(category)}
-                className={`whitespace-nowrap text-sm font-medium transition-all duration-200 px-3 py-2 rounded-lg ${
-                  activeCategory === category
-                    ? "text-white font-bold bg-black border border-black"
-                    : "text-gray-600 hover:text-black hover:bg-gray-50"
-                }`}
-              >
-                {category}
-              </button>
-            ))}
+          {/* Subcategory Pills */}
+          <div className="flex items-center space-x-2 overflow-x-auto scrollbar-none flex-1 justify-center py-1">
+            {categories.slice(2).map((category) => {
+              const isActive = activeCategory?.toLowerCase() === category.toLowerCase();
+              return (
+                <button
+                  key={category}
+                  onClick={() => handleCategorySelect(category)}
+                  className={`whitespace-nowrap text-xs uppercase tracking-[0.14em] font-medium transition-all duration-200 px-3.5 py-1.5 rounded-sm active:scale-95 ${
+                    isActive
+                      ? "text-[#121212] font-semibold bg-white border border-zinc-300 shadow-xs"
+                      : "text-zinc-500 hover:text-black hover:bg-black/5"
+                  }`}
+                >
+                  {category}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Mobile Layout */}
-        <div className="flex md:hidden items-center justify-between py-3">
-          {/* Gender Toggle - Simplified for mobile */}
-          <div className="bg-gray-100 rounded-full p-1 flex border border-gray-200">
+        <div className="flex md:hidden items-center justify-between py-2.5">
+          <div className="flex items-center gap-1 bg-[#F4F3EE] p-0.5 rounded-sm border border-zinc-200/70">
             <button
               onClick={() => handleGenderSelect("MEN")}
-              className={`px-4 py-2 rounded-full text-xs font-semibold transition-all duration-300 flex items-center space-x-1 ${
+              className={`px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] rounded-sm transition-all ${
                 currentDisplayGender === "MEN"
-                  ? "bg-black text-white shadow-md border border-black"
-                  : "text-gray-600 hover:text-black"
+                  ? "bg-[#121212] text-white"
+                  : "text-zinc-600"
               }`}
             >
-              <Shirt className="w-3 h-3" />
-              <span>MEN</span>
+              Men
             </button>
             <button
               onClick={() => handleGenderSelect("WOMEN")}
-              className={`px-4 py-2 rounded-full text-xs font-semibold transition-all duration-300 flex items-center space-x-1 ${
+              className={`px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] rounded-sm transition-all ${
                 currentDisplayGender === "WOMEN"
-                  ? "bg-black text-white shadow-md border border-black"
-                  : "text-gray-600 hover:text-black"
+                  ? "bg-[#121212] text-white"
+                  : "text-zinc-600"
               }`}
             >
-              <Heart className="w-3 h-3" />
-              <span>WOMEN</span>
+              Women
             </button>
           </div>
 
-          {/* Mobile Menu Trigger */}
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-gray-600 hover:bg-gray-100 border border-gray-200"
+              <button
+                className="text-xs uppercase tracking-[0.14em] font-semibold px-3 py-1.5 border border-zinc-300 bg-white rounded-sm flex items-center gap-1.5"
+                aria-label="Filter categories"
               >
-                <Menu className="h-4 w-4 mr-2" />
-                <span className="text-sm font-medium">Categories</span>
-              </Button>
+                <Menu className="w-3.5 h-3.5" />
+                <span>Categories</span>
+              </button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-64 bg-white">
-              <div className="flex flex-col h-full pt-6">
-                <h3 className="text-lg font-bold text-gray-800 mb-4 px-2">
-                  Categories
-                </h3>
-                <div className="flex-1 space-y-2">
+            <SheetContent side="bottom" className="bg-[#FAF9F6] border-t border-zinc-200 rounded-t-xl p-6">
+              <div className="space-y-4">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-400 block">
+                  Select Category
+                </span>
+                <div className="grid grid-cols-2 gap-2">
                   {categories.slice(2).map((category) => (
                     <button
                       key={category}
@@ -177,10 +141,10 @@ function ShoppingSubheader({
                         handleCategorySelect(category);
                         setMobileMenuOpen(false);
                       }}
-                      className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
-                        activeCategory === category
-                          ? "text-white font-bold bg-black border border-black"
-                          : "text-gray-600 hover:text-black hover:bg-gray-50"
+                      className={`text-xs uppercase tracking-[0.12em] font-medium p-3 rounded-sm text-left transition-colors ${
+                        activeCategory?.toLowerCase() === category.toLowerCase()
+                          ? "bg-[#121212] text-white"
+                          : "bg-white border border-zinc-200 text-zinc-700"
                       }`}
                     >
                       {category}

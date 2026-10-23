@@ -22,19 +22,18 @@ export default function AuthRegister() {
     event.preventDefault();
     if (!formData.userName || !formData.email || !formData.password) {
       toast({
-        title: "Validation Error",
-        description: "Please fill in all fields",
+        title: "Missing Information",
+        description: "Please complete all fields to create your account.",
         variant: "destructive",
       });
       return;
     }
 
-    // Password validation: 8+ chars, must contain letters & numbers
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
     if (!passwordRegex.test(formData.password)) {
       toast({
-        title: "Password Constraints",
-        description: "Password must be at least 8 characters and include letters and numbers.",
+        title: "Password Requirements",
+        description: "Password must be at least 8 characters and include both letters and numbers.",
         variant: "destructive",
       });
       return;
@@ -48,8 +47,8 @@ export default function AuthRegister() {
           const payload = result.payload;
           if (payload && payload.success) {
             toast({
-              title: payload.message || "Registration successful",
-              description: "Please check your email for the verification code.",
+              title: payload.message || "Account created successfully.",
+              description: "Please check your inbox for the verification code.",
             });
             navigate(`/auth/verify-otp?email=${encodeURIComponent(formData.email)}`);
           } else {
@@ -61,7 +60,7 @@ export default function AuthRegister() {
         } else {
           const errorPayload = result.payload;
           toast({
-            title: errorPayload?.message || "Registration failed",
+            title: errorPayload?.message || "Registration failed.",
             variant: "destructive",
           });
         }
@@ -79,40 +78,40 @@ export default function AuthRegister() {
   };
 
   return (
-    <div className="w-full space-y-6 font-spaceGrotesk text-[#333]">
-      <div className="text-center space-y-2">
-        <h2 className="text-3xl font-bold uppercase tracking-tight text-black">
-          Create Account
+    <div className="w-full space-y-6 font-sans text-[#121212]">
+      <div className="space-y-1.5 text-center">
+        <h2 className="font-serif text-2xl sm:text-3xl text-[#121212] font-normal">
+          Create an Account
         </h2>
-        <p className="text-sm text-zinc-400">
-          Already have an account?{" "}
+        <p className="text-xs text-zinc-500 font-light">
+          Already registered?{" "}
           <Link
-            className="font-bold text-black hover:underline underline-offset-4"
+            className="font-medium text-black underline underline-offset-4 hover:text-zinc-600"
             to="/auth/login"
           >
-            Login Here
+            Sign In
           </Link>
         </p>
       </div>
 
-      <form onSubmit={onSubmit} className="space-y-4">
-        <div className="space-y-1">
-          <label className="text-[11px] font-bold uppercase tracking-widest text-zinc-400">
-            Username
+      <form onSubmit={onSubmit} className="space-y-4 pt-2">
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400 block">
+            Full Name
           </label>
           <input
             type="text"
             name="userName"
-            placeholder="John Doe"
+            placeholder="Jane Doe"
             value={formData.userName}
             onChange={handleInputChange}
-            className="w-full h-11 px-5 rounded-full border border-zinc-200 focus:border-black focus:outline-none transition-all duration-300 placeholder:text-zinc-300 text-sm"
+            className="w-full h-11 px-3.5 rounded-sm border border-zinc-300 bg-[#FAF9F6] text-xs font-normal text-[#121212] focus:border-black focus:bg-white focus:outline-none transition-colors placeholder:text-zinc-400"
             disabled={isLoading}
           />
         </div>
 
-        <div className="space-y-1">
-          <label className="text-[11px] font-bold uppercase tracking-widest text-zinc-400">
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400 block">
             Email Address
           </label>
           <input
@@ -121,22 +120,22 @@ export default function AuthRegister() {
             placeholder="name@example.com"
             value={formData.email}
             onChange={handleInputChange}
-            className="w-full h-11 px-5 rounded-full border border-zinc-200 focus:border-black focus:outline-none transition-all duration-300 placeholder:text-zinc-300 text-sm"
+            className="w-full h-11 px-3.5 rounded-sm border border-zinc-300 bg-[#FAF9F6] text-xs font-normal text-[#121212] focus:border-black focus:bg-white focus:outline-none transition-colors placeholder:text-zinc-400"
             disabled={isLoading}
           />
         </div>
 
-        <div className="space-y-1">
-          <label className="text-[11px] font-bold uppercase tracking-widest text-zinc-400">
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400 block">
             Password
           </label>
           <input
             type="password"
             name="password"
-            placeholder="Min. 8 characters (Letters & Numbers)"
+            placeholder="Min. 8 characters (letters & numbers)"
             value={formData.password}
             onChange={handleInputChange}
-            className="w-full h-11 px-5 rounded-full border border-zinc-200 focus:border-black focus:outline-none transition-all duration-300 placeholder:text-zinc-300 text-sm"
+            className="w-full h-11 px-3.5 rounded-sm border border-zinc-300 bg-[#FAF9F6] text-xs font-normal text-[#121212] focus:border-black focus:bg-white focus:outline-none transition-colors placeholder:text-zinc-400"
             disabled={isLoading}
           />
         </div>
@@ -144,9 +143,9 @@ export default function AuthRegister() {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full h-11 bg-black text-white hover:bg-zinc-800 disabled:opacity-50 transition-all rounded-full font-bold uppercase tracking-widest text-xs shadow-md mt-6"
+          className="w-full h-11 bg-[#121212] text-white hover:bg-black disabled:opacity-40 transition-all active:scale-[0.98] rounded-sm text-xs font-semibold uppercase tracking-[0.16em] mt-6"
         >
-          {isLoading ? "Signing Up..." : "Sign Up"}
+          {isLoading ? "Creating Account..." : "Create Account"}
         </button>
       </form>
     </div>
