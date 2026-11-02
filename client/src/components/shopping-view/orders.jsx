@@ -14,6 +14,7 @@ import ShoppingOrderDetailsView from "./order-details";
 import { Badge } from "../ui/badge";
 import ReasonFormDialog from "./reason-form-dialog";
 import { Package, Calendar, Eye, X, RotateCcw, Clock, CheckCircle, XCircle, ArrowUpRight } from "lucide-react";
+import { useToast } from "../ui/use-toast";
 
 function ShoppingOrders() {
   const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
@@ -22,6 +23,7 @@ function ShoppingOrders() {
   const [selectedOrder, setSelectedOrder] = useState(null);
 
   const dispatch = useDispatch();
+  const { toast } = useToast();
   const { user } = useSelector((state) => state.auth);
   const { orderList, orderDetails, isLoading } = useSelector(
     (state) => state.shopOrder
@@ -55,7 +57,7 @@ function ShoppingOrders() {
 
   const submitCancellationRequest = async (reason) => {
     if (selectedOrder) {
-      await dispatch(
+      const res = await dispatch(
         requestOrderCancellation({
           orderId: selectedOrder._id,
           reason,
@@ -63,12 +65,23 @@ function ShoppingOrders() {
       );
       setOpenCancellationDialog(false);
       setSelectedOrder(null);
+      if (res?.payload?.success) {
+        toast({
+          title: "Cancellation Request Submitted",
+          description: "Our concierge team will review and confirm your request.",
+        });
+      } else {
+        toast({
+          title: res?.payload?.message || "Failed to submit cancellation request",
+          variant: "destructive",
+        });
+      }
     }
   };
 
   const submitReturnRequest = async (reason) => {
     if (selectedOrder) {
-      await dispatch(
+      const res = await dispatch(
         requestOrderReturn({
           orderId: selectedOrder._id,
           reason,
@@ -76,6 +89,17 @@ function ShoppingOrders() {
       );
       setOpenReturnDialog(false);
       setSelectedOrder(null);
+      if (res?.payload?.success) {
+        toast({
+          title: "Return Request Submitted",
+          description: "Our concierge team will review and process reverse logistics.",
+        });
+      } else {
+        toast({
+          title: res?.payload?.message || "Failed to submit return request",
+          variant: "destructive",
+        });
+      }
     }
   };
 

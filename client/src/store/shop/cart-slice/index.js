@@ -72,8 +72,23 @@ export const addToCart = createAsyncThunk(
             item.selectedColor === selectedColor
         );
 
+        const hasSizes = product.sizes && product.sizes.length > 0;
+        const hasColors = product.colors && product.colors.length > 0;
+
+        if (hasSizes && !selectedSize && hasColors && !selectedColor) {
+          throw new Error("Please select size and colour");
+        }
+        if (hasSizes && !selectedSize) {
+          throw new Error("Please select size");
+        }
+        if (hasColors && !selectedColor) {
+          throw new Error("Please select colour");
+        }
+
         const selectedSizeStock = product.sizes?.find((s) => s.size === selectedSize);
-        const availableStock = selectedSizeStock ? selectedSizeStock.stock : 0;
+        const availableStock = hasSizes
+          ? (selectedSizeStock ? selectedSizeStock.stock : 0)
+          : (product.totalStock || 0);
 
         if (existingItemIndex > -1) {
           const newQty = guestCart.items[existingItemIndex].quantity + quantity;

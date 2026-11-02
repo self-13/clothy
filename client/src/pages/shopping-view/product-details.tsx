@@ -63,21 +63,71 @@ export default function ShoppingProductDetails() {
     }
   }, [productDetails]);
 
-  // Set default size if available
+  // Set default size and colour when productDetails loads
   useEffect(() => {
-    if (productDetails?.sizes?.length > 0 && !selectedSize) {
-      setSelectedSize(productDetails.sizes[0].size);
+    if (productDetails) {
+      if (productDetails.sizes?.length > 0) {
+        const firstInStock = productDetails.sizes.find(
+          (s: { size: string; stock: number }) => s.stock > 0
+        );
+        setSelectedSize(firstInStock ? firstInStock.size : productDetails.sizes[0].size);
+      } else {
+        setSelectedSize("");
+      }
+
+      if (productDetails.colors?.length > 0) {
+        setSelectedColor(productDetails.colors[0]);
+      } else {
+        setSelectedColor("");
+      }
     }
-  }, [productDetails, selectedSize]);
+  }, [productDetails]);
 
   const handleAddToCart = () => {
-    if (!selectedSize) {
+    const hasSizes = Boolean(productDetails?.sizes && productDetails.sizes.length > 0);
+    const hasColors = Boolean(productDetails?.colors && productDetails.colors.length > 0);
+
+    const isMissingSize = hasSizes && !selectedSize;
+    const isMissingColor = hasColors && !selectedColor;
+
+    if (isMissingSize && isMissingColor) {
       toast({
-        title: "Size Selection Required",
-        description: "Please choose your desired size.",
+        title: "Please select size and colour",
+        description: "Choose your desired size and colour before adding to bag.",
         variant: "destructive",
       });
       return;
+    }
+
+    if (isMissingSize) {
+      toast({
+        title: "Please select size",
+        description: "Choose your desired size before adding to bag.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isMissingColor) {
+      toast({
+        title: "Please select colour",
+        description: "Choose your desired colour before adding to bag.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (hasSizes && selectedSize) {
+      const sizeStock = productDetails.sizes.find(
+        (s: { size: string; stock: number }) => s.size === selectedSize
+      );
+      if (!sizeStock || sizeStock.stock < quantity) {
+        toast({
+          title: `Only ${sizeStock?.stock || 0} items available for size ${selectedSize}`,
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     dispatch(
@@ -90,10 +140,15 @@ export default function ShoppingProductDetails() {
       }) as any
     ).then((data: any) => {
       if (data?.payload?.success) {
-        if (user?.id) dispatch(fetchCartItems(user.id) as any);
+        dispatch(fetchCartItems(user?.id) as any);
         setAddedSuccess(true);
         setTimeout(() => setAddedSuccess(false), 2000);
         toast({ title: "Item added to your shopping bag." });
+      } else {
+        toast({
+          title: data?.payload?.message || data?.error?.message || "Failed to add item to bag.",
+          variant: "destructive",
+        });
       }
     });
   };
@@ -315,7 +370,7 @@ export default function ShoppingProductDetails() {
                     {productDetails.colors.map((color: string) => (
                       <button
                         key={color}
-                        onClick={() => setSelectedColor(color)}
+                        onClick={() => setSelectedColor((prev) => (prev === color ? "" : color))}
                         className={`h-9 px-4 rounded-sm text-xs font-medium uppercase tracking-[0.1em] border transition-all active:scale-95 ${
                           selectedColor === color
                             ? "bg-[#121212] text-white border-[#121212]"
@@ -344,9 +399,13 @@ export default function ShoppingProductDetails() {
                     {productDetails.sizes.map((s: { size: string; stock: number }) => (
                       <button
                         key={s.size}
-                        onClick={() => setSelectedSize(s.size)}
+                        disabled={s.stock === 0}
+                        onClick={() => setSelectedSize((prev) => (prev === s.size ? "" : s.size))}
+                        title={s.stock === 0 ? "Out of stock" : undefined}
                         className={`min-w-[44px] h-10 px-3 rounded-sm text-xs font-semibold uppercase border transition-all active:scale-95 ${
-                          selectedSize === s.size
+                          s.stock === 0
+                            ? "bg-zinc-100 text-zinc-300 border-zinc-200 cursor-not-allowed line-through"
+                            : selectedSize === s.size
                             ? "bg-[#121212] text-white border-[#121212]"
                             : "bg-white text-zinc-700 border-zinc-200 hover:border-black"
                         }`}
