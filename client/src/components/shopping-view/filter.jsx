@@ -6,44 +6,53 @@ import { Separator } from "../ui/separator";
 
 function ProductFilter({ filters, handleFilter }) {
   const filterHeaders = {
-    brand: "Brands",
-    color: "Colors",
-    size: "Sizes",
+    brand: "Designers & Brands",
+    color: "Color Palette",
+    size: "Sizing",
   };
 
   return (
-    <div className="w-full">
-      <div className="pb-6 mb-6 border-b border-zinc-100">
-        <h2 className="text-sm font-black uppercase tracking-[0.2em] text-black">Filters</h2>
+    <div className="w-full font-sans">
+      <div className="pb-5 mb-6 border-b border-zinc-200/80 flex items-center justify-between">
+        <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-[#121212]">
+          Refine Results
+        </h2>
       </div>
-      <div className="space-y-6">
+
+      <div className="space-y-7">
         {Object.keys(filterOptions).map((keyItem) => (
           <Fragment key={keyItem}>
             <div>
-              <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 mb-3">
+              <h3 className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-400 mb-3.5">
                 {filterHeaders[keyItem] || keyItem}
               </h3>
-              <div className="flex flex-col gap-3">
-                {filterOptions[keyItem].map((option) => (
-                  <Label
-                    key={option.id}
-                    className="flex font-spaceGrotesk text-xs uppercase tracking-wider font-bold items-center gap-3 cursor-pointer text-zinc-600 hover:text-black transition-colors duration-200"
-                  >
-                    <Checkbox
-                      checked={
-                        !!(filters &&
-                        filters[keyItem] &&
-                        filters[keyItem].includes(option.id))
-                      }
-                      onCheckedChange={() => handleFilter(keyItem, option.id)}
-                      className="border-zinc-300 text-black focus:ring-black data-[state=checked]:bg-black data-[state=checked]:text-white transition-colors"
-                    />
-                    <span>{option.label}</span>
-                  </Label>
-                ))}
+              <div className="flex flex-col gap-2.5">
+                {filterOptions[keyItem].map((option) => {
+                  const isChecked = !!(
+                    filters &&
+                    filters[keyItem] &&
+                    filters[keyItem].includes(option.id)
+                  );
+
+                  return (
+                    <Label
+                      key={option.id}
+                      className="flex text-xs tracking-wide font-normal items-center gap-2.5 cursor-pointer text-zinc-600 hover:text-black transition-colors duration-150 select-none py-0.5"
+                    >
+                      <Checkbox
+                        checked={isChecked}
+                        onCheckedChange={() => handleFilter(keyItem, option.id)}
+                        className="rounded-sm border-zinc-300 data-[state=checked]:bg-[#121212] data-[state=checked]:border-[#121212] transition-colors"
+                      />
+                      <span className={isChecked ? "font-medium text-[#121212]" : ""}>
+                        {option.label}
+                      </span>
+                    </Label>
+                  );
+                })}
               </div>
             </div>
-            <Separator className="bg-zinc-100" />
+            <Separator className="bg-zinc-200/60" />
           </Fragment>
         ))}
       </div>

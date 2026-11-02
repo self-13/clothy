@@ -1,30 +1,37 @@
 import React from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, Link } from "react-router-dom";
 
 export default function AuthLayout() {
   return (
-    <div className="flex min-h-screen w-full font-spaceGrotesk bg-white">
-      {/* Left Premium Display Panel */}
-      <div className="hidden lg:flex flex-col items-center justify-center bg-black w-1/2 px-12 relative overflow-hidden">
-        {/* Abstract Background Design Element */}
-        <div className="absolute inset-0 opacity-[0.03] font-bold text-[25vw] leading-none pointer-events-none select-none text-white flex items-center justify-center tracking-tighter">
-          STYLE
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-br from-black via-zinc-900 to-black opacity-80" />
-
-        <div className="max-w-md space-y-4 text-center text-white z-10 relative">
-          <h1 className="text-6xl font-bold tracking-[0.1em] font-bigShoulders uppercase text-white">
+    <div className="flex min-h-screen w-full font-sans bg-[#FAF9F6] text-[#121212]">
+      {/* Left Editorial Display Panel */}
+      <div className="hidden lg:flex flex-col justify-between bg-[#121212] w-1/2 p-16 text-[#FAF9F6] relative overflow-hidden">
+        <div>
+          <Link to="/" className="font-serif text-2xl tracking-[0.16em] uppercase font-medium">
             LUXERIDGE
-          </h1>
-          <p className="text-sm text-zinc-400 max-w-sm mx-auto leading-relaxed lowercase italic">
-            "explore curated fashion essentials designed for comfort, style, and everyday elegance."
+          </Link>
+        </div>
+
+        <div className="max-w-md space-y-4">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-400 block">
+            Member Sanctuary
+          </span>
+          <h2 className="font-serif text-4xl text-white font-normal leading-[1.15]">
+            Where Comfort Meets Enduring Elegance.
+          </h2>
+          <p className="text-zinc-400 text-sm font-light leading-relaxed">
+            Access private releases, curate your seasonal wardrobe, and experience frictionless order management.
           </p>
+        </div>
+
+        <div className="text-xs text-zinc-500 font-light tracking-wide">
+          © {new Date().getFullYear()} LUXERIDGE CLOTHING. All rights reserved.
         </div>
       </div>
 
       {/* Right Content Panel (Forms) */}
-      <div className="flex flex-1 items-center justify-center bg-white px-4 py-12 sm:px-6 lg:px-8">
-        <div className="w-full max-w-md bg-white border border-zinc-100 p-8 rounded-2xl shadow-sm">
+      <div className="flex flex-1 items-center justify-center px-4 py-12 sm:px-6 lg:px-8 bg-[#FAF9F6]">
+        <div className="w-full max-w-md bg-white border border-zinc-200/80 p-8 sm:p-10 rounded-sm shadow-xs">
           <Outlet />
         </div>
       </div>

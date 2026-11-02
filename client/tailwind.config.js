@@ -18,14 +18,33 @@ module.exports = {
     },
     extend: {
       fontFamily: {
-        bigShoulders: ["'Big Shoulders Display'", "sans-serif"],
-        spaceGrotesk: ["'Space Grotesk'", "sans-serif"],
+        serif: ["'Playfair Display'", "Georgia", "serif"],
+        sans: ["'Plus Jakarta Sans'", "sans-serif"],
+        bigShoulders: ["'Playfair Display'", "serif"],
+        spaceGrotesk: ["'Plus Jakarta Sans'", "sans-serif"],
       },
       colors: {
+        sand: {
+          50: "#faf9f6",
+          100: "#f5f3ee",
+          200: "#eae6dd",
+          300: "#d9d2c3",
+          400: "#c4bba4",
+          500: "#a99d82",
+          600: "#8c8066",
+          700: "#6e6450",
+          800: "#544c3e",
+          900: "#3d372e",
+        },
+        carbon: {
+          900: "#121212",
+          800: "#1a1a1a",
+          700: "#262626",
+        },
         gold: {
-          DEFAULT: "#baa37b",
-          light: "#cbbba0",
-          dark: "#a58f66",
+          DEFAULT: "#c5a880",
+          light: "#d8c3a3",
+          dark: "#a98d65",
         },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -65,6 +84,9 @@ module.exports = {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      transitionTimingFunction: {
+        luxury: "cubic-bezier(0.23, 1, 0.32, 1)",
       },
       keyframes: {
         "accordion-down": {

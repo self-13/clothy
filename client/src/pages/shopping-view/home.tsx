@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeftIcon, ChevronRightIcon, Plus, ArrowRight, ShieldCheck, Truck, RefreshCw, Star } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchAllFilteredProducts, resetProductDetails } from "@/store/shop/products-slice";
 import { addToCart, fetchCartItems } from "@/store/shop/cart-slice";
@@ -10,13 +10,12 @@ import { useToast } from "@/components/ui/use-toast";
 import ShoppingProductTile from "@/components/shopping-view/product-tile";
 import Footer from "@/components/shopping-view/footer";
 
-
 const fadeInUp = {
-  hidden: { opacity: 0, y: 40 },
+  hidden: { opacity: 0, y: 24 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.6, ease: [0.215, 0.61, 0.355, 1] as const }
+    transition: { duration: 0.5, ease: [0.23, 1, 0.32, 1] as const }
   }
 };
 
@@ -25,41 +24,14 @@ const staggerContainer = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.1,
+      staggerChildren: 0.08,
     }
-  }
-};
-
-const slideInLeft = {
-  hidden: { opacity: 0, x: -50 },
-  visible: {
-    opacity: 1,
-    x: 0,
-    transition: { duration: 0.8, ease: [0.215, 0.61, 0.355, 1] as const }
-  }
-};
-
-const slideInRight = {
-  hidden: { opacity: 0, x: 50 },
-  visible: {
-    opacity: 1,
-    x: 0,
-    transition: { duration: 0.8, ease: [0.215, 0.61, 0.355, 1] as const }
-  }
-};
-
-const scaleUp = {
-  hidden: { opacity: 0, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: { duration: 0.6, ease: [0.215, 0.61, 0.355, 1] as const }
   }
 };
 
 export default function ShoppingHome() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [genderView, setGenderView] = useState(() => {
+  const [genderView, setGenderView] = useState<"MEN" | "WOMEN">(() => {
     const savedGender = localStorage.getItem("selectedGender");
     if (savedGender === "man") return "MEN";
     if (savedGender === "woman") return "WOMEN";
@@ -87,19 +59,21 @@ export default function ShoppingHome() {
     ).then((data: any) => {
       if (data?.payload?.success) {
         if (user?.id) dispatch(fetchCartItems(user.id) as any);
-        toast({ title: "Product added to cart successfully!" });
+        toast({ title: "Item added to your shopping bag." });
       }
     });
   };
 
   // Carousel controls
   const goToNextSlide = useCallback(() => {
+    if (!featureImageList || featureImageList.length === 0) return;
     setCurrentSlide((prev) => (prev === featureImageList.length - 1 ? 0 : prev + 1));
-  }, [featureImageList.length]);
+  }, [featureImageList]);
 
   const goToPrevSlide = useCallback(() => {
+    if (!featureImageList || featureImageList.length === 0) return;
     setCurrentSlide((prev) => (prev === 0 ? featureImageList.length - 1 : prev - 1));
-  }, [featureImageList.length]);
+  }, [featureImageList]);
 
   useEffect(() => {
     dispatch(
@@ -113,61 +87,16 @@ export default function ShoppingHome() {
   }, [dispatch]);
 
   useEffect(() => {
-    if (featureImageList.length <= 1) return;
-    const timer = setInterval(() => goToNextSlide(), 5000);
+    if (!featureImageList || featureImageList.length <= 1) return;
+    const timer = setInterval(() => goToNextSlide(), 6000);
     return () => clearInterval(timer);
-  }, [featureImageList.length, goToNextSlide]);
-
-  // Derived product categories
-  const menProducts = useMemo(() => {
-    if (!productList) return [];
-    return productList
-      .filter(
-        (p: any) =>
-          p.category === "men" ||
-          p.category === "man" ||
-          p.gender === "men" ||
-          p.gender === "man"
-      )
-      .slice(0, 4);
-  }, [productList]);
-
-  const womenProducts = useMemo(() => {
-    if (!productList) return [];
-    return productList
-      .filter(
-        (p: any) =>
-          p.category === "women" ||
-          p.category === "woman" ||
-          p.gender === "women" ||
-          p.gender === "woman"
-      )
-      .slice(0, 4);
-  }, [productList]);
-
-  const featuredProducts = useMemo(() => {
-    if (!productList) return [];
-    const isMen = genderView.toUpperCase() === "MEN";
-    return productList
-      .filter((p: any) => {
-        if (!p.isFeatured) return false;
-        const cat = p.category?.toLowerCase();
-        const gen = p.gender?.toLowerCase();
-        if (isMen) {
-          return cat === "men" || cat === "man" || gen === "men" || gen === "man";
-        } else {
-          return cat === "women" || cat === "woman" || gen === "women" || gen === "woman";
-        }
-      })
-      .slice(0, 4);
-  }, [productList, genderView]);
+  }, [featureImageList, goToNextSlide]);
 
   const hotCollections = useMemo(() => {
     if (!productList) return [];
     return productList.slice(0, 4);
   }, [productList]);
 
-  // Filter products by tab selection
   const tabFilteredProducts = useMemo(() => {
     if (!productList) return [];
     const isMen = genderView.toUpperCase() === "MEN";
@@ -187,183 +116,203 @@ export default function ShoppingHome() {
           p.subcategory?.toLowerCase() === activeCategoryTab.toLowerCase()
       );
     }
-    return filtered.slice(0, 4);
+    return filtered.slice(0, 8);
   }, [productList, genderView, activeCategoryTab]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-white font-spaceGrotesk">
+    <div className="flex flex-col min-h-screen bg-[#FAF9F6] text-[#121212] font-sans">
       
-      {/* 1. Banner Section (Hero) */}
-      <section className="relative w-full h-[85vh] overflow-hidden bg-zinc-950 flex flex-col justify-end text-white">
+      {/* 1. Hero Section - Editorial Cover */}
+      <section className="relative w-full h-[90vh] min-h-[600px] max-h-[920px] overflow-hidden bg-[#121212] text-white flex flex-col justify-end">
         {featureImageList && featureImageList.length > 0 ? (
           <div className="absolute inset-0 z-0">
             <AnimatePresence mode="wait">
               <motion.img
                 key={currentSlide}
                 src={featureImageList[currentSlide]?.image}
-                alt="Banner slide"
-                initial={{ opacity: 0, scale: 1.05 }}
+                alt="Editorial hero showcase"
+                initial={{ opacity: 0, scale: 1.03 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 1 }}
-                className="w-full h-full object-cover"
+                transition={{ duration: 1.1, ease: [0.23, 1, 0.32, 1] }}
+                className="w-full h-full object-cover object-center"
               />
             </AnimatePresence>
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/20" />
           </div>
         ) : (
-          <div className="absolute inset-0 bg-neutral-900 flex items-center justify-center">
-            <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">Awaiting slider imagery</p>
+          <div className="absolute inset-0 bg-zinc-900 flex items-center justify-center">
+            <p className="text-zinc-500 text-xs uppercase tracking-[0.2em]">Curating imagery</p>
           </div>
         )}
 
         {/* Hero Content Overlay */}
-        <div className="container mx-auto px-4 md:px-8 pb-16 z-10 flex flex-col items-center text-center relative max-w-4xl">
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-[11px] font-bold uppercase tracking-[0.3em] mb-4 text-zinc-300"
-          >
-            NEW COLLECTION @{new Date().getFullYear()}
-          </motion.p>
-          
-          <motion.p
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-sm md:text-md text-zinc-300 max-w-lg mb-8 leading-relaxed"
-          >
-            Explore curated fashion essentials designed for comfort, style, confidence, and effortless everyday elegance.
-          </motion.p>
-
+        <div className="container mx-auto px-4 md:px-8 pb-16 md:pb-24 z-10 relative max-w-4xl">
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
+            className="space-y-4"
           >
-            <button
-              onClick={() => navigate("/shop/listing")}
-              className="bg-white text-black pl-8 pr-2 py-2 rounded-full font-bold uppercase tracking-widest text-[11px] hover:bg-black hover:text-white border border-white transition-all duration-300 flex items-center gap-4 group"
-            >
-              Shop Now
-              <span className="w-8 h-8 rounded-full bg-black text-white group-hover:bg-white group-hover:text-black flex items-center justify-center transition-all duration-300">
-                <ArrowRight className="w-4 h-4" />
-              </span>
-            </button>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.25em] text-zinc-300 block">
+              Autumn / Winter Capsule Edition
+            </span>
+            
+            <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl text-white font-normal tracking-tight leading-[1.08] max-w-2xl">
+              Timeless Tailoring. Everyday Luxury.
+            </h1>
+            
+            <p className="text-sm sm:text-base text-zinc-300 font-light max-w-md leading-relaxed pt-1">
+              Curated garments engineered for relaxed comfort, precise drape, and enduring elegance.
+            </p>
+
+            <div className="pt-4 flex items-center gap-4">
+              <button
+                onClick={() => navigate("/shop/listing")}
+                className="bg-[#FAF9F6] text-[#121212] hover:bg-white px-8 py-3.5 text-xs font-semibold uppercase tracking-[0.16em] rounded-sm transition-all duration-200 active:scale-[0.97] flex items-center gap-3 shadow-md group"
+              >
+                Explore Collection
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+              </button>
+            </div>
           </motion.div>
         </div>
 
-        {/* Huge Banner Background Text */}
-        <div className="absolute bottom-0 left-0 right-0 w-full overflow-hidden pointer-events-none select-none z-10">
-          <h1 className="text-[18vw] font-bold text-center text-white/10 leading-[0.7] tracking-[0.05em] uppercase w-full">
-            LUXERIDGE
-          </h1>
-        </div>
+        {/* Minimal Slider Controls */}
+        {featureImageList && featureImageList.length > 1 && (
+          <div className="absolute bottom-8 right-6 md:right-12 z-20 flex items-center gap-2">
+            <button
+              onClick={goToPrevSlide}
+              aria-label="Previous slide"
+              className="p-2 text-white/70 hover:text-white transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5 stroke-[1.5]" />
+            </button>
+            <div className="flex gap-1.5 px-2">
+              {featureImageList.map((_: any, idx: number) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentSlide(idx)}
+                  aria-label={`Slide ${idx + 1}`}
+                  className={`h-[2px] transition-all duration-300 ${
+                    currentSlide === idx ? "w-8 bg-white" : "w-3 bg-white/40"
+                  }`}
+                />
+              ))}
+            </div>
+            <button
+              onClick={goToNextSlide}
+              aria-label="Next slide"
+              className="p-2 text-white/70 hover:text-white transition-colors"
+            >
+              <ChevronRight className="w-5 h-5 stroke-[1.5]" />
+            </button>
+          </div>
+        )}
       </section>
 
-      {/* 2. Experience Section */}
-      <section className="py-24 bg-white border-b border-zinc-100">
+      {/* 2. Brand Philosophy / Editorial Craft Section */}
+      <section className="py-24 md:py-32 bg-[#FAF9F6] border-b border-zinc-200/60">
         <div className="container mx-auto px-4 md:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
             
-            {/* Left Image Wrapper */}
+            {/* Left: Editorial Image */}
             <motion.div
-              variants={slideInLeft}
+              variants={fadeInUp}
               initial="hidden"
               whileInView="visible"
-              viewport={{ once: true, margin: "-100px" }}
-              className="lg:col-span-5 relative aspect-[3/4] bg-zinc-50 rounded-2xl overflow-hidden group"
+              viewport={{ once: true, margin: "-80px" }}
+              className="lg:col-span-5 relative aspect-[4/5] bg-[#F4F3F0] rounded-sm overflow-hidden"
             >
               <img
-                src={featureImageList?.[0]?.image || "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=600"}
-                alt="Brand experience"
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                src={featureImageList?.[0]?.image || "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=800"}
+                alt="Tailoring atelier"
+                className="w-full h-full object-cover transition-transform duration-700 hover:scale-103"
               />
-              <div className="absolute inset-0 bg-black/20" />
-              <div className="absolute bottom-8 left-8 text-white">
-                <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-300 mb-2">*EXPERIENCE</p>
-                <h3 className="text-2xl font-bold uppercase tracking-tight">Unmatched Comfort & Style</h3>
-              </div>
             </motion.div>
 
-            {/* Right Cards Wrap */}
+            {/* Right: Narrative Story */}
             <motion.div
-              variants={staggerContainer}
+              variants={fadeInUp}
               initial="hidden"
               whileInView="visible"
-              viewport={{ once: true, margin: "-100px" }}
-              className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6"
+              viewport={{ once: true, margin: "-80px" }}
+              className="lg:col-span-7 space-y-8"
             >
-              {[
-                {
-                  id: "01",
-                  title: "Premium Quality",
-                  desc: "We use soft, durable, skin-friendly fabrics designed to ensure lasting comfort and quality in every single piece.",
-                  icon: ShieldCheck,
-                },
-                {
-                  id: "02",
-                  title: "Fast & Secure Delivery",
-                  desc: "Your orders are packed with extreme care and delivered quickly across the country for a frictionless shopping experience.",
-                  icon: Truck,
-                },
-                {
-                  id: "03",
-                  title: "10-Day Return Policy",
-                  desc: "Not satisfied? Get quick, hassle-free returns or exchanges within 10 days for complete peace of mind.",
-                  icon: RefreshCw,
-                },
-                {
-                  id: "04",
-                  title: "Real User Reviews",
-                  desc: "Loved by thousands worldwide, earning stellar ratings and positive feedback on all fit collections.",
-                  icon: Star,
-                },
-              ].map((card) => (
-                <motion.div
-                  key={card.id}
-                  variants={fadeInUp}
-                  className="p-6 rounded-xl bg-[#f8f8f8] hover:bg-white border border-transparent hover:border-zinc-200 transition-all duration-300 space-y-4 shadow-sm hover:shadow"
-                >
-                  <div className="flex justify-between items-center">
-                    <span className="w-10 h-10 rounded-lg bg-white border border-zinc-200 flex items-center justify-center">
-                      <card.icon className="w-5 h-5 text-black" />
-                    </span>
-                    <span className="font-bold text-zinc-300 text-sm">{card.id}</span>
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-md text-black uppercase tracking-tight mb-2">{card.title}</h4>
-                    <p className="text-zinc-500 text-xs leading-relaxed">{card.desc}</p>
-                  </div>
-                </motion.div>
-              ))}
+              <div className="space-y-3">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-400 block">
+                  The Atelier Philosophy
+                </span>
+                <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl text-[#121212] leading-[1.15]">
+                  Formed by Intention, Cut for Effortless Wear.
+                </h2>
+              </div>
+
+              <div className="space-y-4 text-zinc-600 font-light leading-relaxed text-sm sm:text-base max-w-xl">
+                <p>
+                  At Luxeridge, clothing is not treated as temporary novelty. Every pattern is cut with architectural precision, balancing generous tactile comfort with razor-sharp contours.
+                </p>
+                <p>
+                  We source heavyweight organic fibers, soft brushed cottons, and breathable natural blends designed to hold their integrity year after year, wash after wash.
+                </p>
+              </div>
+
+              {/* Quiet, authentic commitments */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6 border-t border-zinc-200/80">
+                <div>
+                  <h4 className="text-xs uppercase tracking-[0.14em] font-semibold text-[#121212] mb-1">
+                    Fine Natural Fibers
+                  </h4>
+                  <p className="text-xs text-zinc-500 font-light leading-relaxed">
+                    Selected for breathable weight, supple touch, and durability.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="text-xs uppercase tracking-[0.14em] font-semibold text-[#121212] mb-1">
+                    Mindful Proportions
+                  </h4>
+                  <p className="text-xs text-zinc-500 font-light leading-relaxed">
+                    Every silhouette drape tested for effortless daily movement.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="text-xs uppercase tracking-[0.14em] font-semibold text-[#121212] mb-1">
+                    Conscious Packaging
+                  </h4>
+                  <p className="text-xs text-zinc-500 font-light leading-relaxed">
+                    100% recyclable, zero-plastic presentation on every dispatch.
+                  </p>
+                </div>
+              </div>
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* 3. Collection Section (Hot Deals) */}
-      <section className="py-24 bg-[#f8f8f8]">
+      {/* 3. Featured Hot Collections */}
+      <section className="py-24 md:py-32 bg-white border-b border-zinc-200/60">
         <div className="container mx-auto px-4 md:px-8">
           <motion.div
             variants={fadeInUp}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6"
+            viewport={{ once: true, margin: "-80px" }}
+            className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-12 gap-4"
           >
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 mb-2">*COLLECTIONS</p>
-              <h2 className="text-3xl md:text-5xl font-bold uppercase tracking-tighter text-black">
-                OUR HOT COLLECTIONS
+              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-400 block mb-2">
+                New Releases
+              </span>
+              <h2 className="font-serif text-3xl sm:text-4xl text-[#121212]">
+                Curated Foundational Pieces
               </h2>
             </div>
             <button
               onClick={() => navigate("/shop/listing")}
-              className="bg-black text-white hover:bg-zinc-800 px-6 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all shadow-md hover:translate-x-[2px]"
+              className="text-xs font-semibold uppercase tracking-[0.15em] text-[#121212] hover:text-zinc-500 flex items-center gap-1.5 pb-1 border-b border-[#121212] hover:border-zinc-500 transition-colors"
             >
-              Explore All
+              View All Garments
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </motion.div>
 
@@ -371,10 +320,10 @@ export default function ShoppingHome() {
             variants={staggerContainer}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+            viewport={{ once: true, margin: "-80px" }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8"
           >
-            {hotCollections.map((product) => (
+            {hotCollections.map((product: any) => (
               <motion.div key={product._id} variants={fadeInUp}>
                 <ShoppingProductTile
                   product={product}
@@ -386,73 +335,75 @@ export default function ShoppingHome() {
         </div>
       </section>
 
-      {/* 4. Browse Categories Tab Section */}
-      <section className="py-24 bg-white">
+      {/* 4. Browse by Category & Subcategory Tab Section */}
+      <section className="py-24 md:py-32 bg-[#FAF9F6]">
         <div className="container mx-auto px-4 md:px-8">
           <motion.div
             variants={fadeInUp}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true, margin: "-80px" }}
             className="text-center space-y-4 mb-12"
           >
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">*CATEGORY</p>
-            <h2 className="text-3xl md:text-5xl font-bold uppercase tracking-tighter text-black">
-              BROWSE OUR CATEGORIES
+            <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-400 block">
+              The Wardrobe
+            </span>
+            <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl text-[#121212]">
+              Explore by Silhouette
             </h2>
-            <p className="text-zinc-500 text-sm max-w-md mx-auto">
-              Explore handpicked essentials designed to refine your style and enhance your everyday comfort.
+            <p className="text-zinc-500 text-sm max-w-md mx-auto font-light">
+              Refined garments crafted to mix, match, and elevate your daily rotation.
             </p>
           </motion.div>
 
-          {/* Gender selection */}
+          {/* Gender Switcher */}
           <motion.div
             variants={fadeInUp}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            className="flex justify-center gap-6 mb-8 border-b border-zinc-100 pb-4"
+            viewport={{ once: true, margin: "-80px" }}
+            className="flex justify-center gap-8 mb-10 border-b border-zinc-200 pb-4 max-w-xs mx-auto"
           >
             <button
               onClick={() => handleGenderViewChange("MEN")}
-              className={`pb-2 font-bold uppercase tracking-widest text-sm relative transition-all duration-300 ${
-                genderView === "MEN" ? "text-black" : "text-zinc-300 hover:text-zinc-500"
+              className={`pb-2 text-xs font-semibold uppercase tracking-[0.16em] relative transition-colors ${
+                genderView === "MEN" ? "text-[#121212]" : "text-zinc-400 hover:text-zinc-600"
               }`}
             >
-              Men Collection
+              Men's Edit
               {genderView === "MEN" && (
-                <span className="absolute bottom-0 left-0 w-full h-[2px] bg-black" />
+                <motion.span layoutId="activeGenderBar" className="absolute bottom-0 left-0 w-full h-[1.5px] bg-[#121212]" />
               )}
             </button>
             <button
               onClick={() => handleGenderViewChange("WOMEN")}
-              className={`pb-2 font-bold uppercase tracking-widest text-sm relative transition-all duration-300 ${
-                genderView === "WOMEN" ? "text-black" : "text-zinc-300 hover:text-zinc-500"
+              className={`pb-2 text-xs font-semibold uppercase tracking-[0.16em] relative transition-colors ${
+                genderView === "WOMEN" ? "text-[#121212]" : "text-zinc-400 hover:text-zinc-600"
               }`}
             >
-              Women Collection
+              Women's Edit
               {genderView === "WOMEN" && (
-                <span className="absolute bottom-0 left-0 w-full h-[2px] bg-black" />
+                <motion.span layoutId="activeGenderBar" className="absolute bottom-0 left-0 w-full h-[1.5px] bg-[#121212]" />
               )}
             </button>
           </motion.div>
 
-          {/* Subcategory Tabs */}
+          {/* Subcategory Filter Tabs */}
           <motion.div
             variants={fadeInUp}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true, margin: "-80px" }}
             className="flex flex-wrap justify-center gap-2 mb-12"
           >
-            {["All", "winterwear", "plus-size", "shirts", "t-shirts", "jeans", "dresses", "activewear"].map((tab) => (
+            {["All", "shirts", "t-shirts", "jeans", "winterwear", "dresses", "activewear"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveCategoryTab(tab)}
-                className={`px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider border transition-all duration-300 ${
+                className={`px-4 py-1.5 text-xs font-medium uppercase tracking-[0.14em] rounded-sm transition-all duration-200 active:scale-95 ${
                   activeCategoryTab.toLowerCase() === tab.toLowerCase()
-                    ? "bg-black border-black text-white shadow-sm"
-                    : "bg-[#f8f8f8] border-zinc-200 text-zinc-500 hover:border-black hover:text-black"
+                    ? "bg-[#121212] text-white"
+                    : "bg-white border border-zinc-200/80 text-zinc-600 hover:border-black hover:text-black"
                 }`}
               >
                 {tab}
@@ -460,16 +411,16 @@ export default function ShoppingHome() {
             ))}
           </motion.div>
 
-          {/* Tab Content */}
+          {/* Products Grid */}
           {tabFilteredProducts.length > 0 ? (
             <motion.div
               variants={staggerContainer}
               initial="hidden"
               whileInView="visible"
-              viewport={{ once: true, margin: "-100px" }}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+              viewport={{ once: true, margin: "-80px" }}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8"
             >
-              {tabFilteredProducts.map((product) => (
+              {tabFilteredProducts.map((product: any) => (
                 <motion.div key={product._id} variants={fadeInUp}>
                   <ShoppingProductTile
                     product={product}
@@ -479,84 +430,83 @@ export default function ShoppingHome() {
               ))}
             </motion.div>
           ) : (
-            <div className="py-16 text-center border border-dashed border-zinc-200 rounded-2xl">
-              <p className="text-zinc-400 text-sm">No items found in this subcategory.</p>
+            <div className="py-20 text-center bg-white border border-dashed border-zinc-200 rounded-sm">
+              <p className="text-zinc-400 text-xs font-light uppercase tracking-widest">
+                No items currently found in this subcategory.
+              </p>
             </div>
           )}
         </div>
       </section>
 
-      {/* 5. Comfort Style Info Section */}
-      <section className="py-24 bg-[#f8f8f8]">
+      {/* 5. Editorial Focus Banner */}
+      <section className="py-24 md:py-32 bg-[#F4F3EE] border-t border-b border-zinc-200/60">
         <div className="container mx-auto px-4 md:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <motion.div
-              variants={slideInLeft}
+              variants={fadeInUp}
               initial="hidden"
               whileInView="visible"
-              viewport={{ once: true, margin: "-100px" }}
+              viewport={{ once: true, margin: "-80px" }}
               className="space-y-6"
             >
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">*FIT & FORM</p>
-              <h2 className="text-3xl md:text-5xl font-bold uppercase tracking-tighter text-black leading-tight">
-                COMFORT AND STYLE IN EVERY STITCH
+              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-400 block">
+                Signature Aesthetic
+              </span>
+              <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl text-[#121212] leading-[1.12]">
+                Comfort and Structure in Every Stitch
               </h2>
-              <p className="text-zinc-500 text-sm leading-relaxed max-w-lg">
-                Crafted for details, our collections match modern lines with durable and soft materials. Re-frame your styling requirements with apparel that fits you exactly.
+              <p className="text-zinc-600 text-sm sm:text-base font-light leading-relaxed max-w-lg">
+                Engineered for versatile layering. Whether paired with structured denim or relaxed trousers, each garment brings understated confidence to everyday living.
               </p>
-              <button
-                onClick={() => navigate("/shop/listing")}
-                className="bg-black text-white hover:bg-zinc-800 px-8 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all"
-              >
-                Discover Collection
-              </button>
+              <div>
+                <button
+                  onClick={() => navigate("/shop/listing")}
+                  className="bg-[#121212] text-white hover:bg-black px-7 py-3 text-xs font-semibold uppercase tracking-[0.16em] rounded-sm transition-all duration-200 active:scale-[0.97]"
+                >
+                  Discover The Collection
+                </button>
+              </div>
             </motion.div>
 
             <motion.div
-              variants={slideInRight}
+              variants={fadeInUp}
               initial="hidden"
               whileInView="visible"
-              viewport={{ once: true, margin: "-100px" }}
-              className="aspect-[4/3] rounded-2xl overflow-hidden bg-zinc-100 relative group"
+              viewport={{ once: true, margin: "-80px" }}
+              className="aspect-[4/3] bg-zinc-200 rounded-sm overflow-hidden"
             >
               <img
                 src={featureImageList?.[1]?.image || "https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=800"}
-                alt="Styling representation"
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                alt="Collection spotlight"
+                className="w-full h-full object-cover transition-transform duration-700 hover:scale-103"
               />
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* 6. Discount Banner Section */}
-      <section className="py-20 bg-zinc-950 text-white relative overflow-hidden flex items-center justify-center">
-        <div className="absolute inset-0 opacity-[0.03] font-bold text-[30vw] select-none pointer-events-none leading-none tracking-tighter text-center flex items-center justify-center">
-          OFFER
-        </div>
-        <motion.div
-          variants={scaleUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          className="container mx-auto px-4 text-center space-y-6 z-10"
-        >
-          <span className="bg-white/10 px-4 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest border border-white/10">
-            SEASONAL EVENT
+      {/* 6. Editorial Seasonal Note */}
+      <section className="py-24 bg-[#121212] text-[#FAF9F6] relative overflow-hidden">
+        <div className="container mx-auto px-4 text-center max-w-3xl space-y-6">
+          <span className="text-[10px] uppercase tracking-[0.25em] font-semibold text-zinc-400 block">
+            Special Invitation
           </span>
-          <h2 className="text-4xl md:text-7xl font-bold uppercase tracking-tighter max-w-2xl mx-auto leading-tight">
-            UP TO 40% OFF LATEST TRENDS
+          <h2 className="font-serif text-3xl sm:text-5xl text-white font-normal leading-[1.15]">
+            Archive & Seasonal Curations
           </h2>
-          <p className="text-zinc-400 text-sm max-w-md mx-auto">
-            Upgrade your closet with curated clothing packages, tailored to comfort and elegant structures. 10-day returns guaranteed.
+          <p className="text-zinc-300 text-sm sm:text-base font-light max-w-lg mx-auto leading-relaxed">
+            Discover limited editions and seasonal archive selections crafted with exceptional attention to fabric and fit.
           </p>
-          <button
-            onClick={() => navigate("/shop/listing")}
-            className="bg-white text-black hover:bg-zinc-200 px-8 py-3.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all shadow-lg"
-          >
-            Claim Discount
-          </button>
-        </motion.div>
+          <div className="pt-2">
+            <button
+              onClick={() => navigate("/shop/listing")}
+              className="bg-[#FAF9F6] text-[#121212] hover:bg-white px-8 py-3.5 text-xs font-semibold uppercase tracking-[0.16em] rounded-sm transition-all duration-200 active:scale-[0.97] shadow-lg"
+            >
+              Shop The Selection
+            </button>
+          </div>
+        </div>
       </section>
 
       <Footer />

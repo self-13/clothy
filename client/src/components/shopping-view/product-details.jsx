@@ -55,15 +55,67 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
     setRating(getRating);
   }, []);
 
+  // Set default size and colour when productDetails loads
+  useEffect(() => {
+    if (productDetails) {
+      if (productDetails.sizes?.length > 0) {
+        const firstInStock = productDetails.sizes.find((s) => s.stock > 0);
+        setSelectedSize(firstInStock ? firstInStock.size : productDetails.sizes[0].size);
+      } else {
+        setSelectedSize("");
+      }
+
+      if (productDetails.colors?.length > 0) {
+        setSelectedColor(productDetails.colors[0]);
+      } else {
+        setSelectedColor("");
+      }
+    }
+  }, [productDetails]);
+
   function handleAddToCart() {
-    if (!selectedSize) {
-      toast({ title: "Please select a size", variant: "destructive" });
+    const hasSizes = Boolean(productDetails?.sizes && productDetails.sizes.length > 0);
+    const hasColors = Boolean(productDetails?.colors && productDetails.colors.length > 0);
+
+    const isMissingSize = hasSizes && !selectedSize;
+    const isMissingColor = hasColors && !selectedColor;
+
+    if (isMissingSize && isMissingColor) {
+      toast({
+        title: "Please select size and colour",
+        description: "Choose your desired size and colour before adding to bag.",
+        variant: "destructive",
+      });
       return;
     }
-    const sizeStock = productDetails?.sizes?.find((s) => s.size === selectedSize);
-    if (!sizeStock || sizeStock.stock < quantity) {
-      toast({ title: `Only ${sizeStock?.stock || 0} items available`, variant: "destructive" });
+
+    if (isMissingSize) {
+      toast({
+        title: "Please select size",
+        description: "Choose your desired size before adding to bag.",
+        variant: "destructive",
+      });
       return;
+    }
+
+    if (isMissingColor) {
+      toast({
+        title: "Please select colour",
+        description: "Choose your desired colour before adding to bag.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (hasSizes && selectedSize) {
+      const sizeStock = productDetails?.sizes?.find((s) => s.size === selectedSize);
+      if (!sizeStock || sizeStock.stock < quantity) {
+        toast({
+          title: `Only ${sizeStock?.stock || 0} items available for size ${selectedSize}`,
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     dispatch(
@@ -75,8 +127,13 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
       })
     ).then((data) => {
       if (data?.payload?.success) {
-        dispatch(fetchCartItems());
-        toast({ title: "Success", description: "Asset archived in your cart." });
+        dispatch(fetchCartItems(user?.id));
+        toast({ title: "Item added to your shopping bag." });
+      } else {
+        toast({
+          title: data?.payload?.message || data?.error?.message || "Failed to add item to bag.",
+          variant: "destructive",
+        });
       }
     });
   }
@@ -109,6 +166,7 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
     setTimeout(() => {
       dispatch(resetProductDetails());
       setSelectedSize("");
+      setSelectedColor("");
       setQuantity(1);
       setActiveImage(0);
       setIsInWishlist(false);
@@ -244,7 +302,7 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                      {productDetails.colors.map((color) => (
                        <button
                          key={color}
-                         onClick={() => setSelectedColor(color)}
+                         onClick={() => setSelectedColor((prev) => (prev === color ? "" : color))}
                          className={`h-10 min-w-[5rem] px-4 text-[10px] font-black uppercase tracking-widest transition-all border ${selectedColor === color ? "bg-black text-white border-black" : "bg-white text-zinc-300 border-zinc-100 hover:border-black hover:text-black"}`}
                        >
                          {color}
@@ -265,8 +323,9 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                       {productDetails.sizes.map((s) => (
                         <button
                           key={s.size}
-                          onClick={() => setSelectedSize(s.size)}
-                          className={`py-3 text-[10px] font-black uppercase border transition-all duration-500 ${selectedSize === s.size ? "bg-black text-white border-black" : "bg-white text-zinc-300 border-zinc-100 hover:border-zinc-400 hover:text-black"}`}
+                          disabled={s.stock === 0}
+                          onClick={() => setSelectedSize((prev) => (prev === s.size ? "" : s.size))}
+                          className={`py-3 text-[10px] font-black uppercase border transition-all duration-500 ${s.stock === 0 ? "bg-zinc-100 text-zinc-300 border-zinc-200 cursor-not-allowed line-through" : selectedSize === s.size ? "bg-black text-white border-black" : "bg-white text-zinc-300 border-zinc-100 hover:border-zinc-400 hover:text-black"}`}
                         >
                           {s.size}
                         </button>
