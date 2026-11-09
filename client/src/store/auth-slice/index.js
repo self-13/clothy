@@ -73,9 +73,13 @@ export const checkAuth = createAsyncThunk(
       const response = await api.get("/auth/check-auth");
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || {
-        success: false,
-        message: "Authentication check failed"
+      return rejectWithValue({
+        status: error.response?.status,
+        data: error.response?.data,
+        message:
+          error.response?.data?.message ||
+          error.message ||
+          "Authentication check failed",
       });
     }
   }
@@ -243,11 +247,31 @@ const authSlice = createSlice({
       })
       .addCase(checkAuth.rejected, (state, action) => {
         state.isLoading = false;
-        state.user = null;
-        state.token = null;
-        state.isAuthenticated = false;
-        localStorage.removeItem("user");
-        localStorage.removeItem("token");
+        const status = action.payload?.status;
+
+        // ONLY wipe credentials if the server explicitly confirmed 401 Unauthorized
+        if (status === 401) {
+          state.user = null;
+          state.token = null;
+          state.isAuthenticated = false;
+          localStorage.removeItem("user");
+          localStorage.removeItem("token");
+        } else {
+          // If network glitch, server wake-up/timeout, or 5xx, preserve restored session!
+          const storedUser = localStorage.getItem("user");
+          const storedToken = localStorage.getItem("token");
+          if (storedUser) {
+            try {
+              state.user = JSON.parse(storedUser);
+              state.token = storedToken || null;
+              state.isAuthenticated = true;
+            } catch {
+              state.user = null;
+              state.token = null;
+              state.isAuthenticated = false;
+            }
+          }
+        }
       })
       .addCase(logoutUser.fulfilled, (state, action) => {
         state.isLoading = false;

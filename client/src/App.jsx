@@ -46,7 +46,13 @@ function App() {
     dispatch(checkAuth());
   }, [dispatch]);
 
-  if (isLoading) return <Skeleton className="w-[800] bg-black h-[600px]" />;
+  if (isLoading) {
+    return (
+      <div className="w-full min-h-screen flex items-center justify-center bg-[#FAF9F6]">
+        <div className="w-8 h-8 border-2 border-[#121212] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-[#FAF9F6] text-[#121212] font-sans">

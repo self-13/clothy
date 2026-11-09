@@ -27,13 +27,20 @@ const app = express();
 const PORT = process.env.PORT || 3003;
 
 // ✅ Allowed frontend origins
-const allowedOrigins = (
+const defaultOrigins = [
+  "http://localhost:5173",
+  "https://clothy-azure.vercel.app",
+];
+
+const envOrigins = (
   process.env.FRONTEND_URLS
     ? process.env.FRONTEND_URLS.split(",")
-    : [process.env.FRONTEND_URL || "http://localhost:5173"]
+    : [process.env.FRONTEND_URL]
 )
-  .map((url) => url.trim().replace(/\/+$/, ""))
-  .filter(Boolean);
+  .filter(Boolean)
+  .map((url) => url.trim().replace(/\/+$/, ""));
+
+const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
 console.log("Allowed origins:", allowedOrigins);
 
 // ✅ Middlewares
@@ -45,37 +52,41 @@ app.use(mongoSanitize());
 app.set("trust proxy", true);
 
 // ✅ Enhanced CORS configuration
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps, Postman)
-      if (!origin) return callback(null, true);
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
 
-      const normalizedOrigin = origin.trim().replace(/\/+$/, "");
-      if (allowedOrigins.includes(normalizedOrigin)) {
-        callback(null, true);
-      } else {
-        console.log("❌ Blocked by CORS:", origin);
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    methods: ["GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"], // Added OPTIONS and PATCH
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-      "Cache-Control",
-      "Expires",
-      "Pragma",
-      "X-Requested-With",
-      "x-user-id",
-    ],
-    credentials: true,
-    optionsSuccessStatus: 204,
-  })
-);
+    const normalizedOrigin = origin.trim().replace(/\/+$/, "");
+    if (
+      allowedOrigins.includes(normalizedOrigin) ||
+      normalizedOrigin.endsWith(".vercel.app") ||
+      process.env.NODE_ENV !== "production"
+    ) {
+      callback(null, true);
+    } else {
+      console.log("❌ Blocked by CORS:", origin);
+      callback(null, false);
+    }
+  },
+  methods: ["GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "Cache-Control",
+    "Expires",
+    "Pragma",
+    "X-Requested-With",
+    "x-user-id",
+  ],
+  credentials: true,
+  optionsSuccessStatus: 204,
+};
 
-// ✅ Handle preflight requests globally
-app.options("*", cors());
+app.use(cors(corsOptions));
+
+// ✅ Handle preflight requests globally with matching CORS configuration
+app.options("*", cors(corsOptions));
 
 // ✅ Rate limiting for auth routes (skip check-auth and logout to prevent reload lockouts)
 const authLimiter = rateLimit({

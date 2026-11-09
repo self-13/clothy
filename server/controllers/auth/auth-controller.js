@@ -161,28 +161,45 @@ const logoutUser = (req, res) => {
 
 // ---------------- AUTH MIDDLEWARE ----------------
 const authMiddleware = (req, res, next) => {
-  let token = req.cookies?.token;
-
-  if (!token && req.headers.authorization) {
+  let headerToken = null;
+  if (req.headers.authorization) {
     const authHeader = req.headers.authorization;
     if (authHeader.startsWith("Bearer ")) {
-      token = authHeader.slice(7).trim();
+      headerToken = authHeader.slice(7).trim();
     } else {
-      token = authHeader.trim();
+      headerToken = authHeader.trim();
     }
   }
 
-  if (!token)
-    return res.status(401).json({ success: false, message: "Unauthorized" });
+  const cookieToken = req.cookies?.token;
 
-  try {
-    const decoded = jwt.verify(token, process.env.CLIENT_SECRET_KEY);
-    req.user = decoded;
-    req.token = token;
-    next();
-  } catch (err) {
+  // Prioritize active SPA header token, fall back to cookie token
+  const tokensToTry = [headerToken, cookieToken].filter(Boolean);
+
+  if (tokensToTry.length === 0) {
     return res.status(401).json({ success: false, message: "Unauthorized" });
   }
+
+  let verifiedUser = null;
+  let validToken = null;
+
+  for (const token of tokensToTry) {
+    try {
+      verifiedUser = jwt.verify(token, process.env.CLIENT_SECRET_KEY);
+      validToken = token;
+      break;
+    } catch {
+      // try next candidate token
+    }
+  }
+
+  if (!verifiedUser) {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+
+  req.user = verifiedUser;
+  req.token = validToken;
+  next();
 };
 
 // Verify OTP
