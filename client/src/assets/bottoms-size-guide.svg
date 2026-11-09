@@ -1,0 +1,225 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="100%" height="100%">
+  <defs>
+    <style>
+      .bg { fill: #FAF9F6; }
+      .grid-line { stroke: #E4E4E7; stroke-width: 1; stroke-dasharray: 4 4; }
+      .garment-fill { fill: #FFFFFF; stroke: #18181B; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+      .garment-detail { fill: none; stroke: #71717A; stroke-width: 1.2; stroke-dasharray: 3 3; }
+      .waistband-fill { fill: #F4F4F5; stroke: #18181B; stroke-width: 2; }
+      .dim-line { stroke: #000000; stroke-width: 1.5; }
+      .dim-arrow { fill: #000000; }
+      .badge-bg { fill: #18181B; }
+      .badge-text { fill: #FFFFFF; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 11px; font-weight: 800; text-anchor: middle; dominant-baseline: central; }
+      .label-title { fill: #18181B; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+      .label-desc { fill: #71717A; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 10px; font-weight: 400; }
+      .brand-text { fill: #A1A1AA; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase; }
+    </style>
+    <marker id="arrow-start" viewBox="0 0 10 10" refX="2" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 8 1 L 2 5 L 8 9 z" class="dim-arrow" />
+    </marker>
+    <marker id="arrow-end" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 2 1 L 8 5 L 2 9 z" class="dim-arrow" />
+    </marker>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect width="800" height="600" class="bg" rx="4" />
+  
+  <!-- Subtle Blueprint Grid -->
+  <line x1="50" y1="100" x2="750" y2="100" class="grid-line" opacity="0.6"/>
+  <line x1="50" y1="300" x2="750" y2="300" class="grid-line" opacity="0.6"/>
+  <line x1="50" y1="500" x2="750" y2="500" class="grid-line" opacity="0.6"/>
+  <line x1="400" y1="50" x2="400" y2="550" class="grid-line" opacity="0.6"/>
+
+  <!-- Architectural Frame Corners -->
+  <path d="M 30 50 L 30 30 L 50 30" fill="none" stroke="#D4D4D8" stroke-width="2"/>
+  <path d="M 770 50 L 770 30 L 750 30" fill="none" stroke="#D4D4D8" stroke-width="2"/>
+  <path d="M 30 550 L 30 570 L 50 570" fill="none" stroke="#D4D4D8" stroke-width="2"/>
+  <path d="M 770 550 L 770 570 L 750 570" fill="none" stroke="#D4D4D8" stroke-width="2"/>
+
+  <!-- Header Section -->
+  <text x="50" y="55" class="brand-text">LUXERIDGE ARCHIVES // SPECIFICATION SPEC-02</text>
+  <text x="50" y="75" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="900" fill="#18181B" letter-spacing="0.05em">BOTTOMS &amp; TROUSERS MEASUREMENT SCHEMATIC</text>
+
+  <!-- Garment Graphic (Trousers / Jeans Silhouette) -->
+  <g id="trousers" transform="translate(130, 90)">
+    
+    <!-- Main Pants Silhouette -->
+    <path d="
+      M 90 40
+      L 270 40
+      L 285 140
+      L 245 440
+      L 190 440
+      L 180 180
+      L 170 440
+      L 115 440
+      L 75 140
+      Z" 
+      class="garment-fill" 
+      filter="drop-shadow(0px 8px 16px rgba(0,0,0,0.04))"
+    />
+
+    <!-- Waistband Strip -->
+    <path d="
+      M 90 40 
+      L 270 40 
+      L 273 65 
+      L 87 65 
+      Z" 
+      class="waistband-fill" 
+    />
+    <line x1="87" y1="65" x2="273" y2="65" stroke="#18181B" stroke-width="2"/>
+
+    <!-- Fly & Front Crotch Seam -->
+    <path d="M 180 65 L 180 145 C 180 165, 180 175, 180 180" fill="none" stroke="#18181B" stroke-width="1.8"/>
+    <path d="M 180 65 C 195 90, 195 125, 180 145" fill="none" stroke="#71717A" stroke-width="1.2" stroke-dasharray="3 3"/>
+    
+    <!-- Waist Button -->
+    <circle cx="180" cy="52" r="4" fill="#27272A" stroke="#71717A" stroke-width="1"/>
+
+    <!-- Belt Loops -->
+    <rect x="115" y="38" width="5" height="28" fill="#E4E4E7" stroke="#18181B" stroke-width="1.2" rx="0.5"/>
+    <rect x="150" y="38" width="5" height="28" fill="#E4E4E7" stroke="#18181B" stroke-width="1.2" rx="0.5"/>
+    <rect x="205" y="38" width="5" height="28" fill="#E4E4E7" stroke="#18181B" stroke-width="1.2" rx="0.5"/>
+    <rect x="240" y="38" width="5" height="28" fill="#E4E4E7" stroke="#18181B" stroke-width="1.2" rx="0.5"/>
+
+    <!-- Pockets Curve -->
+    <path d="M 90 70 C 110 75, 130 100, 135 125" fill="none" stroke="#71717A" stroke-width="1.2" stroke-dasharray="3 3"/>
+    <path d="M 270 70 C 250 75, 230 100, 225 125" fill="none" stroke="#71717A" stroke-width="1.2" stroke-dasharray="3 3"/>
+
+    <!-- Pressed Center Creases on Legs -->
+    <line x1="145" y1="180" x2="142" y2="435" class="garment-detail" />
+    <line x1="215" y1="180" x2="218" y2="435" class="garment-detail" />
+
+    <!-- Hem Stitching at Ankles -->
+    <line x1="117" y1="428" x2="168" y2="428" class="garment-detail" />
+    <line x1="192" y1="428" x2="243" y2="428" class="garment-detail" />
+
+    <!-- DIMENSION A: WAISTBAND (Top edge straight across) -->
+    <line x1="90" y1="28" x2="270" y2="28" class="dim-line" marker-start="url(#arrow-start)" marker-end="url(#arrow-end)" stroke-width="2"/>
+    <line x1="90" y1="26" x2="90" y2="40" stroke="#A1A1AA" stroke-width="1" stroke-dasharray="2 2"/>
+    <line x1="270" y1="26" x2="270" y2="40" stroke="#A1A1AA" stroke-width="1" stroke-dasharray="2 2"/>
+    <circle cx="180" cy="28" r="11" class="badge-bg"/>
+    <text x="180" y="28" class="badge-text">A</text>
+
+    <!-- DIMENSION B: HIP / SEAT WIDTH (Across fullest point, ~7" below waist) -->
+    <!-- y = 140 -->
+    <line x1="75" y1="140" x2="285" y2="140" class="dim-line" marker-start="url(#arrow-start)" marker-end="url(#arrow-end)"/>
+    <line x1="75" y1="135" x2="75" y2="145" stroke="#A1A1AA" stroke-width="1"/>
+    <line x1="285" y1="135" x2="285" y2="145" stroke="#A1A1AA" stroke-width="1"/>
+    <circle cx="180" cy="140" r="11" class="badge-bg"/>
+    <text x="180" y="140" class="badge-text">B</text>
+
+    <!-- DIMENSION C: INSEAM (From crotch point down inner seam to hem) -->
+    <!-- from (180, 180) to (190, 440) -->
+    <line x1="172" y1="185" x2="182" y2="440" class="dim-line" marker-start="url(#arrow-start)" marker-end="url(#arrow-end)" stroke-width="1.8"/>
+    <circle cx="177" cy="312" r="11" class="badge-bg"/>
+    <text x="177" y="312" class="badge-text">C</text>
+
+    <!-- DIMENSION D: OUTSEAM / TOTAL LENGTH (Top of waistband down outer side to hem) -->
+    <!-- x = 50 -->
+    <line x1="50" y1="40" x2="50" y2="440" class="dim-line" marker-start="url(#arrow-start)" marker-end="url(#arrow-end)"/>
+    <line x1="45" y1="40" x2="90" y2="40" stroke="#A1A1AA" stroke-width="1" stroke-dasharray="2 2"/>
+    <line x1="45" y1="440" x2="115" y2="440" stroke="#A1A1AA" stroke-width="1" stroke-dasharray="2 2"/>
+    <circle cx="50" cy="240" r="11" class="badge-bg"/>
+    <text x="50" y="240" class="badge-text">D</text>
+
+    <!-- DIMENSION E: THIGH WIDTH (1" below crotch across one leg) -->
+    <!-- y = 200, right leg from x=182 to x=270 -->
+    <line x1="182" y1="205" x2="276" y2="205" class="dim-line" marker-start="url(#arrow-start)" marker-end="url(#arrow-end)"/>
+    <circle cx="229" cy="205" r="11" class="badge-bg"/>
+    <text x="229" y="205" class="badge-text">E</text>
+
+    <!-- DIMENSION F: LEG OPENING / HEM (Across bottom cuff) -->
+    <!-- y = 460 -->
+    <line x1="190" y1="455" x2="245" y2="455" class="dim-line" marker-start="url(#arrow-start)" marker-end="url(#arrow-end)"/>
+    <line x1="190" y1="440" x2="190" y2="458" stroke="#A1A1AA" stroke-width="1" stroke-dasharray="2 2"/>
+    <line x1="245" y1="440" x2="245" y2="458" stroke="#A1A1AA" stroke-width="1" stroke-dasharray="2 2"/>
+    <circle cx="217" cy="455" r="11" class="badge-bg"/>
+    <text x="217" y="455" class="badge-text">F</text>
+
+    <!-- DIMENSION G: FRONT RISE (Crotch up to waistband top button) -->
+    <!-- x = 305 -->
+    <line x1="305" y1="40" x2="305" y2="180" class="dim-line" marker-start="url(#arrow-start)" marker-end="url(#arrow-end)"/>
+    <line x1="270" y1="40" x2="310" y2="40" stroke="#A1A1AA" stroke-width="1" stroke-dasharray="2 2"/>
+    <line x1="180" y1="180" x2="310" y2="180" stroke="#A1A1AA" stroke-width="1" stroke-dasharray="2 2"/>
+    <circle cx="305" cy="110" r="11" class="badge-bg"/>
+    <text x="305" y="110" class="badge-text">G</text>
+  </g>
+
+  <!-- Right Side Key & Measurement Legends -->
+  <g transform="translate(515, 105)">
+    <!-- Legend Box -->
+    <rect x="0" y="0" width="235" height="425" fill="#FFFFFF" stroke="#E4E4E7" stroke-width="1" rx="2" />
+    <rect x="0" y="0" width="235" height="34" fill="#F4F4F5" rx="2" />
+    <text x="14" y="21" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" font-weight="800" fill="#18181B" letter-spacing="0.1em">TROUSER ANATOMY SPEC</text>
+
+    <!-- Item A -->
+    <g transform="translate(14, 48)">
+      <circle cx="10" cy="10" r="10" class="badge-bg"/>
+      <text x="10" y="10" class="badge-text">A</text>
+      <text x="30" y="9" class="label-title">Waistband</text>
+      <text x="30" y="23" class="label-desc">Flat across top edge (x2 for total)</text>
+    </g>
+
+    <!-- Item B -->
+    <g transform="translate(14, 98)">
+      <circle cx="10" cy="10" r="10" class="badge-bg"/>
+      <text x="10" y="10" class="badge-text">B</text>
+      <text x="30" y="9" class="label-title">Hip / Seat</text>
+      <text x="30" y="23" class="label-desc">Widest point ~7-8" below waist</text>
+    </g>
+
+    <!-- Item C -->
+    <g transform="translate(14, 148)">
+      <circle cx="10" cy="10" r="10" class="badge-bg"/>
+      <text x="10" y="10" class="badge-text">C</text>
+      <text x="30" y="9" class="label-title">Inseam Length</text>
+      <text x="30" y="23" class="label-desc">From inner crotch point to hem</text>
+    </g>
+
+    <!-- Item D -->
+    <g transform="translate(14, 198)">
+      <circle cx="10" cy="10" r="10" class="badge-bg"/>
+      <text x="10" y="10" class="badge-text">D</text>
+      <text x="30" y="9" class="label-title">Outseam / Total</text>
+      <text x="30" y="23" class="label-desc">Waistband down outer seam</text>
+    </g>
+
+    <!-- Item E -->
+    <g transform="translate(14, 248)">
+      <circle cx="10" cy="10" r="10" class="badge-bg"/>
+      <text x="10" y="10" class="badge-text">E</text>
+      <text x="30" y="9" class="label-title">Thigh Width</text>
+      <text x="30" y="23" class="label-desc">1" below crotch across leg</text>
+    </g>
+
+    <!-- Item F -->
+    <g transform="translate(14, 298)">
+      <circle cx="10" cy="10" r="10" class="badge-bg"/>
+      <text x="10" y="10" class="badge-text">F</text>
+      <text x="30" y="9" class="label-title">Leg Opening</text>
+      <text x="30" y="23" class="label-desc">Straight across bottom cuff</text>
+    </g>
+
+    <!-- Item G -->
+    <g transform="translate(14, 348)">
+      <circle cx="10" cy="10" r="10" class="badge-bg"/>
+      <text x="10" y="10" class="badge-text">G</text>
+      <text x="30" y="9" class="label-title">Front Rise</text>
+      <text x="30" y="23" class="label-desc">Crotch seam up to waistband</text>
+    </g>
+
+    <!-- Quick Tip Box -->
+    <g transform="translate(12, 385)">
+      <rect x="0" y="0" width="211" height="28" fill="#FAF9F6" stroke="#E4E4E7" stroke-width="0.8" rx="2" />
+      <text x="8" y="18" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="8.5" fill="#52525B" font-weight="500">
+        Tip: Fasten button &amp; lay flat for measuring
+      </text>
+    </g>
+  </g>
+
+  <!-- Footer Meta -->
+  <text x="50" y="565" class="brand-text">STANDARD METRIC &amp; IMPERIAL PRECISION TOLERANCE +/- 0.5" (1.2 CM)</text>
+</svg>

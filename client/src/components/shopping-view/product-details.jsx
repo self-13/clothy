@@ -37,6 +37,7 @@ import {
   checkProductInWishlist,
 } from "@/store/shop/wishlist-slice";
 import { motion, AnimatePresence } from "framer-motion";
+import SizeGuideDialog from "./size-guide-dialog";
 
 function ProductDetailsDialog({ open, setOpen, productDetails }) {
   const [selectedSize, setSelectedSize] = useState("");
@@ -51,6 +52,7 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
   const [reviewSort, setReviewSort] = useState("recent");
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [isInWishlist, setIsInWishlist] = useState(false);
+  const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("details"); // "details" or "reviews"
 
   const dispatch = useDispatch();
@@ -184,6 +186,7 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
       setShowReviewForm(false);
       setSelectedRatingFilter("all");
       setReviewSort("recent");
+      setIsSizeGuideOpen(false);
       setActiveTab("details");
     }, 300);
   }
@@ -449,7 +452,13 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                 <div className="space-y-4">
                    <div className="flex justify-between items-end">
                       <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400">Section 03 // Sizing</p>
-                      <button className="text-[9px] font-black uppercase tracking-widest text-black border-b border-black/10 hover:border-black transition-all">Size Guide</button>
+                      <button
+                        type="button"
+                        onClick={() => setIsSizeGuideOpen(true)}
+                        className="text-[9px] font-black uppercase tracking-widest text-black border-b border-black/10 hover:border-black transition-all cursor-pointer"
+                      >
+                        Size Guide
+                      </button>
                    </div>
                    <div className="grid grid-cols-4 gap-2">
                       {productDetails.sizes.map((s) => (
@@ -908,6 +917,15 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
            </div>
         </div>
       </DialogContent>
+
+      {/* Sizing Blueprint Pop-up */}
+      <SizeGuideDialog
+        open={isSizeGuideOpen}
+        onOpenChange={setIsSizeGuideOpen}
+        category={productDetails?.category}
+        subcategory={productDetails?.subcategory}
+        productTitle={productDetails?.title}
+      />
     </Dialog>
   );
 }

@@ -27,6 +27,7 @@ import StarRatingComponent from "@/components/common/star-rating";
 import { motion, AnimatePresence } from "framer-motion";
 import Footer from "@/components/shopping-view/footer";
 import { Separator } from "@/components/ui/separator";
+import SizeGuideDialog from "@/components/shopping-view/size-guide-dialog";
 
 export default function ShoppingProductDetails() {
   const { id } = useParams();
@@ -48,6 +49,7 @@ export default function ShoppingProductDetails() {
   const [reviewSort, setReviewSort] = useState("recent");
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [isInWishlist, setIsInWishlist] = useState(false);
+  const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [addedSuccess, setAddedSuccess] = useState(false);
 
@@ -501,9 +503,13 @@ export default function ShoppingProductDetails() {
                     <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
                       Size: <span className="text-black normal-case font-medium">{selectedSize || "Select"}</span>
                     </span>
-                    <span className="text-[11px] font-medium text-zinc-500 underline underline-offset-4 cursor-pointer hover:text-black">
+                    <button
+                      type="button"
+                      onClick={() => setIsSizeGuideOpen(true)}
+                      className="text-[11px] font-medium text-zinc-500 underline underline-offset-4 cursor-pointer hover:text-black transition-colors"
+                    >
                       Sizing Guide
-                    </span>
+                    </button>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {productDetails.sizes.map((s: { size: string; stock: number }) => (
@@ -920,6 +926,15 @@ export default function ShoppingProductDetails() {
           </div>
         </div>
       </div>
+
+      {/* Sizing Blueprint Pop-up */}
+      <SizeGuideDialog
+        open={isSizeGuideOpen}
+        onOpenChange={setIsSizeGuideOpen}
+        category={productDetails?.category}
+        subcategory={productDetails?.subcategory}
+        productTitle={productDetails?.title}
+      />
 
       <Footer />
     </div>

@@ -1,0 +1,184 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="100%" height="100%">
+  <defs>
+    <style>
+      .bg { fill: #FAF9F6; }
+      .grid-line { stroke: #E4E4E7; stroke-width: 1; stroke-dasharray: 4 4; }
+      .garment-fill { fill: #FFFFFF; stroke: #18181B; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+      .garment-detail { fill: none; stroke: #71717A; stroke-width: 1.2; stroke-dasharray: 3 3; }
+      .collar-fill { fill: #F4F4F5; stroke: #18181B; stroke-width: 2; }
+      .dim-line { stroke: #000000; stroke-width: 1.5; }
+      .dim-arrow { fill: #000000; }
+      .badge-bg { fill: #18181B; }
+      .badge-text { fill: #FFFFFF; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 11px; font-weight: 800; text-anchor: middle; dominant-baseline: central; }
+      .label-title { fill: #18181B; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+      .label-desc { fill: #71717A; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 10px; font-weight: 400; }
+      .brand-text { fill: #A1A1AA; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase; }
+    </style>
+    <marker id="arrow-start" viewBox="0 0 10 10" refX="2" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 8 1 L 2 5 L 8 9 z" class="dim-arrow" />
+    </marker>
+    <marker id="arrow-end" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 2 1 L 8 5 L 2 9 z" class="dim-arrow" />
+    </marker>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect width="800" height="600" class="bg" rx="4" />
+  
+  <!-- Subtle Blueprint Grid -->
+  <line x1="50" y1="100" x2="750" y2="100" class="grid-line" opacity="0.6"/>
+  <line x1="50" y1="300" x2="750" y2="300" class="grid-line" opacity="0.6"/>
+  <line x1="50" y1="500" x2="750" y2="500" class="grid-line" opacity="0.6"/>
+  <line x1="400" y1="50" x2="400" y2="550" class="grid-line" opacity="0.6"/>
+
+  <!-- Architectural Frame Corners -->
+  <path d="M 30 50 L 30 30 L 50 30" fill="none" stroke="#D4D4D8" stroke-width="2"/>
+  <path d="M 770 50 L 770 30 L 750 30" fill="none" stroke="#D4D4D8" stroke-width="2"/>
+  <path d="M 30 550 L 30 570 L 50 570" fill="none" stroke="#D4D4D8" stroke-width="2"/>
+  <path d="M 770 550 L 770 570 L 750 570" fill="none" stroke="#D4D4D8" stroke-width="2"/>
+
+  <!-- Header Section -->
+  <text x="50" y="55" class="brand-text">LUXERIDGE ARCHIVES // SPECIFICATION SPEC-01</text>
+  <text x="50" y="75" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="900" fill="#18181B" letter-spacing="0.05em">GARMENT MEASUREMENT SCHEMATIC</text>
+
+  <!-- Garment Graphic (Tee / Top Silhouette) -->
+  <!-- Center is around x=330, y=300 -->
+  <g id="garment" transform="translate(140, 95)">
+    <!-- Main garment silhouette -->
+    <path d="
+      M 150 40 
+      C 165 52, 215 52, 230 40
+      L 290 65
+      L 350 145
+      L 310 185
+      L 270 145
+      L 270 380
+      L 110 380
+      L 110 145
+      L 70 185
+      L 30 145
+      L 90 65
+      Z" 
+      class="garment-fill" 
+      filter="drop-shadow(0px 8px 16px rgba(0,0,0,0.04))"
+    />
+
+    <!-- Collar -->
+    <path d="
+      M 150 40
+      C 165 70, 215 70, 230 40
+      C 215 52, 165 52, 150 40
+      Z" 
+      class="collar-fill" 
+    />
+    <path d="M 150 40 C 165 70, 215 70, 230 40" fill="none" stroke="#18181B" stroke-width="2"/>
+
+    <!-- Inner neck label -->
+    <rect x="175" y="47" width="30" height="14" fill="#E4E4E7" stroke="#A1A1AA" stroke-width="0.8" rx="1"/>
+
+    <!-- Sleeve Stitch Details -->
+    <line x1="50" y1="165" x2="80" y2="135" class="garment-detail" />
+    <line x1="330" y1="165" x2="300" y2="135" class="garment-detail" />
+
+    <!-- Bottom Hem Stitch Detail -->
+    <line x1="110" y1="365" x2="270" y2="365" class="garment-detail" />
+
+    <!-- Subtle Center Crease -->
+    <line x1="190" y1="75" x2="190" y2="370" stroke="#F4F4F5" stroke-width="1.5" />
+
+    <!-- DIMENSION A: CHEST WIDTH (1" below armhole) -->
+    <!-- y = 160 -->
+    <line x1="110" y1="165" x2="270" y2="165" class="dim-line" marker-start="url(#arrow-start)" marker-end="url(#arrow-end)" stroke-width="2"/>
+    <circle cx="190" cy="165" r="11" class="badge-bg"/>
+    <text x="190" y="165" class="badge-text">A</text>
+
+    <!-- DIMENSION B: SHOULDER WIDTH -->
+    <!-- y = 62 -->
+    <line x1="90" y1="52" x2="290" y2="52" class="dim-line" marker-start="url(#arrow-start)" marker-end="url(#arrow-end)"/>
+    <line x1="90" y1="50" x2="90" y2="65" stroke="#A1A1AA" stroke-width="1" stroke-dasharray="2 2"/>
+    <line x1="290" y1="50" x2="290" y2="65" stroke="#A1A1AA" stroke-width="1" stroke-dasharray="2 2"/>
+    <circle cx="190" cy="52" r="11" class="badge-bg"/>
+    <text x="190" y="52" class="badge-text">B</text>
+
+    <!-- DIMENSION C: TOTAL LENGTH (from highest shoulder point to hem) -->
+    <!-- x = 85 -->
+    <line x1="85" y1="45" x2="85" y2="380" class="dim-line" marker-start="url(#arrow-start)" marker-end="url(#arrow-end)"/>
+    <line x1="80" y1="45" x2="150" y2="45" stroke="#A1A1AA" stroke-width="1" stroke-dasharray="2 2"/>
+    <line x1="80" y1="380" x2="110" y2="380" stroke="#A1A1AA" stroke-width="1" stroke-dasharray="2 2"/>
+    <circle cx="85" cy="212" r="11" class="badge-bg"/>
+    <text x="85" y="212" class="badge-text">C</text>
+
+    <!-- DIMENSION D: SLEEVE LENGTH (from shoulder seam to cuff) -->
+    <!-- from (290, 65) to (330, 165) -->
+    <line x1="312" y1="55" x2="352" y2="155" class="dim-line" marker-start="url(#arrow-start)" marker-end="url(#arrow-end)"/>
+    <circle cx="332" cy="105" r="11" class="badge-bg"/>
+    <text x="332" y="105" class="badge-text">D</text>
+
+    <!-- DIMENSION E: BOTTOM SWEEP / WAIST -->
+    <!-- y = 405 -->
+    <line x1="110" y1="400" x2="270" y2="400" class="dim-line" marker-start="url(#arrow-start)" marker-end="url(#arrow-end)"/>
+    <line x1="110" y1="380" x2="110" y2="405" stroke="#A1A1AA" stroke-width="1" stroke-dasharray="2 2"/>
+    <line x1="270" y1="380" x2="270" y2="405" stroke="#A1A1AA" stroke-width="1" stroke-dasharray="2 2"/>
+    <circle cx="190" cy="400" r="11" class="badge-bg"/>
+    <text x="190" y="400" class="badge-text">E</text>
+  </g>
+
+  <!-- Right Side Key & Measurement Legends -->
+  <g transform="translate(530, 120)">
+    <!-- Legend Box -->
+    <rect x="0" y="0" width="220" height="380" fill="#FFFFFF" stroke="#E4E4E7" stroke-width="1" rx="2" />
+    <rect x="0" y="0" width="220" height="34" fill="#F4F4F5" rx="2" />
+    <text x="16" y="21" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" font-weight="800" fill="#18181B" letter-spacing="0.1em">MEASUREMENT ANATOMY</text>
+
+    <!-- Item A -->
+    <g transform="translate(16, 55)">
+      <circle cx="10" cy="10" r="10" class="badge-bg"/>
+      <text x="10" y="10" class="badge-text">A</text>
+      <text x="30" y="9" class="label-title">Chest Width</text>
+      <text x="30" y="24" class="label-desc">Across front, 1" under armhole</text>
+    </g>
+
+    <!-- Item B -->
+    <g transform="translate(16, 115)">
+      <circle cx="10" cy="10" r="10" class="badge-bg"/>
+      <text x="10" y="10" class="badge-text">B</text>
+      <text x="30" y="9" class="label-title">Shoulder Span</text>
+      <text x="30" y="24" class="label-desc">Seam to seam across back</text>
+    </g>
+
+    <!-- Item C -->
+    <g transform="translate(16, 175)">
+      <circle cx="10" cy="10" r="10" class="badge-bg"/>
+      <text x="10" y="10" class="badge-text">C</text>
+      <text x="30" y="9" class="label-title">Body Length</text>
+      <text x="30" y="24" class="label-desc">Highest point shoulder to hem</text>
+    </g>
+
+    <!-- Item D -->
+    <g transform="translate(16, 235)">
+      <circle cx="10" cy="10" r="10" class="badge-bg"/>
+      <text x="10" y="10" class="badge-text">D</text>
+      <text x="30" y="9" class="label-title">Sleeve Length</text>
+      <text x="30" y="24" class="label-desc">Shoulder joint to outer cuff</text>
+    </g>
+
+    <!-- Item E -->
+    <g transform="translate(16, 295)">
+      <circle cx="10" cy="10" r="10" class="badge-bg"/>
+      <text x="10" y="10" class="badge-text">E</text>
+      <text x="30" y="9" class="label-title">Bottom Sweep</text>
+      <text x="30" y="24" class="label-desc">Straight across bottom edge</text>
+    </g>
+
+    <!-- Quick Tip Box -->
+    <g transform="translate(12, 335)">
+      <rect x="0" y="0" width="196" height="32" fill="#FAF9F6" stroke="#E4E4E7" stroke-width="0.8" rx="2" />
+      <text x="10" y="20" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="9" fill="#52525B" font-weight="500">
+        Tip: Lay garment flat for true fit match
+      </text>
+    </g>
+  </g>
+
+  <!-- Footer Meta -->
+  <text x="50" y="565" class="brand-text">STANDARD METRIC &amp; IMPERIAL PRECISION TOLERANCE +/- 0.5" (1.2 CM)</text>
+</svg>
