@@ -7,12 +7,13 @@ import { addToCart, fetchCartItems } from "@/store/shop/cart-slice";
 import { useToast } from "../ui/use-toast";
 import { resetProductDetails } from "@/store/shop/products-slice";
 import { Label } from "../ui/label";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   ShoppingCart,
   Star,
   Truck,
   Shield,
+  ShieldCheck,
   RotateCcw,
   X,
   Check,
@@ -23,6 +24,8 @@ import {
   ArrowLeft,
   HeartOff,
   Sparkles,
+  MessageSquare,
+  Loader2,
 } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Avatar, AvatarFallback } from "../ui/avatar";
@@ -42,6 +45,11 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
   const [activeImage, setActiveImage] = useState(0);
   const [reviewMsg, setReviewMsg] = useState("");
   const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [selectedRatingFilter, setSelectedRatingFilter] = useState("all");
+  const [reviewSort, setReviewSort] = useState("recent");
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [isInWishlist, setIsInWishlist] = useState(false);
   const [activeTab, setActiveTab] = useState("details"); // "details" or "reviews"
 
@@ -170,39 +178,163 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
       setQuantity(1);
       setActiveImage(0);
       setIsInWishlist(false);
+      setRating(0);
+      setHoverRating(0);
+      setReviewMsg("");
+      setShowReviewForm(false);
+      setSelectedRatingFilter("all");
+      setReviewSort("recent");
+      setActiveTab("details");
     }, 300);
   }
 
   function handleAddReview() {
-    if (!user) return;
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to share a client review.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (rating === 0) {
+      toast({
+        title: "Rating Required",
+        description: "Please select an evaluation score from 1 to 5 stars.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!reviewMsg.trim()) {
+      toast({
+        title: "Critique Required",
+        description: "Please share your commentary on sizing, cut, or fabric feel.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmittingReview(true);
     dispatch(
       addReview({
         productId: productDetails?._id,
-        reviewMessage: reviewMsg,
+        userId: user?.id,
+        userName: user?.userName,
+        reviewMessage: reviewMsg.trim(),
         reviewValue: rating,
       })
-    ).then((data) => {
-      if (data.payload.success) {
-        setRating(0);
-        setReviewMsg("");
-        dispatch(getReviews(productDetails?._id));
-        toast({ title: "Transmission Successful", description: "Review authenticated and live." });
-      }
-    });
+    )
+      .then((data) => {
+        setIsSubmittingReview(false);
+        if (data?.payload?.success) {
+          setRating(0);
+          setHoverRating(0);
+          setReviewMsg("");
+          setShowReviewForm(false);
+          if (productDetails?._id) {
+            dispatch(getReviews(productDetails._id));
+          }
+          toast({
+            title: "Review Published",
+            description: "Your review has been authenticated and published.",
+          });
+        } else {
+          toast({
+            title: "Review Submission Declined",
+            description:
+              data?.payload?.message ||
+              data?.error?.message ||
+              "Only verified purchasers of this item can submit a review.",
+            variant: "destructive",
+          });
+        }
+      })
+      .catch((err) => {
+        setIsSubmittingReview(false);
+        toast({
+          title: "Submission Error",
+          description: err?.message || "An unexpected error occurred. Please try again.",
+          variant: "destructive",
+        });
+      });
   }
 
   useEffect(() => {
-    if (productDetails && user) {
-      dispatch(getReviews(productDetails?._id));
-      dispatch(checkProductInWishlist({ productId: productDetails?._id })).then((data) => {
+    if (productDetails?._id) {
+      dispatch(getReviews(productDetails._id));
+    }
+    if (productDetails?._id && user) {
+      dispatch(checkProductInWishlist({ productId: productDetails._id })).then((data) => {
         setIsInWishlist(data.payload?.data?.isInWishlist || false);
       });
+    } else {
+      setIsInWishlist(false);
     }
   }, [productDetails, user, dispatch]);
 
   const averageReview = reviews?.length > 0
     ? reviews.reduce((sum, item) => sum + item.reviewValue, 0) / reviews.length
     : productDetails?.averageReview || 0;
+
+  const totalReviewsCount = reviews?.length || 0;
+
+  const ratingCounts = useMemo(() => {
+    return [5, 4, 3, 2, 1].map((star) => {
+      const count = reviews?.filter((r) => Math.round(r.reviewValue) === star).length || 0;
+      const percentage =
+        totalReviewsCount > 0 ? Math.round((count / totalReviewsCount) * 100) : 0;
+      return { star, count, percentage };
+    });
+  }, [reviews, totalReviewsCount]);
+
+  const recommendationRate = useMemo(() => {
+    if (totalReviewsCount === 0) return 100;
+    const positive = reviews?.filter((r) => r.reviewValue >= 4).length || 0;
+    return Math.round((positive / totalReviewsCount) * 100);
+  }, [reviews, totalReviewsCount]);
+
+  const filteredReviews = useMemo(() => {
+    return (reviews || [])
+      .filter((r) => {
+        if (selectedRatingFilter === "all") return true;
+        return Math.round(r.reviewValue) === Number(selectedRatingFilter);
+      })
+      .sort((a, b) => {
+        if (reviewSort === "highest") return b.reviewValue - a.reviewValue;
+        if (reviewSort === "lowest") return a.reviewValue - b.reviewValue;
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      });
+  }, [reviews, selectedRatingFilter, reviewSort]);
+
+  function getRatingLabel(score) {
+    switch (score) {
+      case 5:
+        return "5.0 — Exceptional";
+      case 4:
+        return "4.0 — Highly Recommended";
+      case 3:
+        return "3.0 — Meets Expectations";
+      case 2:
+        return "2.0 — Below Expectations";
+      case 1:
+        return "1.0 — Poor Fit / Quality";
+      default:
+        return "Select a rating";
+    }
+  }
+
+  function formatReviewDate(dateString) {
+    if (!dateString) return "Recent";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "Recent";
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  }
 
   const productImages = productDetails?.images || (productDetails?.image ? [productDetails.image] : []);
   const hasSale = productDetails?.salePrice > 0 && productDetails?.salePrice < productDetails?.price;
@@ -370,17 +502,37 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
 
            {/* Auxiliary Data Tabs */}
            <div className="space-y-8 pt-8">
-              <div className="flex gap-8 border-b border-zinc-50">
-                 {["DETAILS", "REVIEWS"].map((tab) => (
+              <div className="flex items-center justify-between border-b border-zinc-100">
+                 <div className="flex gap-8">
                     <button
-                      key={tab}
-                      onClick={() => setActiveTab(tab.toLowerCase())}
-                      className={`pb-4 text-[10px] font-black uppercase tracking-[0.4em] relative transition-all duration-500 ${activeTab === tab.toLowerCase() ? "text-black" : "text-zinc-200 hover:text-zinc-400"}`}
+                      key="details"
+                      onClick={() => setActiveTab("details")}
+                      className={`pb-4 text-[10px] font-black uppercase tracking-[0.4em] relative transition-all duration-300 ${activeTab === "details" ? "text-black" : "text-zinc-300 hover:text-zinc-600"}`}
                     >
-                      {tab}
-                      {activeTab === tab.toLowerCase() && <motion.div layoutId="tabUnderline" className="absolute bottom-0 left-0 w-full h-[2px] bg-black" />}
+                      DETAILS
+                      {activeTab === "details" && <motion.div layoutId="tabUnderline" className="absolute bottom-0 left-0 w-full h-[2px] bg-black" />}
                     </button>
-                 ))}
+                    <button
+                      key="reviews"
+                      onClick={() => setActiveTab("reviews")}
+                      className={`pb-4 text-[10px] font-black uppercase tracking-[0.4em] relative transition-all duration-300 flex items-center gap-2 ${activeTab === "reviews" ? "text-black" : "text-zinc-300 hover:text-zinc-600"}`}
+                    >
+                      <span>REVIEWS</span>
+                      <span className={`px-1.5 py-0.5 text-[9px] font-mono tracking-normal border ${activeTab === "reviews" ? "bg-black text-white border-black" : "bg-zinc-50 text-zinc-400 border-zinc-200"}`}>
+                        {totalReviewsCount}
+                      </span>
+                      {activeTab === "reviews" && <motion.div layoutId="tabUnderline" className="absolute bottom-0 left-0 w-full h-[2px] bg-black" />}
+                    </button>
+                 </div>
+
+                 {activeTab === "reviews" && !showReviewForm && (
+                   <button
+                     onClick={() => setShowReviewForm(true)}
+                     className="pb-4 text-[9px] font-black uppercase tracking-[0.25em] text-black hover:text-zinc-500 transition-colors flex items-center gap-1.5"
+                   >
+                     <span>+ Write Review</span>
+                   </button>
+                 )}
               </div>
 
               <div className="min-h-[200px]">
@@ -390,56 +542,357 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.4 }}
+                      transition={{ duration: 0.3 }}
                     >
                        {activeTab === "details" ? (
                          <div className="space-y-6">
-                            <p className="text-[13px] text-zinc-500 leading-relaxed font-light lowercase italic">
+                            <p className="text-[13px] text-zinc-500 leading-relaxed font-light italic">
                                "{productDetails?.description || "A masterfully crafted essential embodying contemporary minimalism and functional integrity."}"
                             </p>
-                            <div className="grid grid-cols-2 gap-y-4">
+                            <div className="grid grid-cols-2 gap-y-4 pt-2">
                                <div className="space-y-1">
                                   <p className="text-[9px] font-black uppercase tracking-widest text-zinc-300">Category</p>
-                                  <p className="text-[11px] font-black uppercase">{productDetails?.category}</p>
+                                  <p className="text-[11px] font-black uppercase text-black">{productDetails?.category}</p>
                                </div>
                                <div className="space-y-1">
                                   <p className="text-[9px] font-black uppercase tracking-widest text-zinc-300">Sub-Category</p>
-                                  <p className="text-[11px] font-black uppercase">{productDetails?.subcategory}</p>
+                                  <p className="text-[11px] font-black uppercase text-black">{productDetails?.subcategory}</p>
                                </div>
                             </div>
                          </div>
                        ) : (
                          <div className="space-y-8">
-                            {/* Review Form */}
-                            <div className="space-y-4 bg-zinc-50 p-6">
-                               <p className="text-[10px] font-black uppercase tracking-widest">Transmit Review</p>
-                               <div className="flex gap-1">
-                                  {[1,2,3,4,5].map(s => (
-                                    <Star key={s} onClick={() => setRating(s)} className={`w-4 h-4 cursor-pointer ${s <= rating ? "fill-black text-black" : "fill-zinc-200 text-zinc-200"}`} />
+                            {/* Summary & Rating Distribution Matrix */}
+                            <div className="bg-[#FAF9F6] border border-zinc-200/80 p-6 space-y-6">
+                               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-zinc-200/60">
+                                  <div className="space-y-1.5">
+                                     <p className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-400">Composite Client Rating</p>
+                                     <div className="flex items-baseline gap-2">
+                                        <span className="text-4xl font-black tracking-tight text-black">{averageReview.toFixed(1)}</span>
+                                        <span className="text-xs font-semibold text-zinc-400">/ 5.0</span>
+                                     </div>
+                                     <div className="flex items-center gap-1">
+                                        {[1, 2, 3, 4, 5].map((star) => (
+                                          <Star
+                                            key={star}
+                                            className={`w-3.5 h-3.5 ${
+                                              star <= Math.round(averageReview)
+                                                ? "fill-amber-400 text-amber-400"
+                                                : "fill-zinc-200 text-zinc-200"
+                                            }`}
+                                          />
+                                        ))}
+                                        <span className="text-[10px] font-mono text-zinc-500 ml-2">
+                                          ({totalReviewsCount} {totalReviewsCount === 1 ? "review" : "reviews"})
+                                        </span>
+                                     </div>
+                                  </div>
+
+                                  {totalReviewsCount > 0 && (
+                                     <div className="sm:text-right space-y-1">
+                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-zinc-200 text-[9px] font-black uppercase tracking-widest text-zinc-800">
+                                           <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                                           <span>{recommendationRate}% Recommendation</span>
+                                        </div>
+                                        <p className="text-[9px] text-zinc-400 tracking-wider">Verified Purchase Consensus</p>
+                                     </div>
+                                  )}
+                               </div>
+
+                               {/* Distribution Bars */}
+                               <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                     <p className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-400">Score Distribution</p>
+                                     {selectedRatingFilter !== "all" && (
+                                       <button
+                                         onClick={() => setSelectedRatingFilter("all")}
+                                         className="text-[9px] font-black uppercase tracking-widest text-zinc-500 hover:text-black underline"
+                                       >
+                                         Reset Filter
+                                       </button>
+                                     )}
+                                  </div>
+                                  {ratingCounts.map(({ star, count, percentage }) => (
+                                     <button
+                                       key={star}
+                                       type="button"
+                                       onClick={() => setSelectedRatingFilter((prev) => (prev === star ? "all" : star))}
+                                       className={`w-full group flex items-center gap-3 text-left py-1 px-2 -mx-2 rounded transition-colors ${
+                                         selectedRatingFilter === star ? "bg-zinc-200/80" : "hover:bg-zinc-100"
+                                       }`}
+                                     >
+                                        <span className="w-8 text-[10px] font-bold text-zinc-600 group-hover:text-black flex items-center gap-1">
+                                           {star} <Star className="w-2.5 h-2.5 fill-zinc-400 text-zinc-400" />
+                                        </span>
+                                        <div className="flex-1 h-2 bg-zinc-200 rounded-full overflow-hidden">
+                                           <div
+                                             className={`h-full transition-all duration-500 ${
+                                               selectedRatingFilter === star ? "bg-black" : "bg-zinc-700 group-hover:bg-black"
+                                             }`}
+                                             style={{ width: `${percentage}%` }}
+                                           />
+                                        </div>
+                                        <span className="w-12 text-[10px] font-mono text-right text-zinc-400 group-hover:text-black">
+                                           {count} ({percentage}%)
+                                        </span>
+                                     </button>
                                   ))}
                                </div>
-                               <Input 
-                                 value={reviewMsg} 
-                                 onChange={(e) => setReviewMsg(e.target.value)}
-                                 className="rounded-none border-zinc-200 py-6 text-xs bg-white" 
-                                 placeholder="Enter analytical feedback..." 
-                               />
-                               <Button onClick={handleAddReview} className="bg-black text-white text-[9px] uppercase tracking-[0.3em] font-black rounded-none">Confirm Submission</Button>
                             </div>
 
-                            {/* Review List */}
-                            <div className="space-y-6">
-                               {reviews?.map((r, i) => (
-                                 <div key={i} className="border-b border-zinc-50 pb-6 last:border-0">
-                                    <div className="flex justify-between items-start mb-2">
-                                       <span className="text-[10px] font-black uppercase tracking-widest text-black underline underline-offset-4 decoration-zinc-100">{r.userName}</span>
-                                       <div className="flex gap-0.5">
-                                          {[1,2,3,4,5].map(s => <Star key={s} className={`w-2.5 h-2.5 ${s <= r.reviewValue ? "fill-black text-black" : "fill-zinc-100 text-zinc-100"}`} />)}
+                            {/* Review Form Drawer */}
+                            <AnimatePresence>
+                               {showReviewForm && (
+                                 <motion.div
+                                   initial={{ opacity: 0, height: 0, overflow: "hidden" }}
+                                   animate={{ opacity: 1, height: "auto", overflow: "visible" }}
+                                   exit={{ opacity: 0, height: 0, overflow: "hidden" }}
+                                   transition={{ duration: 0.3 }}
+                                 >
+                                    <div className="border border-black bg-white p-6 space-y-5 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                                       <div className="flex justify-between items-start">
+                                          <div className="space-y-1">
+                                             <span className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-400">Client Critique</span>
+                                             <h4 className="text-sm font-black uppercase tracking-wider text-black">Write a Review</h4>
+                                          </div>
+                                          <button
+                                            type="button"
+                                            onClick={() => setShowReviewForm(false)}
+                                            className="text-zinc-400 hover:text-black p-1 transition-colors"
+                                          >
+                                             <X className="w-4 h-4" />
+                                          </button>
                                        </div>
+
+                                       {!user ? (
+                                         <div className="py-6 text-center space-y-3 bg-zinc-50 border border-zinc-200 p-4">
+                                            <p className="text-xs text-zinc-600">
+                                               Please sign in with your account to submit a client review.
+                                            </p>
+                                            <a
+                                              href="/auth/login"
+                                              className="inline-block px-5 py-2.5 bg-black text-white text-[10px] font-black uppercase tracking-[0.2em] hover:bg-zinc-800 transition-colors"
+                                            >
+                                               Sign In
+                                            </a>
+                                         </div>
+                                       ) : (
+                                         <div className="space-y-4">
+                                            {/* Star Selection */}
+                                            <div className="space-y-2">
+                                               <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 block">
+                                                  Select Evaluation (1 - 5 Stars) *
+                                               </label>
+                                               <div className="flex items-center gap-2 py-1">
+                                                  {[1, 2, 3, 4, 5].map((s) => {
+                                                    const active = s <= (hoverRating || rating);
+                                                    return (
+                                                      <button
+                                                        key={s}
+                                                        type="button"
+                                                        onMouseEnter={() => setHoverRating(s)}
+                                                        onMouseLeave={() => setHoverRating(0)}
+                                                        onClick={() => setRating(s)}
+                                                        className="p-1 -m-1 focus:outline-none transition-transform hover:scale-110 active:scale-95"
+                                                      >
+                                                         <Star
+                                                           className={`w-6 h-6 transition-colors duration-200 ${
+                                                             active
+                                                               ? "fill-amber-400 text-amber-400"
+                                                               : "fill-zinc-100 text-zinc-300"
+                                                           }`}
+                                                         />
+                                                      </button>
+                                                    );
+                                                  })}
+                                                  <span className="ml-3 text-[11px] font-bold uppercase tracking-wider text-zinc-700">
+                                                     {getRatingLabel(hoverRating || rating)}
+                                                  </span>
+                                               </div>
+                                            </div>
+
+                                            {/* Review Commentary */}
+                                            <div className="space-y-1.5">
+                                               <div className="flex justify-between items-center">
+                                                  <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400">
+                                                     Your Impressions & Fit Notes *
+                                                  </label>
+                                                  <span className="text-[9px] font-mono text-zinc-400">
+                                                     {reviewMsg.length} / 500
+                                                  </span>
+                                               </div>
+                                               <textarea
+                                                 value={reviewMsg}
+                                                 maxLength={500}
+                                                 onChange={(e) => setReviewMsg(e.target.value)}
+                                                 placeholder="Critique garment cut, fabric feel, drape, and overall craftsmanship..."
+                                                 className="w-full h-28 p-3 text-xs bg-[#FAF9F6] border border-zinc-200 rounded-none focus:outline-none focus:border-black focus:bg-white transition-colors resize-none placeholder:text-zinc-400 font-sans"
+                                               />
+                                            </div>
+
+                                            <div className="pt-2 flex items-center justify-between gap-4">
+                                               <button
+                                                 type="button"
+                                                 onClick={() => setShowReviewForm(false)}
+                                                 className="px-4 py-3 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-black border border-zinc-200 hover:border-black transition-colors"
+                                               >
+                                                  Cancel
+                                               </button>
+                                               <Button
+                                                 type="button"
+                                                 onClick={handleAddReview}
+                                                 disabled={isSubmittingReview || rating === 0 || !reviewMsg.trim()}
+                                                 className="flex-1 bg-black hover:bg-zinc-800 text-white rounded-none py-3 h-auto text-[9px] font-black uppercase tracking-[0.3em] transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                                               >
+                                                  {isSubmittingReview ? (
+                                                    <>
+                                                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                       <span>Publishing...</span>
+                                                    </>
+                                                  ) : (
+                                                    <span>Confirm & Publish Critique</span>
+                                                  )}
+                                               </Button>
+                                            </div>
+                                         </div>
+                                       )}
                                     </div>
-                                    <p className="text-xs text-zinc-500 font-light lowercase">"{r.reviewMessage}"</p>
+                                 </motion.div>
+                               )}
+                            </AnimatePresence>
+
+                            {/* Filters & Sorting Toolbar */}
+                            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-b border-zinc-100 pb-4">
+                               <div className="flex items-center gap-1.5 overflow-x-auto">
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedRatingFilter("all")}
+                                    className={`px-3 py-1 text-[9px] font-black uppercase tracking-wider border transition-all ${
+                                      selectedRatingFilter === "all"
+                                        ? "bg-black text-white border-black"
+                                        : "bg-white text-zinc-400 border-zinc-200 hover:border-black hover:text-black"
+                                    }`}
+                                  >
+                                     All ({totalReviewsCount})
+                                  </button>
+                                  {[5, 4, 3, 2, 1].map((s) => (
+                                     <button
+                                       key={s}
+                                       type="button"
+                                       onClick={() => setSelectedRatingFilter((prev) => (prev === s ? "all" : s))}
+                                       className={`px-2.5 py-1 text-[9px] font-black uppercase tracking-wider border transition-all flex items-center gap-1 ${
+                                         selectedRatingFilter === s
+                                           ? "bg-black text-white border-black"
+                                           : "bg-white text-zinc-400 border-zinc-200 hover:border-black hover:text-black"
+                                       }`}
+                                     >
+                                        <span>{s}</span>
+                                        <Star className="w-2.5 h-2.5 fill-current" />
+                                     </button>
+                                  ))}
+                               </div>
+
+                               <div className="flex items-center gap-2 text-[10px]">
+                                  <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Sort:</span>
+                                  <select
+                                    value={reviewSort}
+                                    onChange={(e) => setReviewSort(e.target.value)}
+                                    className="bg-transparent text-[10px] font-bold uppercase tracking-wider text-black border-none focus:outline-none cursor-pointer"
+                                  >
+                                     <option value="recent">Newest</option>
+                                     <option value="highest">Highest Rating</option>
+                                     <option value="lowest">Lowest Rating</option>
+                                  </select>
+                               </div>
+                            </div>
+
+                            {/* Reviews Feed */}
+                            <div className="space-y-6">
+                               {filteredReviews && filteredReviews.length > 0 ? (
+                                 filteredReviews.map((r, i) => (
+                                   <div
+                                     key={r._id || i}
+                                     className="border-b border-zinc-100 pb-6 last:border-0 space-y-3"
+                                   >
+                                      <div className="flex justify-between items-start">
+                                         <div className="flex items-center gap-3">
+                                            <Avatar className="w-8 h-8 rounded-full border border-zinc-200 bg-zinc-100 text-black">
+                                               <AvatarFallback className="text-[11px] font-black">
+                                                  {(r.userName || "U").charAt(0).toUpperCase()}
+                                               </AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                               <div className="flex items-center gap-2">
+                                                  <span className="text-xs font-black uppercase tracking-wider text-black">
+                                                     {r.userName || "Anonymous Client"}
+                                                  </span>
+                                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200/50 text-[8px] font-black uppercase tracking-wider">
+                                                     <Check className="w-2.5 h-2.5" /> Verified Buyer
+                                                  </span>
+                                               </div>
+                                               <p className="text-[9px] font-mono text-zinc-400 mt-0.5">
+                                                  {formatReviewDate(r.createdAt)}
+                                               </p>
+                                            </div>
+                                         </div>
+
+                                         <div className="flex items-center gap-0.5 text-amber-500">
+                                            {[1, 2, 3, 4, 5].map((s) => (
+                                              <Star
+                                                key={s}
+                                                className={`w-3 h-3 ${
+                                                  s <= r.reviewValue
+                                                    ? "fill-amber-400 text-amber-400"
+                                                    : "fill-zinc-200 text-zinc-200"
+                                                }`}
+                                              />
+                                            ))}
+                                         </div>
+                                      </div>
+
+                                      <p className="text-xs text-zinc-600 font-normal leading-relaxed pl-11">
+                                         "{r.reviewMessage}"
+                                      </p>
+                                   </div>
+                                 ))
+                               ) : (
+                                 <div className="py-12 px-6 text-center bg-[#FAF9F6] border border-dashed border-zinc-200 space-y-4">
+                                    <div className="w-10 h-10 mx-auto rounded-full bg-white border border-zinc-200 flex items-center justify-center text-zinc-400">
+                                       <Sparkles className="w-5 h-5" />
+                                    </div>
+                                    <div className="space-y-1">
+                                       <p className="text-xs font-black uppercase tracking-widest text-black">
+                                          {selectedRatingFilter !== "all"
+                                            ? `No ${selectedRatingFilter}-Star Reviews`
+                                            : "No Client Reviews Yet"}
+                                       </p>
+                                       <p className="text-xs text-zinc-400 font-light max-w-xs mx-auto">
+                                          {selectedRatingFilter !== "all"
+                                            ? "There are currently no reviews with this specific rating."
+                                            : "Be the first verified client to articulate fit, fabric, and silhouette critique."}
+                                       </p>
+                                    </div>
+                                    {selectedRatingFilter !== "all" ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => setSelectedRatingFilter("all")}
+                                        className="text-[10px] font-black uppercase tracking-widest text-black underline underline-offset-4"
+                                      >
+                                         Clear Filter
+                                      </button>
+                                    ) : (
+                                      !showReviewForm && (
+                                        <button
+                                          type="button"
+                                          onClick={() => setShowReviewForm(true)}
+                                          className="px-5 py-2.5 bg-black text-white text-[9px] font-black uppercase tracking-[0.25em] hover:bg-zinc-800 transition-colors"
+                                        >
+                                           Write First Review
+                                        </button>
+                                      )
+                                    )}
                                  </div>
-                               ))}
+                               )}
                             </div>
                          </div>
                        )}
