@@ -14,7 +14,7 @@ try {
 
 const initialState = {
   isAuthenticated: !!parsedUser,
-  isLoading: true,
+  isLoading: false,
   user: parsedUser,
   token: storedToken || null,
 };
@@ -227,49 +227,35 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
       })
       .addCase(checkAuth.pending, (state) => {
-        state.isLoading = true;
+        // Keep current authentication state during background checkAuth
       })
       .addCase(checkAuth.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.user = action.payload.success ? action.payload.user : null;
-        state.isAuthenticated = action.payload.success;
-        if (action.payload.token) {
-          state.token = action.payload.token;
-          localStorage.setItem("token", action.payload.token);
-        }
-        if (action.payload.success && action.payload.user) {
+        if (action.payload && action.payload.success && action.payload.user) {
+          state.user = action.payload.user;
+          state.isAuthenticated = true;
           localStorage.setItem("user", JSON.stringify(action.payload.user));
-        } else {
-          state.token = null;
-          localStorage.removeItem("user");
-          localStorage.removeItem("token");
+          if (action.payload.token) {
+            state.token = action.payload.token;
+            localStorage.setItem("token", action.payload.token);
+          }
         }
       })
-      .addCase(checkAuth.rejected, (state, action) => {
+      .addCase(checkAuth.rejected, (state) => {
         state.isLoading = false;
-        const status = action.payload?.status;
-
-        // ONLY wipe credentials if the server explicitly confirmed 401 Unauthorized
-        if (status === 401) {
-          state.user = null;
-          state.token = null;
-          state.isAuthenticated = false;
-          localStorage.removeItem("user");
-          localStorage.removeItem("token");
-        } else {
-          // If network glitch, server wake-up/timeout, or 5xx, preserve restored session!
-          const storedUser = localStorage.getItem("user");
-          const storedToken = localStorage.getItem("token");
-          if (storedUser) {
-            try {
-              state.user = JSON.parse(storedUser);
-              state.token = storedToken || null;
-              state.isAuthenticated = true;
-            } catch {
-              state.user = null;
-              state.token = null;
-              state.isAuthenticated = false;
-            }
+        // Never log out the user on background checkAuth failures.
+        // Keep whatever active session is saved in localStorage.
+        const storedUser = typeof window !== "undefined" ? localStorage.getItem("user") : null;
+        const storedToken = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        if (storedUser) {
+          try {
+            state.user = JSON.parse(storedUser);
+            state.token = storedToken || null;
+            state.isAuthenticated = true;
+          } catch {
+            state.user = null;
+            state.token = null;
+            state.isAuthenticated = false;
           }
         }
       })

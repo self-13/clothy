@@ -38,8 +38,11 @@ axios.interceptors.request.use(attachAuthToken, (error) => Promise.reject(error)
 
 // Global response error handler
 const handleAuthError = (error) => {
-  if (error.response && error.response.status === 401) {
-    // Clear auth credentials only on explicit 401 Unauthorized
+  const isCheckAuth = error.config?.url?.includes("/auth/check-auth");
+  const isLogin = error.config?.url?.includes("/auth/login");
+
+  if (error.response && error.response.status === 401 && !isCheckAuth && !isLogin) {
+    // Clear auth credentials only on explicit 401 Unauthorized from protected actions
     if (typeof window !== "undefined") {
       localStorage.removeItem("user");
       localStorage.removeItem("token");

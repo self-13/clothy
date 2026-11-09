@@ -29,6 +29,9 @@ const PORT = process.env.PORT || 3003;
 // ✅ Allowed frontend origins
 const defaultOrigins = [
   "http://localhost:5173",
+  "https://theluxeridge.vercel.app",
+  "https://theluxeridge.com",
+  "https://www.theluxeridge.com",
   "https://clothy-azure.vercel.app",
 ];
 
