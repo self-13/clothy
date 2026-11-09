@@ -2,10 +2,21 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import api from "../../api"; // Using centralized api instance for consistent config
 
+const storedUser = typeof window !== "undefined" ? localStorage.getItem("user") : null;
+const storedToken = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+let parsedUser = null;
+try {
+  parsedUser = storedUser ? JSON.parse(storedUser) : null;
+} catch {
+  parsedUser = null;
+}
+
 const initialState = {
-  isAuthenticated: false,
+  isAuthenticated: !!parsedUser,
   isLoading: true,
-  user: null,
+  user: parsedUser,
+  token: storedToken || null,
 };
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
@@ -154,12 +165,21 @@ const authSlice = createSlice({
       state.isAuthenticated = !!action.payload;
     },
     restoreSession: (state) => {
-      const user = localStorage.getItem("user");
-      if (user) {
-        state.user = JSON.parse(user);
-        state.isAuthenticated = true;
+      const storedUser = typeof window !== "undefined" ? localStorage.getItem("user") : null;
+      const storedToken = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      if (storedUser) {
+        try {
+          state.user = JSON.parse(storedUser);
+          state.token = storedToken || null;
+          state.isAuthenticated = true;
+        } catch {
+          state.user = null;
+          state.token = null;
+          state.isAuthenticated = false;
+        }
       } else {
         state.user = null;
+        state.token = null;
         state.isAuthenticated = false;
       }
     },
@@ -172,11 +192,13 @@ const authSlice = createSlice({
       .addCase(registerUser.fulfilled, (state, action) => {
         state.isLoading = false;
         state.user = null;
+        state.token = null;
         state.isAuthenticated = false;
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.isLoading = false;
         state.user = null;
+        state.token = null;
         state.isAuthenticated = false;
       })
       .addCase(loginUser.pending, (state) => {
@@ -185,14 +207,19 @@ const authSlice = createSlice({
       .addCase(loginUser.fulfilled, (state, action) => {
         state.isLoading = false;
         state.user = action.payload.success ? action.payload.user : null;
+        state.token = action.payload.token || null;
         state.isAuthenticated = action.payload.success;
         if (action.payload.success && action.payload.user) {
           localStorage.setItem("user", JSON.stringify(action.payload.user));
+          if (action.payload.token) {
+            localStorage.setItem("token", action.payload.token);
+          }
         }
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
         state.user = null;
+        state.token = null;
         state.isAuthenticated = false;
       })
       .addCase(checkAuth.pending, (state) => {
@@ -202,21 +229,41 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.user = action.payload.success ? action.payload.user : null;
         state.isAuthenticated = action.payload.success;
-        if (!action.payload.success) {
+        if (action.payload.token) {
+          state.token = action.payload.token;
+          localStorage.setItem("token", action.payload.token);
+        }
+        if (action.payload.success && action.payload.user) {
+          localStorage.setItem("user", JSON.stringify(action.payload.user));
+        } else {
+          state.token = null;
           localStorage.removeItem("user");
+          localStorage.removeItem("token");
         }
       })
       .addCase(checkAuth.rejected, (state, action) => {
         state.isLoading = false;
         state.user = null;
+        state.token = null;
         state.isAuthenticated = false;
         localStorage.removeItem("user");
+        localStorage.removeItem("token");
       })
       .addCase(logoutUser.fulfilled, (state, action) => {
         state.isLoading = false;
         state.user = null;
+        state.token = null;
         state.isAuthenticated = false;
         localStorage.removeItem("user");
+        localStorage.removeItem("token");
+      })
+      .addCase(logoutUser.rejected, (state, action) => {
+        state.isLoading = false;
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false;
+        localStorage.removeItem("user");
+        localStorage.removeItem("token");
       })
       .addCase(verifyOTP.pending, (state) => {
         state.isLoading = true;
@@ -260,6 +307,10 @@ const authSlice = createSlice({
       .addCase(updateProfile.fulfilled, (state, action) => {
         state.isLoading = false;
         state.user = action.payload.success ? action.payload.user : state.user;
+        if (action.payload.token) {
+          state.token = action.payload.token;
+          localStorage.setItem("token", action.payload.token);
+        }
         if (action.payload.success && action.payload.user) {
           localStorage.setItem("user", JSON.stringify(action.payload.user));
         }

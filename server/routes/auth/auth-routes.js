@@ -22,9 +22,12 @@ router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 router.put("/update-profile", authMiddleware, updateProfile);
 router.get("/check-auth", authMiddleware, (req, res) => {
-  res
-    .status(200)
-    .json({ success: true, message: "Authenticated user!", user: req.user });
+  res.status(200).json({
+    success: true,
+    message: "Authenticated user!",
+    user: req.user,
+    token: req.token,
+  });
 });
 
 module.exports = router;

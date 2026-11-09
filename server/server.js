@@ -27,9 +27,13 @@ const app = express();
 const PORT = process.env.PORT || 3003;
 
 // ✅ Allowed frontend origins
-const allowedOrigins = process.env.FRONTEND_URLS
-  ? process.env.FRONTEND_URLS.split(",").map((url) => url.trim())
-  : [process.env.FRONTEND_URL || "http://localhost:5173"];
+const allowedOrigins = (
+  process.env.FRONTEND_URLS
+    ? process.env.FRONTEND_URLS.split(",")
+    : [process.env.FRONTEND_URL || "http://localhost:5173"]
+)
+  .map((url) => url.trim().replace(/\/+$/, ""))
+  .filter(Boolean);
 console.log("Allowed origins:", allowedOrigins);
 
 // ✅ Middlewares
@@ -38,7 +42,7 @@ app.use(cookieParser());
 app.use(express.json({ limit: "10kb" }));
 app.use(mongoSanitize());
 
-app.set("trust proxy", 1);
+app.set("trust proxy", true);
 
 // ✅ Enhanced CORS configuration
 app.use(
@@ -47,7 +51,8 @@ app.use(
       // Allow requests with no origin (like mobile apps, Postman)
       if (!origin) return callback(null, true);
 
-      if (allowedOrigins.includes(origin)) {
+      const normalizedOrigin = origin.trim().replace(/\/+$/, "");
+      if (allowedOrigins.includes(normalizedOrigin)) {
         callback(null, true);
       } else {
         console.log("❌ Blocked by CORS:", origin);
@@ -72,12 +77,13 @@ app.use(
 // ✅ Handle preflight requests globally
 app.options("*", cors());
 
-// ✅ Rate limiting for auth routes
+// ✅ Rate limiting for auth routes (skip check-auth and logout to prevent reload lockouts)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 min
-  max: 20, // max 20 requests per IP
+  max: 100, // max 100 requests per IP
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.path === "/check-auth" || req.path === "/logout",
 });
 app.use("/api/auth", authLimiter);
 

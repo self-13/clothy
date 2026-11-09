@@ -114,27 +114,31 @@ const loginUser = async (req, res) => {
         userName: user.userName,
       },
       process.env.CLIENT_SECRET_KEY,
-      { expiresIn: "60m" }
+      { expiresIn: "7d" }
     );
 
     // Check if running in production or secure environment (HTTPS)
     const isProduction = process.env.NODE_ENV === "production";
     const isSecure = req.secure || req.headers["x-forwarded-proto"] === "https";
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: isProduction || isSecure,
-      sameSite: (isProduction || isSecure) ? "None" : "Lax",
-    }).json({
-      success: true,
-      message: "Logged in successfully",
-      user: {
-        email: user.email,
-        role: user.role,
-        id: user._id,
-        userName: user.userName,
-      },
-    });
+    res
+      .cookie("token", token, {
+        httpOnly: true,
+        secure: isProduction || isSecure,
+        sameSite: isProduction || isSecure ? "None" : "Lax",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      })
+      .json({
+        success: true,
+        message: "Logged in successfully",
+        token,
+        user: {
+          email: user.email,
+          role: user.role,
+          id: user._id,
+          userName: user.userName,
+        },
+      });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Server error" });
@@ -150,21 +154,33 @@ const logoutUser = (req, res) => {
     .clearCookie("token", {
       httpOnly: true,
       secure: isProduction || isSecure,
-      sameSite: (isProduction || isSecure) ? "None" : "Lax",
+      sameSite: isProduction || isSecure ? "None" : "Lax",
     })
     .json({ success: true, message: "Logged out successfully" });
 };
 
 // ---------------- AUTH MIDDLEWARE ----------------
 const authMiddleware = (req, res, next) => {
-  const token = req.cookies.token;
+  let token = req.cookies?.token;
+
+  if (!token && req.headers.authorization) {
+    const authHeader = req.headers.authorization;
+    if (authHeader.startsWith("Bearer ")) {
+      token = authHeader.slice(7).trim();
+    } else {
+      token = authHeader.trim();
+    }
+  }
+
   if (!token)
     return res.status(401).json({ success: false, message: "Unauthorized" });
 
   try {
-    req.user = jwt.verify(token, process.env.CLIENT_SECRET_KEY);
+    const decoded = jwt.verify(token, process.env.CLIENT_SECRET_KEY);
+    req.user = decoded;
+    req.token = token;
     next();
-  } catch {
+  } catch (err) {
     return res.status(401).json({ success: false, message: "Unauthorized" });
   }
 };
@@ -421,7 +437,7 @@ const updateProfile = async (req, res) => {
         userName: user.userName,
       },
       process.env.CLIENT_SECRET_KEY,
-      { expiresIn: "60m" }
+      { expiresIn: "7d" }
     );
 
     const isProduction = process.env.NODE_ENV === "production";
@@ -432,10 +448,12 @@ const updateProfile = async (req, res) => {
         httpOnly: true,
         secure: isProduction || isSecure,
         sameSite: isProduction || isSecure ? "None" : "Lax",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
       })
       .json({
         success: true,
         message: "Profile updated successfully",
+        token,
         user: {
           email: user.email,
           role: user.role,
